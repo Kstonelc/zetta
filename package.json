@@ -1,7 +1,7 @@
 {
-  "name": "soupbun-algo",
+  "name": "zetta",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,6 +12,7 @@
   "dependencies": {
     "@mantine/core": "^8.1.1",
     "@mantine/hooks": "^8.1.1",
+    "@tabler/icons-react": "^3.34.0",
     "prettier": "^3.6.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

@@ -1,7 +1,12 @@
 .container {
   height: 60px;
   width: 100vw;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: 24px;
+  padding-right: 24px;
   background-color: antiquewhite;
+}
+
+.divider {
+  margin-bottom: 12px;
+  margin-top: -12px;
 }
