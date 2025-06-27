@@ -6,8 +6,8 @@ import {
   Avatar,
   useMantineTheme,
 } from "@mantine/core";
-import { IconBook, IconBrain } from "@tabler/icons-react";
 import zettaLogo from "@/assets/zetta-logo.svg";
+import { BookOpenText } from "lucide-react";
 import classes from "./Header.module.scss";
 import React from "react";
 
@@ -25,7 +25,7 @@ const Header = () => {
         <Menu shadow="md">
           <Menu.Target>
             <Button variant="light" onClick={() => {}}>
-              <IconBook size={20} className={classes.icon} />
+              <BookOpenText className={classes.icon} size={20} />
               知识库
             </Button>
           </Menu.Target>
@@ -35,7 +35,6 @@ const Header = () => {
               color={theme.colors.gray[6]}
               onClick={() => {}}
             >
-              <IconBrain size={20} className={classes.icon} />
               AI
             </Button>
           </Menu.Target>

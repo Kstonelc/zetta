@@ -17,7 +17,7 @@ const theme = createTheme({
 export default function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
-      <RouterProvider router={routerConfig}></RouterProvider>;
+      <RouterProvider router={routerConfig}></RouterProvider>
     </MantineProvider>
   );
 }

@@ -1,9 +1,14 @@
 import React from "react";
 import { AppShell, Text, Container, Box, Stack, Divider } from "@mantine/core";
-import { Header } from "../components";
+import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import classes from "./Wiki.module.scss";
 
 const Wiki = () => {
-  return <Stack>1111</Stack>;
+  return (
+    <Stack className={classes.container}>
+      <SimpleEditor></SimpleEditor>
+    </Stack>
+  );
 };
 
 export { Wiki };
