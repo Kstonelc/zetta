@@ -1,10 +1,18 @@
-import { Flex, Button, Image, Menu } from "@mantine/core";
+import {
+  Flex,
+  Button,
+  Image,
+  Menu,
+  Avatar,
+  useMantineTheme,
+} from "@mantine/core";
 import { IconBook, IconBrain } from "@tabler/icons-react";
 import zettaLogo from "@/assets/zetta-logo.svg";
 import classes from "./Header.module.scss";
 import React from "react";
 
 const Header = () => {
+  const theme = useMantineTheme();
   return (
     <Flex
       className={classes.header}
@@ -14,22 +22,28 @@ const Header = () => {
     >
       <Image src={zettaLogo} className={classes.logo} />
       <Flex gap={"md"}>
-        <Menu shadow="md" width={200}>
+        <Menu shadow="md">
           <Menu.Target>
-            <Button variant="light">
+            <Button variant="light" onClick={() => {}}>
               <IconBook size={20} className={classes.icon} />
               知识库
             </Button>
           </Menu.Target>
           <Menu.Target>
-            <Button variant="subtle" color={"grey"}>
+            <Button
+              variant="subtle"
+              color={theme.colors.gray[6]}
+              onClick={() => {}}
+            >
               <IconBrain size={20} className={classes.icon} />
               AI
             </Button>
           </Menu.Target>
         </Menu>
       </Flex>
-      <Button>333</Button>
+      <Avatar color={theme.colors.blue[8]} radius="xl">
+        KS
+      </Avatar>
     </Flex>
   );
 };

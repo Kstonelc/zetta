@@ -1,1 +1,2 @@
-export * from "./Home.jsx";
+export * from "./Wiki.jsx";
+export * from './Agent.jsx'
