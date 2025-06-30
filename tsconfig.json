@@ -1,8 +1,13 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "esnext",
+    "moduleResolution": "bundler",
     "jsx": "react",
+    "baseUrl": "src",
+    "paths": {
+      "@/*": ["*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

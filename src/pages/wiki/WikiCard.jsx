@@ -3,6 +3,7 @@ import {
   Badge,
   Card,
   Center,
+  Divider,
   Flex,
   Group,
   Image,
@@ -11,13 +12,32 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import WikiIcon from "@/assets/wiki.svg";
-import { Ellipsis, Tags } from "lucide-react";
+import {
+  Ellipsis,
+  Tags,
+  SquarePen,
+  Trash,
+  Star,
+  ArrowRight,
+} from "lucide-react";
 import React from "react";
 
 const WikiCard = () => {
   const theme = useMantineTheme();
   return (
-    <Card shadow="sm" padding="lg" radius={"md"}>
+    <Card
+      shadow="sm"
+      padding="lg"
+      radius={"md"}
+      // onClick={() =>
+      //   notifications.show({
+      //     withCloseButton: false,
+      //     message: "点击了知识库",
+      //     color: theme.colors.green[6],
+      //     autoClose: 3000,
+      //   })
+      // }
+    >
       <Group mb={"md"} justify="space-between">
         <Group>
           <Center
@@ -39,14 +59,28 @@ const WikiCard = () => {
           </Flex>
         </Group>
         <Group>
-          <Menu position="right-start">
+          <ActionIcon variant="white">
+            <Star
+              size={16}
+              color={theme.colors.gray[6]}
+              color={theme.colors.yellow[9]}
+            ></Star>
+          </ActionIcon>
+          <Menu>
             <Menu.Target>
               <ActionIcon variant="white" color={theme.colors.gray[9]}>
                 <Ellipsis size={16} />
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item>编辑</Menu.Item>
+              <Menu.Item leftSection={<SquarePen size={15} />}>编辑</Menu.Item>
+              <Divider my={4}></Divider>
+              <Menu.Item
+                leftSection={<Trash size={15} />}
+                color={theme.colors.red[9]}
+              >
+                删除
+              </Menu.Item>
             </Menu.Dropdown>
           </Menu>
         </Group>
@@ -56,12 +90,11 @@ const WikiCard = () => {
           Relink产品描述
         </Text>
       </Flex>
-      <Badge leftSection={<Tags size={15} />} variant={"light"}>
-        标签
-      </Badge>
-      <Menu position="right-start" offset={6}>
-        {/* Menu items */}
-      </Menu>
+      <Group justify={"space-between"}>
+        <Badge leftSection={<Tags size={15} />} variant={"light"}>
+          标签
+        </Badge>
+      </Group>
     </Card>
   );
 };

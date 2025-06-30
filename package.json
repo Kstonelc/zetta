@@ -13,6 +13,7 @@
     "@floating-ui/react": "^0.27.12",
     "@mantine/core": "^8.1.1",
     "@mantine/hooks": "^8.1.1",
+    "@mantine/notifications": "^8.1.2",
     "@tiptap/extension-highlight": "^2.23.0",
     "@tiptap/extension-image": "^2.23.0",
     "@tiptap/extension-link": "^2.23.0",

@@ -20,7 +20,7 @@ import {
   Center,
   useMantineTheme,
 } from "@mantine/core";
-import { WikiCard } from "@/components";
+import { WikiCard } from "./WikiCard";
 import WikiIcon from "@/assets/wiki.svg";
 import { ArrowRight, Tags, Ellipsis } from "lucide-react";
 import classes from "./Wiki.module.scss";

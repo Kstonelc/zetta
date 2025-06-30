@@ -1,7 +1,9 @@
 import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
 
 import { MantineProvider, createTheme, Button } from "@mantine/core";
 import routerConfig from "@/routers";
+import { Notifications } from "@mantine/notifications";
 import { RouterProvider } from "react-router-dom";
 
 const theme = createTheme({
@@ -17,7 +19,8 @@ const theme = createTheme({
 export default function App() {
   return (
     <MantineProvider theme={theme} defaultColorScheme="light">
-      <RouterProvider router={routerConfig}></RouterProvider>
+      <Notifications />
+      <RouterProvider router={routerConfig} />
     </MantineProvider>
   );
 }
