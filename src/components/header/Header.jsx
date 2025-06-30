@@ -21,6 +21,8 @@ const Header = () => {
   const isActive = (route) => {
     return route === currentRoute.pathname;
   };
+
+  console.log(theme.colors);
   return (
     <Flex
       className={classes.header}

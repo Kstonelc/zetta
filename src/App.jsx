@@ -8,7 +8,7 @@ const theme = createTheme({
   components: {
     Button: Button.extend({
       defaultProps: {
-        radius: "lg",
+        radius: "md",
       },
     }),
   },

@@ -1,2 +1,2 @@
-export * from "./Wiki.jsx";
+export * from "./wiki/Wiki.jsx";
 export * from "./Agent.jsx";
