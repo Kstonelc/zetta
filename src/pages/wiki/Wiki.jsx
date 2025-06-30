@@ -34,7 +34,7 @@ const Wiki = () => {
       <Grid gutter="md">
         {cards.map((card) => (
           <Grid.Col key={card} span={{ base: 12, sm: 6, md: 3 }}>
-            <WikiCard></WikiCard>
+            <WikiCard />
           </Grid.Col>
         ))}
       </Grid>

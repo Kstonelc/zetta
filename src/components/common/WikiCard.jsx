@@ -39,13 +39,16 @@ const WikiCard = () => {
           </Flex>
         </Group>
         <Group>
-          <ActionIcon
-            variant="white"
-            color={theme.colors.gray[9]}
-            aria-label="Settings"
-          >
-            <Ellipsis size={16} />
-          </ActionIcon>
+          <Menu position="right-start">
+            <Menu.Target>
+              <ActionIcon variant="white" color={theme.colors.gray[9]}>
+                <Ellipsis size={16} />
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item>编辑</Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Group>
       <Flex mb={"xl"}>
