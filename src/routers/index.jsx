@@ -1,17 +1,17 @@
 import React from "react";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
-import Layouts from "../layouts";
+import { MainLayout } from "../layouts";
 import { Wiki, Agent } from "../pages";
 
 const Router = createBrowserRouter([
   {
     path: "/",
-    element: <Layouts />,
+    element: <MainLayout />,
     children: [
       {
-        path: "/",
-        element: <Wiki />,
+        index: true,
+        element: <Navigate to="/wiki" replace />,
       },
       {
         path: "wiki",
