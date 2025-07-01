@@ -12,17 +12,10 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import WikiIcon from "@/assets/wiki.svg";
-import {
-  Ellipsis,
-  Tags,
-  SquarePen,
-  Trash,
-  Star,
-  ArrowRight,
-} from "lucide-react";
+import { Ellipsis, Tags, SquarePen, Trash, Star } from "lucide-react";
 import React from "react";
 
-const WikiCard = () => {
+const WikiHomeCard = () => {
   const theme = useMantineTheme();
   return (
     <Card
@@ -49,10 +42,10 @@ const WikiCard = () => {
               border: `1px solid ${theme.colors.blue[1]}`,
             }}
           >
-            <Image src={WikiIcon} w={20} h={20} />
+            <Image src={WikiIcon} w={18} h={18} />
           </Center>
           <Flex direction={"column"}>
-            <Text fw={600}>知识库</Text>
+            <Text fw={"bold"}>知识库</Text>
             <Text size={"xs"} c="dimmed">
               3文档 | 1600字符 | 关联1应用
             </Text>
@@ -60,11 +53,7 @@ const WikiCard = () => {
         </Group>
         <Group>
           <ActionIcon variant="white">
-            <Star
-              size={16}
-              color={theme.colors.gray[6]}
-              color={theme.colors.yellow[9]}
-            ></Star>
+            <Star size={16} color={theme.colors.yellow[9]} />
           </ActionIcon>
           <Menu>
             <Menu.Target>
@@ -73,13 +62,15 @@ const WikiCard = () => {
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item leftSection={<SquarePen size={15} />}>编辑</Menu.Item>
+              <Menu.Item leftSection={<SquarePen size={15} />}>
+                <Text size={"xs"}>编辑</Text>
+              </Menu.Item>
               <Divider my={4}></Divider>
               <Menu.Item
                 leftSection={<Trash size={15} />}
                 color={theme.colors.red[9]}
               >
-                删除
+                <Text size={"xs"}>删除</Text>
               </Menu.Item>
             </Menu.Dropdown>
           </Menu>
@@ -98,4 +89,4 @@ const WikiCard = () => {
     </Card>
   );
 };
-export { WikiCard };
+export { WikiHomeCard };

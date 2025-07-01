@@ -1,2 +1,3 @@
-export * from "./wiki/Wiki.jsx";
-export * from "./Agent.jsx";
+export * from "./wiki/WikiHome";
+export * from "./wiki/WikiDetailEdit";
+export * from "./agent/Agent.jsx";
