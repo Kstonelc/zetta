@@ -8,7 +8,7 @@ import {
 } from "@mantine/core";
 import zettaLogo from "@/assets/zetta-logo.svg";
 import { useLocation, Link } from "react-router-dom";
-import { BookOpenText } from "lucide-react";
+import { BookOpenText, Bot } from "lucide-react";
 import classes from "./Header.module.scss";
 import React from "react";
 
@@ -22,7 +22,6 @@ const Header = () => {
     return route === currentRoute.pathname;
   };
 
-  console.log(theme.colors);
   return (
     <Flex
       className={classes.header}
@@ -46,6 +45,7 @@ const Header = () => {
             variant={isActive("/agent") ? "light" : "subtle"}
             color={!isActive("/agent") && theme.colors.gray[6]}
           >
+            <Bot className={classes.icon} size={20} />
             AI
           </Button>
         </Link>

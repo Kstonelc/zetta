@@ -21,8 +21,8 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { WikiHomeCard } from "./WikiHomeCard.jsx";
-import { Select, Modal, Loading } from "@/components";
-import { Grid2x2Plus } from "lucide-react";
+import { Select, Modal, Loading, TextInput, TextArea } from "@/components";
+import { Grid2x2Plus, Blocks } from "lucide-react";
 import classes from "./WikiHome.module.scss";
 
 const WikiHome = () => {
@@ -40,11 +40,35 @@ const WikiHome = () => {
           placeholder={"请选择部门"}
         />
         <Modal
-          title={<Text fw={"bold"}>新建知识库</Text>}
+          title={
+            <Group gap={"sm"}>
+              <Blocks size={20} color={theme.colors.blue[8]} />
+              <Text fw={"bold"} size={"lg"}>
+                创建知识库
+              </Text>
+            </Group>
+          }
           trigger={
             <Button leftSection={<Grid2x2Plus size={16} />}>新建知识库</Button>
           }
-        ></Modal>
+        >
+          <TextInput
+            label={"名称"}
+            required={true}
+            placeholder={"请输入知识库名称"}
+            onChange={(e) => {
+              console.log(111, e.target.value);
+            }}
+          />
+          <TextArea
+            label={"描述"}
+            description={"简单介绍一下知识库"}
+            placeholder={"请输入知识库描述"}
+          />
+          <Group justify={"flex-end"}>
+            <Button>确认</Button>
+          </Group>
+        </Modal>
       </Flex>
       <Loading>
         <Grid gutter="md">

@@ -40,7 +40,7 @@ const Modal: FC<CustomModalProps> = ({
         }}
         {...props}
       >
-        <Stack gap="sm">
+        <Stack gap="md">
           {description && (
             <Text size="sm" c="dimmed">
               {description}

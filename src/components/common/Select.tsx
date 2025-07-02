@@ -3,6 +3,7 @@ import React, { FC } from "react";
 
 const Select: FC<SelectProps> = ({
   size = "sm",
+  variant = "filled",
   searchable = false,
   clearable = false,
   allowDeselect = true,
@@ -10,6 +11,7 @@ const Select: FC<SelectProps> = ({
 }) => {
   return (
     <SelectMT
+      variant={variant}
       size={size}
       searchable={searchable}
       clearable={clearable}
