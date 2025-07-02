@@ -41,7 +41,7 @@ const Modal: FC<CustomModalProps> = ({
           backgroundColor: theme.colors.gray[1],
         },
       }}
-      closeButtonProps={{ size: "xl", radius: "md" }}
+      closeButtonProps={{ size: "lg", radius: "md" }}
       {...props}
     >
       <Stack gap="md">

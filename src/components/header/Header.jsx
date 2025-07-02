@@ -9,6 +9,7 @@ import {
   Text,
   useMantineTheme,
   Divider,
+  useMantineColorScheme,
 } from "@mantine/core";
 import zettaLogo from "@/assets/zetta-logo.svg";
 import { Modal } from "@/components";
@@ -24,6 +25,7 @@ const Header = () => {
     isUserSettingOpen,
     { open: openUserSetting, close: closeUserSetting },
   ] = useDisclosure(false);
+  const { setColorScheme } = useMantineColorScheme();
 
   const currentRoute = useLocation();
 
@@ -102,6 +104,20 @@ const Header = () => {
         onClose={closeUserSetting}
         title="用户设置"
       ></Modal>
+      <Button
+        onClick={() => {
+          setColorScheme("dark");
+        }}
+      >
+        暗色
+      </Button>
+      <Button
+        onClick={() => {
+          setColorScheme("light");
+        }}
+      >
+        亮色
+      </Button>
     </Flex>
   );
 };

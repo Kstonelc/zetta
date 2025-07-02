@@ -57,7 +57,7 @@ const WikiHomeCard = () => {
           </ActionIcon>
           <Menu>
             <Menu.Target>
-              <ActionIcon variant="transparent" color={theme.colors.gray[9]}>
+              <ActionIcon variant="transparent" color={theme.colors.black}>
                 <Ellipsis size={16} />
               </ActionIcon>
             </Menu.Target>
