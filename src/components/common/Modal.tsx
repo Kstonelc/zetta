@@ -1,55 +1,58 @@
-import React, { FC } from "react";
-import { Text, Modal as ModalMT, ModalProps, Stack } from "@mantine/core";
-import { useDisclosure } from "@mantine/hooks";
+import React, { FC, useEffect } from "react";
+import {
+  Text,
+  Modal as ModalMT,
+  ModalProps,
+  Stack,
+  useMantineTheme,
+} from "@mantine/core";
 
-interface CustomModalProps extends Omit<ModalProps, "opened" | "onClose"> {
-  trigger?: React.ReactElement<{ onClick?: React.MouseEventHandler }>;
+interface CustomModalProps extends ModalProps {
+  opened: boolean;
+  onClose: () => void;
   description?: string;
 }
 
 const Modal: FC<CustomModalProps> = ({
+  opened,
+  onClose,
   children,
   title,
-  trigger,
+  fullScreen = false,
   description,
   ...props
 }) => {
-  const [isOpen, { open, close }] = useDisclosure(false);
-
-  const triggerWithOpen = React.isValidElement(trigger)
-    ? React.cloneElement(trigger, {
-        onClick: (e: React.MouseEvent) => {
-          trigger.props.onClick?.(e);
-          open();
-        },
-      })
-    : null;
-
+  const theme = useMantineTheme();
   return (
-    <>
-      {triggerWithOpen}
-      <ModalMT
-        opened={isOpen}
-        onClose={close}
-        title={title}
-        centered
-        radius={"md"}
-        overlayProps={{
-          backgroundOpacity: 0.55,
-          blur: 3,
-        }}
-        {...props}
-      >
-        <Stack gap="md">
-          {description && (
-            <Text size="sm" c="dimmed">
-              {description}
-            </Text>
-          )}
-          {children}
-        </Stack>
-      </ModalMT>
-    </>
+    <ModalMT
+      opened={opened}
+      onClose={onClose}
+      title={title}
+      centered
+      transitionProps={{ transition: "fade-down", duration: 200 }}
+      radius={"md"}
+      fullScreen={fullScreen}
+      overlayProps={{
+        backgroundOpacity: 0.55,
+        blur: 3,
+      }}
+      styles={{
+        close: {
+          backgroundColor: theme.colors.gray[1],
+        },
+      }}
+      closeButtonProps={{ size: "xl", radius: "md" }}
+      {...props}
+    >
+      <Stack gap="md">
+        {description && (
+          <Text size="sm" c="dimmed">
+            {description}
+          </Text>
+        )}
+        {children}
+      </Stack>
+    </ModalMT>
   );
 };
 

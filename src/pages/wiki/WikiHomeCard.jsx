@@ -52,12 +52,12 @@ const WikiHomeCard = () => {
           </Flex>
         </Group>
         <Group>
-          <ActionIcon variant="white">
+          <ActionIcon variant="transparent">
             <Star size={16} color={theme.colors.yellow[9]} />
           </ActionIcon>
           <Menu>
             <Menu.Target>
-              <ActionIcon variant="white" color={theme.colors.gray[9]}>
+              <ActionIcon variant="transparent" color={theme.colors.gray[9]}>
                 <Ellipsis size={16} />
               </ActionIcon>
             </Menu.Target>

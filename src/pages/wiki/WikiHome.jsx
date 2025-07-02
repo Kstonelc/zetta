@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   AppShell,
   Text,
@@ -24,9 +24,16 @@ import { WikiHomeCard } from "./WikiHomeCard.jsx";
 import { Select, Modal, Loading, TextInput, TextArea } from "@/components";
 import { Grid2x2Plus, Blocks } from "lucide-react";
 import classes from "./WikiHome.module.scss";
+import { useDisclosure } from "@mantine/hooks";
 
 const WikiHome = () => {
   const theme = useMantineTheme();
+  const [
+    isWikiAddModalOpen,
+    { open: openWikiAddModal, close: closeWikiAddModal },
+  ] = useDisclosure(false);
+
+  console.log(theme.colors);
 
   const cards = [1, 2, 3];
   return (
@@ -39,7 +46,18 @@ const WikiHome = () => {
           searchable={true}
           placeholder={"请选择部门"}
         />
+        <Button
+          leftSection={<Grid2x2Plus size={16} />}
+          onClick={() => {
+            openWikiAddModal();
+            console.log(2222);
+          }}
+        >
+          新建知识库
+        </Button>
         <Modal
+          opened={isWikiAddModalOpen}
+          onClose={closeWikiAddModal}
           title={
             <Group gap={"sm"}>
               <Blocks size={20} color={theme.colors.blue[8]} />
@@ -47,9 +65,6 @@ const WikiHome = () => {
                 创建知识库
               </Text>
             </Group>
-          }
-          trigger={
-            <Button leftSection={<Grid2x2Plus size={16} />}>新建知识库</Button>
           }
         >
           <TextInput
