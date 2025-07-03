@@ -33,8 +33,6 @@ const WikiHome = () => {
     { open: openWikiAddModal, close: closeWikiAddModal },
   ] = useDisclosure(false);
 
-  console.log(theme.colors);
-
   const cards = [1, 2, 3];
   return (
     <Stack className={classes.container}>

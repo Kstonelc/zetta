@@ -25,7 +25,7 @@ const Header = () => {
     isUserSettingOpen,
     { open: openUserSetting, close: closeUserSetting },
   ] = useDisclosure(false);
-  const { setColorScheme } = useMantineColorScheme();
+  const { toggleColorScheme } = useMantineColorScheme();
 
   const currentRoute = useLocation();
 
@@ -85,11 +85,11 @@ const Header = () => {
               </Avatar>
             </Group>
           </Menu.Item>
-          <Divider my={2} />
+          <Divider my={4} />
           <Menu.Item
             onClick={openUserSetting}
             leftSection={
-              <SettingsIcon size={16} color={theme.colors.gray[8]} />
+              <SettingsIcon size={16} color={theme.colors.gray[6]} />
             }
           >
             <Text size={"sm"} c={"dimmed"}>
@@ -102,22 +102,19 @@ const Header = () => {
         fullScreen={true}
         opened={isUserSettingOpen}
         onClose={closeUserSetting}
-        title="用户设置"
+        title={
+          <Text fw={"bold"} size={"xl"}>
+            用户设置
+          </Text>
+        }
       ></Modal>
-      <Button
-        onClick={() => {
-          setColorScheme("dark");
-        }}
-      >
-        暗色
-      </Button>
-      <Button
-        onClick={() => {
-          setColorScheme("light");
-        }}
-      >
-        亮色
-      </Button>
+      {/*<Button*/}
+      {/*  onClick={() => {*/}
+      {/*    toggleColorScheme();*/}
+      {/*  }}*/}
+      {/*>*/}
+      {/*  切换*/}
+      {/*</Button>*/}
     </Flex>
   );
 };

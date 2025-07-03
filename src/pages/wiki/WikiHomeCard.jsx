@@ -19,7 +19,7 @@ const WikiHomeCard = () => {
   const theme = useMantineTheme();
   return (
     <Card
-      shadow="sm"
+      shadow="md"
       padding="lg"
       radius={"md"}
       // onClick={() =>
@@ -57,7 +57,7 @@ const WikiHomeCard = () => {
           </ActionIcon>
           <Menu>
             <Menu.Target>
-              <ActionIcon variant="transparent" color={theme.colors.black}>
+              <ActionIcon variant="transparent" color={theme.colors.dark[2]}>
                 <Ellipsis size={16} />
               </ActionIcon>
             </Menu.Target>

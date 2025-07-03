@@ -10,6 +10,7 @@ import {
 import routerConfig from "@/routers";
 import { Notifications } from "@mantine/notifications";
 import { RouterProvider } from "react-router-dom";
+import { ColorScheme } from "@/enum";
 
 const theme = createTheme({
   fontFamily:
@@ -26,8 +27,8 @@ const theme = createTheme({
 export default function App() {
   return (
     <>
-      <ColorSchemeScript defaultColorScheme={"light"} />
-      <MantineProvider theme={theme} defaultColorScheme={"light"}>
+      <ColorSchemeScript defaultColorScheme={ColorScheme.light} />
+      <MantineProvider theme={theme} defaultColorScheme={ColorScheme.light}>
         <Notifications />
         <RouterProvider router={routerConfig} />
       </MantineProvider>

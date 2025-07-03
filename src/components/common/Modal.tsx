@@ -2,10 +2,12 @@ import React, { FC, useEffect } from "react";
 import {
   Text,
   Modal as ModalMT,
+  useMantineColorScheme,
   ModalProps,
   Stack,
   useMantineTheme,
 } from "@mantine/core";
+import { ColorScheme } from "@/enum";
 
 interface CustomModalProps extends ModalProps {
   opened: boolean;
@@ -23,6 +25,7 @@ const Modal: FC<CustomModalProps> = ({
   ...props
 }) => {
   const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
   return (
     <ModalMT
       opened={opened}
@@ -38,7 +41,10 @@ const Modal: FC<CustomModalProps> = ({
       }}
       styles={{
         close: {
-          backgroundColor: theme.colors.gray[1],
+          backgroundColor:
+            colorScheme === ColorScheme.light
+              ? theme.colors.gray[0]
+              : theme.colors.gray[8],
         },
       }}
       closeButtonProps={{ size: "lg", radius: "md" }}
