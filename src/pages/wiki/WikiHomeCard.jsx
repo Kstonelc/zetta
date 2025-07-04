@@ -14,22 +14,28 @@ import {
 import WikiIcon from "@/assets/wiki.svg";
 import { Ellipsis, Tags, SquarePen, Trash, Star } from "lucide-react";
 import React from "react";
+import { useNavigate } from "react-router-dom";
 
 const WikiHomeCard = () => {
   const theme = useMantineTheme();
+  const nav = useNavigate();
   return (
     <Card
-      shadow="md"
+      shadow="sm"
       padding="lg"
+      withBorder
       radius={"md"}
-      // onClick={() =>
-      //   notifications.show({
-      //     withCloseButton: false,
-      //     message: "点击了知识库",
-      //     color: theme.colors.green[6],
-      //     autoClose: 3000,
-      //   })
-      // }
+      onClick={() => {
+        nav({
+          pathname: "/wiki/detail",
+        });
+        // notifications.show({
+        //   withCloseButton: false,
+        //   message: "点击了知识库",
+        //   color: theme.colors.green[6],
+        //   autoClose: 3000,
+        // })
+      }}
     >
       <Group mb={"md"} justify="space-between">
         <Group>

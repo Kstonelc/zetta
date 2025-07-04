@@ -2,7 +2,7 @@ import React from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import { MainLayout } from "../layouts";
-import { WikiHome, Agent, WikiDetailEdit } from "../pages";
+import { WikiHome, Agent, WikiDetailEdit, WikiDetail } from "../pages";
 
 const Router = createBrowserRouter([
   {
@@ -16,6 +16,10 @@ const Router = createBrowserRouter([
       {
         path: "wiki",
         element: <WikiHome />,
+      },
+      {
+        path: "wiki/detail",
+        element: <WikiDetail />,
       },
       {
         path: "agent",

@@ -35,7 +35,7 @@ const WikiHome = () => {
 
   const cards = [1, 2, 3];
   return (
-    <Stack className={classes.container}>
+    <Stack>
       <Title order={3}>知识库</Title>
       <Flex gap={"sm"} justify={"space-between"}>
         <Select
@@ -48,7 +48,6 @@ const WikiHome = () => {
           leftSection={<Grid2x2Plus size={16} />}
           onClick={() => {
             openWikiAddModal();
-            console.log(2222);
           }}
         >
           新建知识库

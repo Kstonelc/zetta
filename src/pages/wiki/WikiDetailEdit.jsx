@@ -1,8 +1,8 @@
 import React from "react";
-import { SimpleEditor } from "@/components/tiptap-templates/simple/simple-editor";
+import { TipTapEditor } from "@/components";
 
 const WikiDetailEdit = () => {
-  return <SimpleEditor />;
+  return <TipTapEditor />;
 };
 
 export { WikiDetailEdit };

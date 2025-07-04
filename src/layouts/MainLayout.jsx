@@ -13,7 +13,16 @@ const MainLayout = () => {
           marginTop: -15,
         }}
       />
-      <Outlet />
+      <div
+        style={{
+          paddingLeft: 32,
+          paddingRight: 32,
+          paddingTop: 16,
+          paddingBottom: 16,
+        }}
+      >
+        <Outlet />
+      </div>
     </Stack>
   );
 };

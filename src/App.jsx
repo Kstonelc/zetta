@@ -1,5 +1,7 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
+// import tiptap styles after core package styles
+import "@mantine/tiptap/styles.css";
 
 import {
   MantineProvider,
