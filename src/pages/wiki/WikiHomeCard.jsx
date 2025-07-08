@@ -63,12 +63,24 @@ const WikiHomeCard = () => {
           </ActionIcon>
           <Menu>
             <Menu.Target>
-              <ActionIcon variant="transparent" color={theme.colors.dark[2]}>
+              <ActionIcon
+                variant="transparent"
+                color={theme.colors.dark[2]}
+                onClick={(e) => {
+                  // 阻止事件冒泡
+                  e.stopPropagation();
+                }}
+              >
                 <Ellipsis size={16} />
               </ActionIcon>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item leftSection={<SquarePen size={15} />}>
+              <Menu.Item
+                leftSection={<SquarePen size={15} />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
                 <Text size={"xs"}>编辑</Text>
               </Menu.Item>
               <Divider my={4}></Divider>

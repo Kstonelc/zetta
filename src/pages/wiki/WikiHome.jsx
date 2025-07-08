@@ -35,7 +35,7 @@ const WikiHome = () => {
 
   const cards = [1, 2, 3];
   return (
-    <Stack>
+    <Stack className={classes.container}>
       <Title order={3}>知识库</Title>
       <Flex gap={"sm"} justify={"space-between"}>
         <Select
@@ -82,7 +82,7 @@ const WikiHome = () => {
           </Group>
         </Modal>
       </Flex>
-      <Loading>
+      <Loading visible={false}>
         <Grid gutter="md">
           {cards.map((card) => (
             <Grid.Col key={card} span={{ base: 12, sm: 6, md: 3 }}>

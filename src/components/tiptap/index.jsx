@@ -83,8 +83,8 @@ const TipTapEditor = () => {
 
       <RichTextEditor.Content
         style={{
-          // minHeight: "calc(100vh - 200px)",
-          // maxHeight: "calc(100vh - 200px)",
+          minHeight: "calc(100vh - 200px)",
+          maxHeight: "calc(100vh - 200px)",
           overflowY: "auto",
         }}
       />

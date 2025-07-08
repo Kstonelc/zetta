@@ -11,10 +11,12 @@ import {
   Divider,
 } from "@mantine/core";
 
+import classes from "./Agent.module.scss";
+
 const Agent = () => {
   const theme = useMantineTheme();
   return (
-    <Stack>
+    <Stack className={classes.container}>
       <Group align="flex-start">
         {/*flex 1 不可以下在Editor上*/}
         <Paper shadow="xs" radius="md" p={"sm"} w={200} withBorder>

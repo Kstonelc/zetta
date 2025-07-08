@@ -1,29 +1,21 @@
-import { Divider, Stack } from "@mantine/core";
+import { Divider, Flex } from "@mantine/core";
 import { Outlet } from "react-router-dom";
 import { Header } from "@/components";
 import React from "react";
 
 const MainLayout = () => {
   return (
-    <Stack>
+    <Flex direction="column" h="100vh">
       <Header />
       <Divider
         size="xs"
         style={{
-          marginTop: -15,
+          marginTop: 0,
+          marginBottom: 0,
         }}
       />
-      <div
-        style={{
-          paddingLeft: 32,
-          paddingRight: 32,
-          paddingTop: 16,
-          paddingBottom: 16,
-        }}
-      >
-        <Outlet />
-      </div>
-    </Stack>
+      <Outlet />
+    </Flex>
   );
 };
 
