@@ -6,11 +6,12 @@ import {
 import React, { FC } from "react";
 
 interface LoadingProps {
-  children: React.ReactNode;
   visible: boolean;
+  size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' ,
+  children: React.ReactNode;
 }
 
-const Loading: FC<LoadingProps> = ({ visible = false, children }) => {
+const Loading: FC<LoadingProps> = ({ visible = false, size = "sm", children  }) => {
   const theme = useMantineTheme();
   return (
     <Box pos="relative">
@@ -18,7 +19,7 @@ const Loading: FC<LoadingProps> = ({ visible = false, children }) => {
         visible={visible}
         zIndex={1000}
         overlayProps={{ radius: "sm", blur: 2 }}
-        loaderProps={{ color: theme.colors.blue[8], type: "bars", size: "sm" }}
+        loaderProps={{ color: theme.colors.blue[8], type: "bars", size: size }}
       />
       {children}
     </Box>

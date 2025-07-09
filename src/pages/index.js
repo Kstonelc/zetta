@@ -3,3 +3,4 @@ export * from "./wiki/WikiDetail";
 export * from "./wiki/WikiDetailEdit";
 export * from "./agent/Agent";
 export * from "./settings/UserSettings";
+export * from "./user/UserLogin";

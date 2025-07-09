@@ -10,16 +10,17 @@ import {
   Paper,
   Divider,
 } from "@mantine/core";
+import { ChatBox } from "@/components";
 
 import classes from "./Agent.module.scss";
 
 const Agent = () => {
   const theme = useMantineTheme();
+
   return (
     <Stack className={classes.container}>
-      <Group align="flex-start">
-        {/*flex 1 不可以下在Editor上*/}
-        <Paper shadow="xs" radius="md" p={"sm"} w={200} withBorder>
+      {/* <Group align='flex-start'>
+        <Paper shadow='xs' radius='md' p={"sm"} w={200} withBorder>
           <Text fw={"bold"} size={"sm"} mb={8}>
             摘要
           </Text>
@@ -27,7 +28,8 @@ const Agent = () => {
           <Text size={"sm"}>暂无内容</Text>
         </Paper>
         <WikiDetailEdit />
-      </Group>
+      </Group> */}
+      <ChatBox></ChatBox>
     </Stack>
   );
 };

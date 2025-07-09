@@ -40,7 +40,6 @@ const WikiHome = () => {
       <Flex gap={"sm"} justify={"space-between"}>
         <Select
           data={["软件研发", "产品设计"]}
-          value={"软件研发"}
           searchable={true}
           placeholder={"请选择部门"}
         />
@@ -83,7 +82,7 @@ const WikiHome = () => {
         </Modal>
       </Flex>
       <Loading visible={false}>
-        <Grid gutter="md">
+        <Grid gutter='md'>
           {cards.map((card) => (
             <Grid.Col key={card} span={{ base: 12, sm: 6, md: 3 }}>
               <WikiHomeCard />

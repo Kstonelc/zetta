@@ -36,7 +36,7 @@ const SideBar = () => {
   return (
     <Flex
       w={collapsed ? rem(60) : rem(200)}
-      p="sm"
+      p='sm'
       style={{
         borderRight: `1px solid ${theme.colors.gray[3]}`,
         transition: "width 0.2s ease",
@@ -75,7 +75,8 @@ const SideBar = () => {
               <Tooltip
                 key={item.label}
                 label={item.label}
-                position="right"
+                position='right'
+                active={true}
                 withArrow
               >
                 <NavLink leftSection={item.icon} />
@@ -86,21 +87,13 @@ const SideBar = () => {
                 leftSection={item.icon}
                 label={item.label}
                 active={true}
-                style={{
-                  borderRadius: 8,
-                }}
+                bdrs={8}
                 onClick={() => console.log(`点击 ${item.label}`)}
               />
-            ),
+            )
           )}
         </Flex>
-        <ActionIcon
-          variant={"subtle"}
-          onClick={toggle}
-          style={{
-            borderRadius: 8,
-          }}
-        >
+        <ActionIcon variant={"subtle"} onClick={toggle} bdrs={8}>
           {collapsed ? (
             <PanelLeftOpen color={theme.colors.gray[7]} />
           ) : (
