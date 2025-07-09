@@ -1,11 +1,7 @@
-import { SideBar } from "@/layouts/SideBar";
+import { Flex } from "@mantine/core";
 
 const WikiDetail = () => {
-  return (
-    <div>
-      <SideBar />
-    </div>
-  );
+  return <Flex></Flex>;
 };
 
 export { WikiDetail };

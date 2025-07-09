@@ -6,3 +6,4 @@ export * from "./common/TextInput";
 export * from "./common/TextArea";
 export * from "./chatbox";
 export * from "./tiptap";
+export * from "./sidebar/WikiSideBar";

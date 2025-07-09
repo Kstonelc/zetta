@@ -1,1 +1,2 @@
-export * from "./MainLayout.jsx";
+export * from "./MainLayout";
+export * from "./WikiLayout";

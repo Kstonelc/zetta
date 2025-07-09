@@ -20,23 +20,27 @@ import {
   FolderCog,
   FilePlus2,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import WikiIcon from "@/assets/wiki.svg";
 
-const SideBar = () => {
+const WikiSideBar = () => {
   const theme = useMantineTheme();
   const [collapsed, setCollapsed] = useState(false);
 
   const toggle = () => setCollapsed((c) => !c);
 
   const menuItems = [
-    { icon: <FileText size={16} />, label: "文档" },
+    {
+      icon: <FileText size={16} />,
+      label: "文档",
+    },
     { icon: <FolderCog size={16} />, label: "设置" },
   ];
 
   return (
     <Flex
       w={collapsed ? rem(60) : rem(200)}
-      p='sm'
+      p="sm"
       style={{
         borderRight: `1px solid ${theme.colors.gray[3]}`,
         transition: "width 0.2s ease",
@@ -75,7 +79,9 @@ const SideBar = () => {
               <Tooltip
                 key={item.label}
                 label={item.label}
-                position='right'
+                to="/wiki/detail/edit"
+                component={Link}
+                position="right"
                 active={true}
                 withArrow
               >
@@ -85,12 +91,14 @@ const SideBar = () => {
               <NavLink
                 key={item.label}
                 leftSection={item.icon}
+                component={Link}
                 label={item.label}
+                to="/wiki/detail/edit"
                 active={true}
                 bdrs={8}
                 onClick={() => console.log(`点击 ${item.label}`)}
               />
-            )
+            ),
           )}
         </Flex>
         <ActionIcon variant={"subtle"} onClick={toggle} bdrs={8}>
@@ -105,4 +113,4 @@ const SideBar = () => {
   );
 };
 
-export { SideBar };
+export { WikiSideBar };
