@@ -23,7 +23,7 @@ import {
 import { Link, useLocation } from "react-router-dom";
 import WikiIcon from "@/assets/wiki.svg";
 
-const WikiSideBar = () => {
+const WikiSideBar = ({ wikiId }) => {
   const theme = useMantineTheme();
   const currentRoute = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -34,7 +34,7 @@ const WikiSideBar = () => {
     {
       icon: <FileText size={16} />,
       label: "文档",
-      path: "/wiki/detail",
+      path: `/wiki/${wikiId}/docs`,
     },
     { icon: <FolderCog size={16} />, label: "设置", path: "/wiki/detail/edit" },
   ];

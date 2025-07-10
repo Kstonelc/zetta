@@ -1,12 +1,32 @@
 import React from "react";
-import { Flex, Title, Button, Group, Text, Stack, Box } from "@mantine/core";
+import {
+  Flex,
+  Title,
+  Button,
+  Group,
+  Text,
+  Stack,
+  Box,
+  useMantineTheme,
+} from "@mantine/core";
 import { Send } from "lucide-react";
 import { TipTapEditor } from "@/components";
 
 const WikiDetailEdit = () => {
+  const theme = useMantineTheme();
   return (
-    <Flex direction={"column"} gap={"md"}>
-      <Group justify="space-between">
+    <Stack gap={"sm"}>
+      <Group
+        justify="space-between"
+        pos={"absolute"}
+        w={"98%"}
+        py={"xs"}
+        style={{
+          left: theme.spacing.xs,
+          zIndex: 100,
+          backgroundColor: theme.white,
+        }}
+      >
         <Stack gap={"sm"}>
           <Title order={2}>富文本编辑器介绍</Title>
           <Text size={"sm"} c={"dimmed"}>
@@ -16,7 +36,7 @@ const WikiDetailEdit = () => {
         <Button leftSection={<Send size={16} />}>发布</Button>
       </Group>
       <TipTapEditor />
-    </Flex>
+    </Stack>
   );
 };
 

@@ -7,9 +7,14 @@ import TextAlign from "@tiptap/extension-text-align";
 import Superscript from "@tiptap/extension-superscript";
 import SubScript from "@tiptap/extension-subscript";
 import Image from "@tiptap/extension-image";
-import { Flex } from "@mantine/core";
+import ImageResize from "tiptap-extension-resize-image";
 
-import { InsertImageButton } from "@/components/tiptap/extensions";
+import {
+  InsertImageButton,
+  ImageUploader,
+} from "@/components/tiptap/extensions";
+import { Send } from "lucide-react";
+import React from "react";
 
 const content =
   '<h2 style="text-align: center;">Welcome to Mantine rich text editor</h2><p><code>RichTextEditor</code> component focuses on usability and is designed to be as simple as possible to bring a familiar editing experience to regular users. <code>RichTextEditor</code> is based on <a href="https://tiptap.dev/" rel="noopener noreferrer" target="_blank">Tiptap.dev</a> and supports all of its features:</p><ul><li>General text formatting: <strong>bold</strong>, <em>italic</em>, <u>underline</u>, <s>strike-through</s> </li><li>Headings (h1-h6)</li><li>Sub and super scripts (<sup>&lt;sup /&gt;</sup> and <sub>&lt;sub /&gt;</sub> tags)</li><li>Ordered and bullet lists</li><li>Text align&nbsp;</li><li>And all <a href="https://tiptap.dev/extensions" target="_blank" rel="noopener noreferrer">other extensions</a></li></ul>';
@@ -23,10 +28,13 @@ const TipTapEditor = () => {
       Superscript,
       SubScript,
       Highlight,
+      ImageResize,
       Image.configure({
-        inline: false,
+        inline: true,
         allowBase64: true,
       }),
+
+      ImageUploader,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
     content,
@@ -42,6 +50,7 @@ const TipTapEditor = () => {
     >
       <RichTextEditor.Toolbar
         sticky
+        stickyOffset="80"
         style={{
           border: "none",
         }}
@@ -97,6 +106,7 @@ const TipTapEditor = () => {
         style={{
           minHeight: "calc(100vh - 200px)",
           overflowY: "auto",
+          paddingTop: 70,
         }}
       />
     </RichTextEditor>

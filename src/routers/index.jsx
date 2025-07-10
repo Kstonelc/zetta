@@ -8,6 +8,7 @@ import {
   UserLogin,
   WikiDetail,
   WikiDetailEdit,
+  NotFound,
 } from "../pages";
 
 const AuthGuard = ({ children }) => {
@@ -37,7 +38,7 @@ const Router = createBrowserRouter([
         element: <WikiLayout />,
         children: [
           {
-            path: "detail",
+            path: ":wikiId/docs",
             element: <WikiDetail />,
           },
           {
@@ -58,6 +59,10 @@ const Router = createBrowserRouter([
       { index: true, element: <UserLogin /> },
       { path: "login", element: <UserLogin /> },
     ],
+  },
+  {
+    path: "*",
+    element: <NotFound />,
   },
 ]);
 

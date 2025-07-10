@@ -27,7 +27,7 @@ const WikiHomeCard = () => {
       radius={"md"}
       onClick={() => {
         nav({
-          pathname: "/wiki/detail",
+          pathname: "/wiki/123456/docs",
         });
         // notifications.show({
         //   withCloseButton: false,

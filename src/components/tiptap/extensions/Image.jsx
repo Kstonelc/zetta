@@ -4,10 +4,7 @@ import { ActionIcon, useMantineTheme } from "@mantine/core";
 const InsertImageButton = ({ editor }) => {
   const theme = useMantineTheme();
   const handleClick = () => {
-    const url = window.prompt("请输入图片地址:");
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
+    editor.chain().focus().insertContent({ type: "imageUploader" }).run();
   };
 
   return (
