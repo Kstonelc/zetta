@@ -9,7 +9,6 @@ import {
   Stack,
   Center,
   Title,
-  useMantineTheme,
 } from "@mantine/core";
 import { TextInput } from "@/components";
 import { Mail } from "lucide-react";

@@ -20,11 +20,12 @@ import {
   FolderCog,
   FilePlus2,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import WikiIcon from "@/assets/wiki.svg";
 
 const WikiSideBar = () => {
   const theme = useMantineTheme();
+  const currentRoute = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
   const toggle = () => setCollapsed((c) => !c);
@@ -33,18 +34,25 @@ const WikiSideBar = () => {
     {
       icon: <FileText size={16} />,
       label: "文档",
+      path: "/wiki/detail",
     },
-    { icon: <FolderCog size={16} />, label: "设置" },
+    { icon: <FolderCog size={16} />, label: "设置", path: "/wiki/detail/edit" },
   ];
+
+  //region 方法
+  const isActive = (route) => {
+    return route === currentRoute.pathname;
+  };
+  //endregion
 
   return (
     <Flex
       w={collapsed ? rem(60) : rem(200)}
       p="sm"
+      h={"100%"}
       style={{
         borderRight: `1px solid ${theme.colors.gray[3]}`,
         transition: "width 0.2s ease",
-        minHeight: "calc(100vh - 66px)",
       }}
     >
       <Stack w={"100%"} justify={"space-between"}>
@@ -67,11 +75,21 @@ const WikiSideBar = () => {
             </Text>
           )}
           {collapsed ? (
-            <ActionIcon>
+            <ActionIcon
+              variant="gradient"
+              gradient={{ from: "blue", to: "grape", deg: 90 }}
+            >
               <FilePlus2 size={16} />
             </ActionIcon>
           ) : (
-            <Button leftSection={<FilePlus2 size={16} />}>新建文档</Button>
+            <Button
+              leftSection={<FilePlus2 size={16} />}
+              size={"xs"}
+              variant="gradient"
+              gradient={{ from: "blue", to: "grape", deg: 90 }}
+            >
+              新建文档
+            </Button>
           )}
           <Divider my={4} />
           {menuItems.map((item) =>
@@ -79,24 +97,27 @@ const WikiSideBar = () => {
               <Tooltip
                 key={item.label}
                 label={item.label}
-                to="/wiki/detail/edit"
-                component={Link}
                 position="right"
-                active={true}
                 withArrow
               >
-                <NavLink leftSection={item.icon} />
+                <NavLink
+                  bdrs={"md"}
+                  leftSection={item.icon}
+                  to={item.path}
+                  component={Link}
+                  active={isActive(item.path)}
+                />
               </Tooltip>
             ) : (
               <NavLink
                 key={item.label}
+                size={"xs"}
                 leftSection={item.icon}
                 component={Link}
                 label={item.label}
-                to="/wiki/detail/edit"
-                active={true}
-                bdrs={8}
-                onClick={() => console.log(`点击 ${item.label}`)}
+                to={item.path}
+                active={isActive(item.path)}
+                bdrs={"md"}
               />
             ),
           )}

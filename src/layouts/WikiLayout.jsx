@@ -1,4 +1,4 @@
-import { Flex, Group } from "@mantine/core";
+import { Flex, Group, Title, ScrollArea } from "@mantine/core";
 import { Outlet } from "react-router-dom";
 import React, { useEffect } from "react";
 import { WikiSideBar } from "@/components";
@@ -20,12 +20,17 @@ const WikiLayout = () => {
   //endregion
 
   return (
-    <Flex direction="column" h="100vh">
-      <Group gap={0}>
-        <WikiSideBar />
+    <Group
+      gap={0}
+      wrap="nowrap"
+      style={{ overflow: "hidden" }}
+      h={"calc(100vh - 66px)"}
+    >
+      <WikiSideBar />
+      <ScrollArea p={"lg"} direction={"column"} h={"100%"} w={"100%"}>
         <Outlet />
-      </Group>
-    </Flex>
+      </ScrollArea>
+    </Group>
   );
 };
 

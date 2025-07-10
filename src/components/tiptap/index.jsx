@@ -7,6 +7,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import Superscript from "@tiptap/extension-superscript";
 import SubScript from "@tiptap/extension-subscript";
 import Image from "@tiptap/extension-image";
+import { Flex } from "@mantine/core";
 
 import { InsertImageButton } from "@/components/tiptap/extensions";
 
@@ -32,8 +33,19 @@ const TipTapEditor = () => {
   });
 
   return (
-    <RichTextEditor editor={editor} variant="subtle" flex={1}>
-      <RichTextEditor.Toolbar sticky>
+    <RichTextEditor
+      editor={editor}
+      variant="subtle"
+      style={{
+        border: "none",
+      }}
+    >
+      <RichTextEditor.Toolbar
+        sticky
+        style={{
+          border: "none",
+        }}
+      >
         <RichTextEditor.ControlsGroup>
           <RichTextEditor.Undo />
           <RichTextEditor.Redo />
@@ -77,14 +89,13 @@ const TipTapEditor = () => {
         </RichTextEditor.ControlsGroup>
 
         <RichTextEditor.ControlsGroup>
-          <InsertImageButton editor={editor}></InsertImageButton>
+          <InsertImageButton editor={editor} />
         </RichTextEditor.ControlsGroup>
       </RichTextEditor.Toolbar>
 
       <RichTextEditor.Content
         style={{
           minHeight: "calc(100vh - 200px)",
-          maxHeight: "calc(100vh - 200px)",
           overflowY: "auto",
         }}
       />

@@ -9,7 +9,6 @@ import {
   Text,
   useMantineTheme,
   Divider,
-  useMantineColorScheme,
 } from "@mantine/core";
 import zettaLogo from "@/assets/zetta-logo.svg";
 import { Modal } from "@/components";
@@ -35,13 +34,13 @@ const Header = () => {
   return (
     <Flex
       className={classes.header}
-      direction='row'
+      direction="row"
       justify={"space-between"}
       align={"center"}
     >
       <Image src={zettaLogo} className={classes.logo} />
       <Flex gap={"md"}>
-        <Link to='/wiki'>
+        <Link to="/wiki">
           <Button
             variant={isActive("/wiki") ? "light" : "subtle"}
             color={!isActive("/wiki") && theme.colors.gray[6]}
@@ -50,7 +49,7 @@ const Header = () => {
             知识库
           </Button>
         </Link>
-        <Link to='/agent'>
+        <Link to="/agent">
           <Button
             variant={isActive("/agent") ? "light" : "subtle"}
             color={!isActive("/agent") && theme.colors.gray[6]}
@@ -60,9 +59,9 @@ const Header = () => {
           </Button>
         </Link>
       </Flex>
-      <Menu shadow='md' width={250} radius={"md"}>
+      <Menu shadow="md" width={250} radius={"md"}>
         <Menu.Target>
-          <Avatar color={theme.colors.blue[8]} radius='xl'>
+          <Avatar color={theme.colors.blue[8]} radius="xl">
             KS
           </Avatar>
         </Menu.Target>
@@ -73,12 +72,12 @@ const Header = () => {
               <Flex direction={"column"}>
                 <Text fw={"bold"}>liuchang</Text>
                 <Box w={"160"}>
-                  <Text size={"sm"} c={"dimmed"} truncate='end'>
+                  <Text size={"sm"} c={"dimmed"} truncate="end">
                     liuchang@yrobot.com
                   </Text>
                 </Box>
               </Flex>
-              <Avatar color={theme.colors.blue[8]} radius='xl'>
+              <Avatar color={theme.colors.blue[8]} radius="xl">
                 KS
               </Avatar>
             </Group>
