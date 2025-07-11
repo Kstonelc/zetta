@@ -1,7 +1,9 @@
 import { Dropzone } from "@mantine/dropzone";
-import { Text, Group } from "@mantine/core";
+import { Text, Group, useMantineTheme } from "@mantine/core";
+import { Image } from "lucide-react";
 
 export default function ImageUploadComponent({ editor, getPos }) {
+  const theme = useMantineTheme();
   const handleUpload = async (file) => {
     // 1. 上传图片（可接入 S3、OSS、Cloudinary）
     const url = await fakeUpload(file);
@@ -28,8 +30,14 @@ export default function ImageUploadComponent({ editor, getPos }) {
       multiple={false}
     >
       <Group justify="center" gap="xs" h={100}>
+        <Image size={56} color={theme.colors.gray[5]} />
         <div>
-          <Text size="sm">拖转或点击上传图片</Text>
+          <Text c={"dimmed"} fw={"bold"}>
+            拖转或点击上传图片
+          </Text>
+          <Text c={"dimmed"} size={"xs"}>
+            大小不超过5M
+          </Text>
         </div>
       </Group>
     </Dropzone>

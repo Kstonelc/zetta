@@ -20,11 +20,12 @@ const WikiDetailEdit = () => {
         justify="space-between"
         pos={"absolute"}
         w={"98%"}
-        py={"xs"}
+        p={"xs"}
+        bg={theme.white}
         style={{
           left: theme.spacing.xs,
+          top: 0,
           zIndex: 100,
-          backgroundColor: theme.white,
         }}
       >
         <Stack gap={"sm"}>

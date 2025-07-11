@@ -50,7 +50,7 @@ const TipTapEditor = () => {
     >
       <RichTextEditor.Toolbar
         sticky
-        stickyOffset="80"
+        stickyOffset="65"
         style={{
           border: "none",
         }}

@@ -11,6 +11,7 @@ import {
   Divider,
   Image,
   Center,
+  Group,
   Button,
 } from "@mantine/core";
 import {
@@ -19,6 +20,7 @@ import {
   FileText,
   FolderCog,
   FilePlus2,
+  ChevronLeft,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import WikiIcon from "@/assets/wiki.svg";
@@ -56,7 +58,7 @@ const WikiSideBar = ({ wikiId }) => {
       }}
     >
       <Stack w={"100%"} justify={"space-between"}>
-        <Flex direction={"column"} gap={"xs"}>
+        <Flex direction={"column"} gap={"xs"} align={collapsed && "center"}>
           <Center
             mb={8}
             bg={theme.colors.blue[0]}
@@ -84,7 +86,6 @@ const WikiSideBar = ({ wikiId }) => {
           ) : (
             <Button
               leftSection={<FilePlus2 size={16} />}
-              size={"xs"}
               variant="gradient"
               gradient={{ from: "blue", to: "grape", deg: 90 }}
             >
