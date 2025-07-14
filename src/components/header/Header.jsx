@@ -14,6 +14,7 @@ import zettaLogo from "@/assets/zetta-logo.svg";
 import { Modal } from "@/components";
 import { useLocation, Link } from "react-router-dom";
 import { BookOpenText, Bot, SettingsIcon } from "lucide-react";
+import { UserSettings } from "@/pages";
 import classes from "./Header.module.scss";
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
@@ -95,23 +96,10 @@ const Header = () => {
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>
-      <Modal
-        fullScreen={true}
-        opened={isUserSettingOpen}
-        onClose={closeUserSetting}
-        title={
-          <Text fw={"bold"} size={"xl"}>
-            用户设置
-          </Text>
-        }
-      ></Modal>
-      {/*<Button*/}
-      {/*  onClick={() => {*/}
-      {/*    toggleColorScheme();*/}
-      {/*  }}*/}
-      {/*>*/}
-      {/*  切换*/}
-      {/*</Button>*/}
+      <UserSettings
+        closeUserSetting={closeUserSetting}
+        isUserSettingOpen={isUserSettingOpen}
+      />
     </Flex>
   );
 };

@@ -77,20 +77,11 @@ const WikiSideBar = ({ wikiId }) => {
             </Text>
           )}
           {collapsed ? (
-            <ActionIcon
-              variant="gradient"
-              gradient={{ from: "blue", to: "grape", deg: 90 }}
-            >
+            <ActionIcon>
               <FilePlus2 size={16} />
             </ActionIcon>
           ) : (
-            <Button
-              leftSection={<FilePlus2 size={16} />}
-              variant="gradient"
-              gradient={{ from: "blue", to: "grape", deg: 90 }}
-            >
-              新建文档
-            </Button>
+            <Button leftSection={<FilePlus2 size={16} />}>新建文档</Button>
           )}
           <Divider my={4} />
           {menuItems.map((item) =>
