@@ -1,6 +1,17 @@
-import { Text, Tabs, Card, Stack, Image, Group } from "@mantine/core";
+import {
+  Text,
+  Tabs,
+  Card,
+  Stack,
+  Image,
+  Group,
+  Badge,
+  Flex,
+  useMantineTheme,
+  ActionIcon,
+} from "@mantine/core";
 import { Modal, TextInput } from "@/components";
-import { Brain, SquareUser, Search } from "lucide-react";
+import { Brain, SquareUser, Search, CircleAlert } from "lucide-react";
 import QWen from "@/assets/models/qwen.svg";
 import React from "react";
 
@@ -65,11 +76,30 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
 };
 
 const ModelCard = ({ model }) => {
+  const theme = useMantineTheme();
   return (
     <Card shadow={"sm"} withBorder radius={"md"}>
-      <Group>
-        <Image src={QWen} w={30} h={30} />
-        <Text size={"sm"}>通义千问</Text>
+      <Group mb={"xs"} justify={"space-between"}>
+        <Group gap={"sm"}>
+          <Image src={QWen} w={40} h={40} />
+          <Flex direction={"column"}>
+            <Text size={"sm"} fw={"bold"}>
+              通义千问
+            </Text>
+            <Group gap={2}>
+              <CircleAlert size={12} color={theme.colors.yellow[8]} />
+              <Text size={"xs"}>请配置API KEY</Text>
+            </Group>
+          </Flex>
+        </Group>
+      </Group>
+      <Group gap={"xs"}>
+        <Badge color={theme.colors.gray[4]} size={"xs"}>
+          LLM
+        </Badge>
+        <Badge color={theme.colors.gray[4]} size={"xs"}>
+          TEXT EMBEDDING
+        </Badge>
       </Group>
     </Card>
   );
