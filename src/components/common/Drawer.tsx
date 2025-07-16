@@ -1,42 +1,37 @@
 import React, { FC, useEffect } from "react";
 import {
   Text,
-  Modal as ModalMT,
+  Drawer as DrawerMT,
   useMantineColorScheme,
-  ModalProps,
+  DrawerProps,
   Stack,
   useMantineTheme,
+  ScrollArea,
 } from "@mantine/core";
 import { ColorScheme } from "@/enum";
 
-interface CustomModalProps extends ModalProps {
+interface CustomDrawerProps extends DrawerProps {
   description?: string;
 }
 
-const Modal: FC<CustomModalProps> = ({
+const Drawer: FC<CustomDrawerProps> = ({
   opened,
   onClose,
   children,
   title,
-  fullScreen = false,
   description,
   ...props
 }) => {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   return (
-    <ModalMT
+    <DrawerMT
+      offset={8}
       opened={opened}
       onClose={onClose}
-      title={title}
-      centered
-      transitionProps={{ transition: "fade-down", duration: 200 }}
+      position="right"
+      title={<Text fw={"bold"}>{title}</Text>}
       radius={"md"}
-      fullScreen={fullScreen}
-      overlayProps={{
-        backgroundOpacity: 0.55,
-        blur: 3,
-      }}
       styles={{
         close: {
           backgroundColor:
@@ -45,6 +40,7 @@ const Modal: FC<CustomModalProps> = ({
               : theme.colors.gray[8],
         },
       }}
+      scrollAreaComponent={ScrollArea.Autosize}
       closeButtonProps={{ size: "lg", radius: "md" }}
       {...props}
     >
@@ -56,8 +52,8 @@ const Modal: FC<CustomModalProps> = ({
         )}
         {children}
       </Stack>
-    </ModalMT>
+    </DrawerMT>
   );
 };
 
-export { Modal };
+export { Drawer };

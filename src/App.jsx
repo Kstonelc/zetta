@@ -9,6 +9,10 @@ import {
   createTheme,
   Button,
   ColorSchemeScript,
+  TextInput,
+  Textarea,
+  Select,
+  Switch,
 } from "@mantine/core";
 import routerConfig from "@/routers";
 import { Notifications } from "@mantine/notifications";
@@ -22,6 +26,33 @@ const theme = createTheme({
     Button: Button.extend({
       defaultProps: {
         radius: "md",
+      },
+    }),
+    TextInput: TextInput.extend({
+      defaultProps: {
+        radius: "md",
+        variant: "filled",
+      },
+    }),
+    Textarea: Textarea.extend({
+      defaultProps: {
+        radius: "md",
+        variant: "filled",
+        autosize: true,
+        minRows: 3,
+      },
+    }),
+    Select: Select.extend({
+      defaultProps: {
+        radius: "md",
+        variant: "filled",
+      },
+    }),
+    Switch: Switch.extend({
+      defaultProps: {
+        size: "sm",
+        radius: "md",
+        withThumbIndicator: false,
       },
     }),
   },

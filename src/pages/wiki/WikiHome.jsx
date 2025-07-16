@@ -7,10 +7,13 @@ import {
   Group,
   Title,
   Flex,
+  Select,
+  TextInput,
+  Textarea,
   useMantineTheme,
 } from "@mantine/core";
 import { WikiHomeCard } from "./WikiHomeCard.jsx";
-import { Select, Modal, Loading, TextInput, TextArea } from "@/components";
+import { Modal, Loading } from "@/components";
 import { Grid2x2Plus, Blocks } from "lucide-react";
 import classes from "./WikiHome.module.scss";
 import { useDisclosure } from "@mantine/hooks";
@@ -60,7 +63,7 @@ const WikiHome = () => {
               console.log(111, e.target.value);
             }}
           />
-          <TextArea
+          <Textarea
             label={"描述"}
             description={"简单介绍一下知识库"}
             placeholder={"请输入知识库描述"}

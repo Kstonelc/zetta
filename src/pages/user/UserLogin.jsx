@@ -9,8 +9,8 @@ import {
   Stack,
   Center,
   Title,
+  TextInput,
 } from "@mantine/core";
-import { TextInput } from "@/components";
 import { Mail } from "lucide-react";
 import GoogleIcon from "@/assets/google-icon.svg";
 import GithubIcon from "@/assets/github-icon.svg";

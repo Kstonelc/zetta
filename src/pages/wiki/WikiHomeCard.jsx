@@ -29,12 +29,6 @@ const WikiHomeCard = () => {
         nav({
           pathname: "/wiki/123456/docs",
         });
-        // notifications.show({
-        //   withCloseButton: false,
-        //   message: "点击了知识库",
-        //   color: theme.colors.green[6],
-        //   autoClose: 3000,
-        // })
       }}
     >
       <Group mb={"md"} justify="space-between">
