@@ -32,6 +32,9 @@ class AppHelper {
       if (e.response.status === HttpStatus.Unauthorized) {
         return { ok: false, message: "_authenticationError" };
       }
+      if (e.response.status === HttpStatus.UnprocessableEntity) {
+        return { ok: false, message: "参数校验错误" };
+      }
       return { ok: false, message: e.message };
     }
   }

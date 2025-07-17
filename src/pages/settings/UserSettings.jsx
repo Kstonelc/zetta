@@ -53,7 +53,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
     setModelProviders(response.data);
   };
 
-  const destroy = () => {};
+  const destroy = async () => {};
 
   return (
     <Modal
@@ -126,71 +126,72 @@ const ModelProviderCard = ({ onOpenModelSetting, modelProviders }) => {
   const theme = useMantineTheme();
   return (
     <>
-      {modelProviders.map((provider, index) => (
-        <Card key={provider.id} shadow="sm" withBorder radius="md">
-          <Group justify="space-between">
-            <Flex direction="column">
-              <Group mb="xs" justify="space-between">
-                <Group gap="sm" align="space-between">
-                  <Image src={QWen} w={45} h={45} />
-                  <Flex direction="column" justify="space-between">
-                    <Text size="sm" fw="bold">
-                      {provider.name}
-                    </Text>
-                    {!provider.api_key ? (
-                      <Badge
-                        size="xs"
-                        variant="light"
-                        color={theme.colors.yellow[8]}
-                        leftSection={
-                          <CircleAlert
-                            size={12}
-                            color={theme.colors.yellow[8]}
-                          />
-                        }
-                      >
-                        请配置 API KEY
-                      </Badge>
-                    ) : (
-                      <Badge
-                        size="xs"
-                        variant="light"
-                        color={theme.colors.green[8]}
-                        leftSection={
-                          <Check size={12} color={theme.colors.green[8]} />
-                        }
-                      >
-                        已就绪
-                      </Badge>
-                    )}
-                  </Flex>
+      {modelProviders &&
+        modelProviders.map((provider, index) => (
+          <Card key={provider.id} shadow="sm" withBorder radius="md">
+            <Group justify="space-between">
+              <Flex direction="column">
+                <Group mb="xs" justify="space-between">
+                  <Group gap="sm" align="space-between">
+                    <Image src={QWen} w={45} h={45} />
+                    <Flex direction="column" justify="space-between">
+                      <Text size="sm" fw="bold">
+                        {provider.name}
+                      </Text>
+                      {!provider.api_key ? (
+                        <Badge
+                          size="xs"
+                          variant="light"
+                          color={theme.colors.yellow[8]}
+                          leftSection={
+                            <CircleAlert
+                              size={12}
+                              color={theme.colors.yellow[8]}
+                            />
+                          }
+                        >
+                          请配置 API KEY
+                        </Badge>
+                      ) : (
+                        <Badge
+                          size="xs"
+                          variant="light"
+                          color={theme.colors.green[8]}
+                          leftSection={
+                            <Check size={12} color={theme.colors.green[8]} />
+                          }
+                        >
+                          已就绪
+                        </Badge>
+                      )}
+                    </Flex>
+                  </Group>
                 </Group>
-              </Group>
 
-              <Group gap="xs">
-                <Badge color={theme.colors.gray[5]} size="xs">
-                  LLM
-                </Badge>
-                <Badge color={theme.colors.gray[5]} size="xs">
-                  TEXT EMBEDDING
-                </Badge>
-                <Badge color={theme.colors.gray[5]} size="xs">
-                  TEXT GENERATION
-                </Badge>
-              </Group>
-            </Flex>
+                <Group gap="xs">
+                  <Badge color={theme.colors.gray[5]} size="xs">
+                    LLM
+                  </Badge>
+                  <Badge color={theme.colors.gray[5]} size="xs">
+                    TEXT EMBEDDING
+                  </Badge>
+                  <Badge color={theme.colors.gray[5]} size="xs">
+                    TEXT GENERATION
+                  </Badge>
+                </Group>
+              </Flex>
 
-            <ActionIcon
-              variant="light"
-              onClick={() => {
-                onOpenModelSetting(provider);
-              }}
-            >
-              <Settings2 size={16} />
-            </ActionIcon>
-          </Group>
-        </Card>
-      ))}
+              <ActionIcon
+                variant="light"
+                onClick={() => {
+                  onOpenModelSetting(provider);
+                }}
+              >
+                <Settings2 size={16} />
+              </ActionIcon>
+            </Group>
+          </Card>
+        ))}
     </>
   );
 };

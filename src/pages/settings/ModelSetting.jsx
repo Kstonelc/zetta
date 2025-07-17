@@ -21,7 +21,6 @@ const ModelSetting = ({ modelProviderInfo, opened, onClose }) => {
   const theme = useMantineTheme();
   const { notify } = useNotify();
   const modelProviderId = useRef(null);
-  console.log(222, modelProviderInfo);
 
   const [modelApiKey, setModelApiKey] = useState(modelProviderInfo?.api_key);
   const [isUpdatingApiKey, setIsUpdatingApiKey] = useState(false);
@@ -32,10 +31,9 @@ const ModelSetting = ({ modelProviderInfo, opened, onClose }) => {
     return () => {
       destroy();
     };
-  }, []);
+  }, [modelProviderInfo]);
 
   const initialize = async () => {
-    console.log(2222, modelProviderInfo?.api_key);
     modelProviderId.current = modelProviderInfo?.id;
   };
   const destroy = async () => {};
@@ -53,6 +51,7 @@ const ModelSetting = ({ modelProviderInfo, opened, onClose }) => {
       },
     );
     if (!response.ok) {
+      setIsUpdatingApiKey(false);
       notify({
         type: "error",
         message: response.message,
@@ -97,7 +96,9 @@ const ModelSetting = ({ modelProviderInfo, opened, onClose }) => {
           size={"xs"}
           variant={"filled"}
           color={theme.colors.gray[5]}
-          onClick={() => {}}
+          onClick={() => {
+            onClose();
+          }}
         >
           取消
         </Button>
