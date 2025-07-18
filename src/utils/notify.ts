@@ -16,14 +16,17 @@ export function useNotify() {
   const notify = ({
     message,
     type = "info",
+    position = "top-left",
     autoClose = 3000,
   }: {
     message: string;
     type?: NotifyType;
+    position?: "top-right" | "top-left" | "bottom-right" | "bottom-left";
     autoClose?: number;
   }) => {
     notifications.show({
       message,
+      position,
       withCloseButton: false,
       color: colorMap[type],
       autoClose,
