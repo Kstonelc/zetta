@@ -21,16 +21,21 @@ class AppHelper {
       const apiUrl = url.startsWith("http")
         ? url
         : this.combineUrls(this.config.apiUrl, url);
-      const axiosResponse = await axios.post(apiUrl, data);
+      const axiosResponse = await axios.post(apiUrl, data, {
+        timeout: 5000,
+      });
       return axiosResponse.status === HttpStatus.OK
         ? axiosResponse.data // {ok, data?, message?}
         : { ok: false, message: axiosResponse.statusText };
     } catch (e) {
       if (e.code === "ERR_NETWORK") {
-        return { ok: false, message: "_timeoutError" };
+        return { ok: false, message: "请求错误" };
+      }
+      if (e.code === "ECONNABORTED") {
+        return { ok: false, message: "请求超时" };
       }
       if (e.response.status === HttpStatus.Unauthorized) {
-        return { ok: false, message: "_authenticationError" };
+        return { ok: false, message: "权限不足" };
       }
       if (e.response.status === HttpStatus.UnprocessableEntity) {
         return { ok: false, message: "参数校验错误" };

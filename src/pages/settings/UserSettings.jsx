@@ -27,9 +27,12 @@ import QWen from "@/assets/models/qwen.svg";
 import React, { useEffect, useState } from "react";
 import appHelper from "@/AppHelper";
 import { ModelSetting } from "./ModelSetting";
+import { useNotify } from "@/utils/notify.js";
 
 const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const theme = useMantineTheme();
+  const { notify } = useNotify();
+
   const [isModelSettingVisible, setIsModelSettingVisible] = useState(false);
   const [modelProviders, setModelProviders] = useState([]);
   const [currentModelProvider, setCurrentModelProvider] = useState(null);
@@ -50,6 +53,14 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
     const response = await appHelper.apiPost(
       "model-provider/find-model-provider",
     );
+    if (!response.ok) {
+      console.log(response.message);
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
     setModelProviders(response.data);
   };
 
