@@ -11,3 +11,14 @@ export enum HttpStatus {
   UnprocessableEntity = 422,
   InternalServerError = 500,
 }
+
+export enum ModelProviderUpdateType {
+  Update = "update",
+  Clear = "clear",
+}
+
+export enum ModelType {
+  TextEmbedding = "TextEmbedding",
+  TextGeneration = "TextGeneration",
+  ReRank = "ReRank",
+}

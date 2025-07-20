@@ -7,10 +7,10 @@ import {
   Group,
   Badge,
   Flex,
-  useMantineTheme,
   Button,
+  Center,
+  useMantineTheme,
   ActionIcon,
-  Switch,
   TextInput,
 } from "@mantine/core";
 import { Modal, Drawer } from "@/components";
@@ -20,24 +20,33 @@ import {
   Search,
   CircleAlert,
   Settings2,
-  ArrowUpRight,
+  Settings,
+  Blocks,
   Check,
 } from "lucide-react";
 import QWen from "@/assets/models/qwen.svg";
+import NoData from "@/assets/no-data.png";
 import React, { useEffect, useState } from "react";
 import appHelper from "@/AppHelper";
 import { ModelSetting } from "./ModelSetting";
+import { ModelGlobalSetting } from "@/pages/model/ModelGlobalSetting.jsx";
 
 const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const theme = useMantineTheme();
 
   const [isModelSettingVisible, setIsModelSettingVisible] = useState(false);
+  const [isModalGlobalSettingVisible, setIsModalGlobalSettingVisible] =
+    useState(false);
   const [modelProviders, setModelProviders] = useState([]);
   const [currentModelProvider, setCurrentModelProvider] = useState(null);
 
   const onOpenModelSetting = (provider) => {
     setCurrentModelProvider(provider);
     setIsModelSettingVisible(true);
+  };
+
+  const onOpenModelGlobalSetting = () => {
+    setIsModalGlobalSettingVisible(true);
   };
 
   useEffect(() => {
@@ -101,9 +110,43 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
               <TextInput
                 leftSection={<Search size={16} />}
                 placeholder={"搜索"}
+                value={""}
               />
             </Group>
-            <Text size={"sm"}>提供商列表</Text>
+            <Group justify={"space-between"}>
+              <Text size={"sm"}>系统配置</Text>
+            </Group>
+            <Card withBorder shadow="sm" radius={"md"}>
+              <Group justify={"space-between"}>
+                <Group>
+                  <Settings size={40} color={theme.colors.blue[6]}></Settings>
+                  <Flex direction={"column"}>
+                    <Text fw={"bold"} size={"sm"}>
+                      系统配置
+                    </Text>
+                    <Text size={"xs"} c={"dimmed"}>
+                      配置全局模型
+                    </Text>
+                  </Flex>
+                </Group>
+                <ActionIcon
+                  variant={"light"}
+                  onClick={onOpenModelGlobalSetting}
+                >
+                  <Settings size={16} />
+                </ActionIcon>
+              </Group>
+            </Card>
+            <Group justify={"space-between"}>
+              <Text size={"sm"}>提供商列表</Text>
+              <Button
+                variant={"light"}
+                leftSection={<Blocks size={16} />}
+                size={"xs"}
+              >
+                添加模型
+              </Button>
+            </Group>
             <ModelProviderCard
               onOpenModelSetting={onOpenModelSetting}
               modelProviders={modelProviders}
@@ -117,7 +160,16 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
       <ModelSetting
         modelProviderInfo={currentModelProvider}
         opened={isModelSettingVisible}
+        onUpdated={() => {
+          initialize();
+        }}
         onClose={() => setIsModelSettingVisible(false)}
+      />
+      <ModelGlobalSetting
+        modelProviders={modelProviders}
+        opened={isModalGlobalSettingVisible}
+        onUpdated={() => {}}
+        onClose={() => setIsModalGlobalSettingVisible(false)}
       />
     </Modal>
   );
@@ -127,7 +179,7 @@ const ModelProviderCard = ({ onOpenModelSetting, modelProviders }) => {
   const theme = useMantineTheme();
   return (
     <>
-      {modelProviders &&
+      {appHelper.getLength(modelProviders) > 0 ? (
         modelProviders.map((provider, index) => (
           <Card key={provider.id} shadow="sm" withBorder radius="md">
             <Group justify="space-between">
@@ -170,15 +222,16 @@ const ModelProviderCard = ({ onOpenModelSetting, modelProviders }) => {
                 </Group>
 
                 <Group gap="xs">
-                  <Badge color={theme.colors.gray[5]} size="xs">
-                    LLM
-                  </Badge>
-                  <Badge color={theme.colors.gray[5]} size="xs">
-                    TEXT EMBEDDING
-                  </Badge>
-                  <Badge color={theme.colors.gray[5]} size="xs">
-                    TEXT GENERATION
-                  </Badge>
+                  {appHelper.getLength(provider.types) > 0 &&
+                    provider.types.map((type, index) => (
+                      <Badge
+                        color={theme.colors.violet[6]}
+                        size="xs"
+                        variant={"dot"}
+                      >
+                        {type}
+                      </Badge>
+                    ))}
                 </Group>
               </Flex>
 
@@ -192,7 +245,15 @@ const ModelProviderCard = ({ onOpenModelSetting, modelProviders }) => {
               </ActionIcon>
             </Group>
           </Card>
-        ))}
+        ))
+      ) : (
+        <Stack align={"center"}>
+          <Image src={NoData} w={200} h={200} />
+          <Button variant={"light"} leftSection={<Blocks size={16} />}>
+            前往插件市场
+          </Button>
+        </Stack>
+      )}
     </>
   );
 };

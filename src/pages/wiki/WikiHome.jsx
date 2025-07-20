@@ -59,9 +59,7 @@ const WikiHome = () => {
             label={"名称"}
             required={true}
             placeholder={"请输入知识库名称"}
-            onChange={(e) => {
-              console.log(111, e.target.value);
-            }}
+            onChange={(e) => {}}
           />
           <Textarea
             label={"描述"}

@@ -32,6 +32,7 @@ const theme = createTheme({
       defaultProps: {
         radius: "md",
         variant: "filled",
+        autoComplete: "new-password",
       },
     }),
     Textarea: Textarea.extend({
