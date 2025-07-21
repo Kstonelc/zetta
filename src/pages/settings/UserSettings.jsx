@@ -28,7 +28,7 @@ import QWen from "@/assets/models/qwen.svg";
 import NoData from "@/assets/no-data.png";
 import React, { useEffect, useState } from "react";
 import appHelper from "@/AppHelper";
-import { ModelSetting } from "./ModelSetting";
+import { ModelSetting } from "../model/ModelSetting.jsx";
 import { ModelGlobalSetting } from "@/pages/model/ModelGlobalSetting.jsx";
 
 const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
@@ -116,7 +116,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
             <Group justify={"space-between"}>
               <Text size={"sm"}>系统配置</Text>
             </Group>
-            <Card withBorder shadow="sm" radius={"md"}>
+            <Card withBorder>
               <Group justify={"space-between"}>
                 <Group>
                   <Settings size={40} color={theme.colors.blue[6]}></Settings>
@@ -125,7 +125,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
                       系统配置
                     </Text>
                     <Text size={"xs"} c={"dimmed"}>
-                      配置全局模型
+                      配置全局默认模型
                     </Text>
                   </Flex>
                 </Group>
@@ -181,7 +181,7 @@ const ModelProviderCard = ({ onOpenModelSetting, modelProviders }) => {
     <>
       {appHelper.getLength(modelProviders) > 0 ? (
         modelProviders.map((provider, index) => (
-          <Card key={provider.id} shadow="sm" withBorder radius="md">
+          <Card key={provider.id} withBorder>
             <Group justify="space-between">
               <Flex direction="column">
                 <Group mb="xs" justify="space-between">

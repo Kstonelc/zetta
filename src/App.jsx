@@ -12,6 +12,7 @@ import {
   TextInput,
   Textarea,
   Select,
+  Card,
   Switch,
 } from "@mantine/core";
 import routerConfig from "@/routers";
@@ -54,6 +55,12 @@ const theme = createTheme({
         size: "sm",
         radius: "md",
         withThumbIndicator: false,
+      },
+    }),
+    Card: Card.extend({
+      defaultProps: {
+        shadow: "sm",
+        radius: "md",
       },
     }),
   },

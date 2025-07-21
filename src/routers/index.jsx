@@ -6,6 +6,8 @@ import {
   WikiHome,
   Agent,
   UserLogin,
+  UserRegister,
+  UserForgotPassword,
   WikiDetail,
   WikiDetailEdit,
   NotFound,
@@ -29,6 +31,10 @@ const Router = createBrowserRouter([
       </AuthGuard>
     ),
     children: [
+      {
+        index: true,
+        element: <Navigate to="/wiki" replace />,
+      },
       {
         path: "wiki",
         element: <WikiHome />,
@@ -58,6 +64,8 @@ const Router = createBrowserRouter([
     children: [
       { index: true, element: <UserLogin /> },
       { path: "login", element: <UserLogin /> },
+      { path: "register", element: <UserRegister /> },
+      { path: "reset-password", element: <UserForgotPassword /> },
     ],
   },
   {

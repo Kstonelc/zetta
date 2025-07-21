@@ -21,10 +21,8 @@ const WikiHomeCard = () => {
   const nav = useNavigate();
   return (
     <Card
-      shadow="sm"
       padding="lg"
       withBorder
-      radius={"md"}
       onClick={() => {
         nav({
           pathname: "/wiki/123456/docs",

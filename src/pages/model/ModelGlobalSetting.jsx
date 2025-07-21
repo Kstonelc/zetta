@@ -58,6 +58,8 @@ const ModelGlobalSetting = ({ modelProviders, opened, onUpdated, onClose }) => {
     }
   };
 
+  const onSaveGlobalSetting = async () => {};
+
   //endregion
   return (
     <Drawer
@@ -103,7 +105,14 @@ const ModelGlobalSetting = ({ modelProviders, opened, onUpdated, onClose }) => {
         <Button variant={"subtle"} onClick={onClose}>
           取消
         </Button>
-        <Button leftSection={<Save size={16} />}>保存</Button>
+        <Button
+          leftSection={<Save size={16} />}
+          onClick={async () => {
+            await onSaveGlobalSetting();
+          }}
+        >
+          保存
+        </Button>
       </Group>
     </Drawer>
   );

@@ -22,3 +22,8 @@ export enum ModelType {
   TextGeneration = "TextGeneration",
   ReRank = "ReRank",
 }
+
+export enum WikiDataType {
+  Structured = 1 << 0,
+  Unstructured = 1 << 1,
+}

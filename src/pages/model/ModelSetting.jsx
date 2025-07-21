@@ -15,8 +15,8 @@ import { Save, SquareArrowOutUpRight } from "lucide-react";
 import QWen from "@/assets/models/qwen.svg";
 import { Drawer } from "@/components/index.js";
 import React, { useEffect, useRef, useState } from "react";
-import { useNotify } from "@/utils/notify.js";
-import appHelper from "@/AppHelper";
+import { useNotify } from "@/utils/notify.ts";
+import appHelper from "@/AppHelper.js";
 import { ModelProviderUpdateType } from "@/enum";
 
 const ModelSetting = ({ modelProviderInfo, opened, onUpdated, onClose }) => {
@@ -159,7 +159,7 @@ const ModelSetting = ({ modelProviderInfo, opened, onUpdated, onClose }) => {
         </Button>
       </Group>
       <Text fw={"bold"}>模型列表</Text>
-      <Card withBorder shadow={"sm"} radius={"md"} p={"sm"}>
+      <Card withBorder p={"sm"}>
         <Stack gap={"sm"}>
           {appHelper.getLength(models) > 0 ? (
             models.map((model) => (
