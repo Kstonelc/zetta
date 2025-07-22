@@ -75,6 +75,7 @@ const UserRegister = () => {
             <Stack mb={"md"}>
               <Group>
                 <TextInput
+                  flex={1}
                   withAsterisk
                   label={"姓"}
                   key={form.key("lastName")}
@@ -83,6 +84,7 @@ const UserRegister = () => {
                   {...form.getInputProps("lastName")}
                 />
                 <TextInput
+                  flex={1}
                   withAsterisk
                   label={"名"}
                   key={form.key("firstName")}
