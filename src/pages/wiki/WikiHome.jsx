@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Text,
   Grid,
@@ -33,6 +33,19 @@ const WikiHome = () => {
   const [wikiName, setWikiName] = useState("");
   const [wikiDataType, setWikiDataType] = useState(null);
   const cards = [1, 2, 3];
+
+  //region 初始化
+  useEffect(() => {
+    initialize();
+    return () => {
+      destroy();
+    };
+  }, []);
+
+  const initialize = async () => {};
+
+  const destroy = async () => {};
+  //endregion
 
   //region 方法
   const isCanNext = () => {

@@ -18,11 +18,15 @@ class AppHelper {
       if (!data) {
         data = {};
       }
+      const accessToken = this.getAccessToken();
       const apiUrl = url.startsWith("http")
         ? url
         : this.combineUrls(this.config.apiUrl, url);
       const axiosResponse = await axios.post(apiUrl, data, {
         timeout: 5000,
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       });
       return axiosResponse.status === HttpStatus.OK
         ? axiosResponse.data // {ok, data?, message?}
@@ -35,13 +39,24 @@ class AppHelper {
         return { ok: false, message: "请求超时" };
       }
       if (e.response.status === HttpStatus.Unauthorized) {
-        return { ok: false, message: "权限不足" };
+        return { ok: false, message: "登录信息过期, 请重新登录" };
       }
       if (e.response.status === HttpStatus.UnprocessableEntity) {
         return { ok: false, message: "参数校验错误" };
       }
       return { ok: false, message: e.message };
     }
+  }
+
+  //endregion
+
+  //region LocalStorage 持久化数据
+  getAccessToken() {
+    return localStorage.getItem("access_token");
+  }
+
+  setAccessToken(accessToken) {
+    localStorage.setItem("access_token", accessToken);
   }
 
   //endregion

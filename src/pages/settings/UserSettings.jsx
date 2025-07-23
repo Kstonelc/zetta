@@ -30,9 +30,13 @@ import React, { useEffect, useState } from "react";
 import appHelper from "@/AppHelper";
 import { ModelSetting } from "../model/ModelSetting.jsx";
 import { ModelGlobalSetting } from "@/pages/model/ModelGlobalSetting.jsx";
+import { useNotify } from "@/utils/notify.js";
+import { useNavigate } from "react-router-dom";
 
 const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const theme = useMantineTheme();
+  const nav = useNavigate();
+  const { notify } = useNotify();
 
   const [isModelSettingVisible, setIsModelSettingVisible] = useState(false);
   const [isModalGlobalSettingVisible, setIsModalGlobalSettingVisible] =
@@ -60,6 +64,16 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
     const response = await appHelper.apiPost(
       "model-provider/find-model-provider",
     );
+    if (!response.ok) {
+      nav({
+        pathname: "/user/login",
+      });
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
     setModelProviders(response.data);
   };
 
@@ -68,6 +82,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   return (
     <Modal
       fullScreen={true}
+      keepMounted={false}
       styles={{
         header: {
           paddingLeft: "30%",

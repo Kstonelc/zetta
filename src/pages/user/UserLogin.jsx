@@ -13,6 +13,7 @@ import {
   Blockquote,
   useMantineTheme,
 } from "@mantine/core";
+import { Loading } from "@/components";
 import { CircleAlert, CircleUser, Mail, ShieldUser } from "lucide-react";
 import zettaLogo from "@/assets/zetta-logo.svg";
 import React, { useEffect, useState } from "react";
@@ -25,7 +26,7 @@ const UserLogin = () => {
   const { notify } = useNotify();
   const nav = useNavigate();
   const theme = useMantineTheme();
-  const form = useForm({
+  const formAdmin = useForm({
     mode: "uncontrolled",
     initialValues: {
       email: "",
@@ -43,7 +44,24 @@ const UserLogin = () => {
     },
   });
 
+  const formLogin = useForm({
+    mode: "uncontrolled",
+    initialValues: {
+      email: "",
+      password: "",
+    },
+
+    validate: {
+      email: (value) => (/^\S+@\S+$/.test(value) ? null : "邮箱地址无效"),
+      password: (value) =>
+        /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(value)
+          ? null
+          : "至少8位, 包含数字和字母",
+    },
+  });
+
   const [isAdminExist, setIsAdminExist] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   //region 初始化
   useEffect(() => {
@@ -54,12 +72,14 @@ const UserLogin = () => {
   }, []);
 
   const initialize = async () => {
+    setIsReady(false);
     const response = await appHelper.apiPost("/tenant/find-admin");
     if (response.ok) {
       setIsAdminExist(true);
     } else {
       setIsAdminExist(false);
     }
+    setIsReady(true);
   };
 
   const destroy = async () => {};
@@ -85,7 +105,7 @@ const UserLogin = () => {
       });
       return;
     }
-    console.log(response.data);
+    appHelper.setAccessToken(response.data.access_token);
     nav({
       pathname: "/",
     });
@@ -93,103 +113,110 @@ const UserLogin = () => {
 
   //endregion
   return (
-    <Flex h={"100vh"} p={"xl"} direction={"column"}>
-      <Image src={zettaLogo} w={142} h={40} />
-      <Center flex={1}>
-        {isAdminExist ? (
-          <Card p={"md"} miw={450} withBorder>
-            <Flex direction={"column"} gap={"xs"}>
-              <Title order={3}>🤖 欢迎回来!</Title>
-              <Text c="dimmed" size={"sm"} mb={"md"}>
-                登录 Zetta 以继续
-              </Text>
-            </Flex>
-            <form onSubmit={form.onSubmit((values) => onPressLogin(values))}>
-              <Stack mb={"md"}>
-                <TextInput
-                  label={"邮箱"}
-                  withAsterisk
-                  key={form.key("email")}
-                  inputSize={"sm"}
-                  {...form.getInputProps("email")}
-                />
-                <TextInput
-                  withAsterisk
-                  key={form.key("password")}
-                  label={"密码"}
-                  type={"password"}
-                  {...form.getInputProps("password")}
-                />
-                <Button leftSection={<Mail size={16} />} type="submit">
-                  邮箱登录
-                </Button>
-              </Stack>
-              <Stack gap={"xs"} align={"center"}>
-                <Button variant="transparent" p={0} onClick={onPressReset}>
-                  <Text td="underline" size={"sm"} c={"dimmed"}>
-                    糟糕, 忘记密码？
-                  </Text>
-                </Button>
-              </Stack>
-            </form>
-          </Card>
-        ) : (
-          <Card p={"md"} miw={450} withBorder>
-            <Flex direction={"column"} gap={"xs"}>
-              <Group gap={"xs"}>
-                <ShieldUser size={30} color={theme.colors.blue[6]} />
-                <Title order={3}>设置管理员</Title>
-              </Group>
-              <Text c="dimmed" size={"xs"} mb={"md"}>
-                管理员拥有Zetta最大权限,可用于创建知识库, 配置大模型等
-              </Text>
-              <form onSubmit={form.onSubmit((values) => {})}>
+    <Loading visible={!isReady} size={"md"}>
+      <Flex h={"100vh"} p={"xl"} direction={"column"}>
+        <Image src={zettaLogo} w={142} h={40} />
+        <Center flex={1}>
+          {isAdminExist ? (
+            <Card p={"md"} miw={450} withBorder>
+              <Flex direction={"column"} gap={"xs"}>
+                <Title order={3}>🤖 欢迎回来!</Title>
+                <Text c="dimmed" size={"sm"} mb={"md"}>
+                  登录 Zetta 以继续
+                </Text>
+              </Flex>
+              <form
+                onSubmit={formLogin.onSubmit((values) => onPressLogin(values))}
+              >
                 <Stack mb={"md"}>
                   <TextInput
-                    withAsterisk
-                    label={"姓名"}
-                    key={form.key("name")}
-                    inputSize={"sm"}
-                    placeholder={"姓名"}
-                    {...form.getInputProps("name")}
-                  />
-                  <TextInput
-                    withAsterisk
                     label={"邮箱"}
-                    key={form.key("email")}
-                    placeholder={"请输入邮箱地址"}
-                    {...form.getInputProps("email")}
+                    withAsterisk
+                    key={formLogin.key("email")}
+                    inputSize={"sm"}
+                    {...formLogin.getInputProps("email")}
                   />
                   <TextInput
                     withAsterisk
-                    type={"password"}
-                    key={form.key("password")}
+                    key={formLogin.key("password")}
                     label={"密码"}
-                    placeholder={"至少8位, 包含数字和字母"}
-                    {...form.getInputProps("password")}
+                    type={"password"}
+                    {...formLogin.getInputProps("password")}
                   />
-                  <Blockquote
-                    color={theme.colors.yellow[5]}
-                    radius="md"
-                    icon={<CircleAlert size={16} />}
-                    iconSize={30}
-                    p={"sm"}
-                    mt="xs"
-                  >
-                    <Text size={"sm"}>
-                      密码要求：至少8位字符，包含大小写字母、数字
+                  <Button leftSection={<Mail size={16} />} type="submit">
+                    邮箱登录
+                  </Button>
+                </Stack>
+                <Stack gap={"xs"} align={"center"}>
+                  <Button variant="transparent" p={0} onClick={onPressReset}>
+                    <Text td="underline" size={"sm"} c={"dimmed"}>
+                      糟糕, 忘记密码？
                     </Text>
-                  </Blockquote>
-                  <Button leftSection={<CircleUser size={18} />} type="submit">
-                    创建账户
                   </Button>
                 </Stack>
               </form>
-            </Flex>
-          </Card>
-        )}
-      </Center>
-    </Flex>
+            </Card>
+          ) : (
+            <Card p={"md"} miw={450} withBorder>
+              <Flex direction={"column"} gap={"xs"}>
+                <Group gap={"xs"}>
+                  <ShieldUser size={30} color={theme.colors.blue[6]} />
+                  <Title order={3}>设置管理员</Title>
+                </Group>
+                <Text c="dimmed" size={"xs"} mb={"md"}>
+                  管理员拥有Zetta最大权限,可用于创建知识库, 配置大模型等
+                </Text>
+                <form onSubmit={formAdmin.onSubmit((values) => {})}>
+                  <Stack mb={"md"}>
+                    <TextInput
+                      withAsterisk
+                      label={"姓名"}
+                      key={formAdmin.key("name")}
+                      inputSize={"sm"}
+                      placeholder={"姓名"}
+                      {...formAdmin.getInputProps("name")}
+                    />
+                    <TextInput
+                      withAsterisk
+                      label={"邮箱"}
+                      key={formAdmin.key("email")}
+                      placeholder={"请输入邮箱地址"}
+                      {...formAdmin.getInputProps("email")}
+                    />
+                    <TextInput
+                      withAsterisk
+                      type={"password"}
+                      key={formAdmin.key("password")}
+                      label={"密码"}
+                      placeholder={"至少8位, 包含数字和字母"}
+                      {...formAdmin.getInputProps("password")}
+                    />
+                    <Blockquote
+                      color={theme.colors.yellow[5]}
+                      radius="md"
+                      icon={<CircleAlert size={16} />}
+                      iconSize={30}
+                      p={"sm"}
+                      mt="xs"
+                    >
+                      <Text size={"sm"}>
+                        密码要求：至少8位字符，包含大小写字母、数字
+                      </Text>
+                    </Blockquote>
+                    <Button
+                      leftSection={<CircleUser size={18} />}
+                      type="submit"
+                    >
+                      创建账户
+                    </Button>
+                  </Stack>
+                </form>
+              </Flex>
+            </Card>
+          )}
+        </Center>
+      </Flex>
+    </Loading>
   );
 };
 

@@ -12,15 +12,18 @@ import {
 } from "@mantine/core";
 import zettaLogo from "@/assets/zetta-logo.svg";
 import { Modal } from "@/components";
-import { useLocation, Link } from "react-router-dom";
-import { BookOpenText, Bot, SettingsIcon } from "lucide-react";
+import { useLocation, Link, useNavigate } from "react-router-dom";
+import { BookOpenText, Bot, SettingsIcon, LogOut } from "lucide-react";
 import { UserSettings } from "@/pages";
 import classes from "./Header.module.scss";
 import React from "react";
 import { useDisclosure } from "@mantine/hooks";
+import appHelper from "@/AppHelper";
 
 const Header = () => {
   const theme = useMantineTheme();
+  const nav = useNavigate();
+
   const [
     isUserSettingOpen,
     { open: openUserSetting, close: closeUserSetting },
@@ -31,6 +34,17 @@ const Header = () => {
   const isActive = (route) => {
     return currentRoute.pathname.startsWith(route);
   };
+
+  //region 方法
+
+  const onPressLogOut = async () => {
+    appHelper.setAccessToken(null);
+    nav({
+      pathname: "/user/login",
+    });
+  };
+
+  //endregion
 
   return (
     <Flex
@@ -92,6 +106,14 @@ const Header = () => {
           >
             <Text size={"sm"} c={"dimmed"}>
               设置
+            </Text>
+          </Menu.Item>
+          <Menu.Item
+            onClick={onPressLogOut}
+            leftSection={<LogOut size={16} color={theme.colors.gray[6]} />}
+          >
+            <Text size={"sm"} c={"dimmed"}>
+              登出
             </Text>
           </Menu.Item>
         </Menu.Dropdown>
