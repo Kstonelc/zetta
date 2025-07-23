@@ -16,9 +16,10 @@ import { useLocation, Link, useNavigate } from "react-router-dom";
 import { BookOpenText, Bot, SettingsIcon, LogOut } from "lucide-react";
 import { UserSettings } from "@/pages";
 import classes from "./Header.module.scss";
-import React from "react";
+import React, { useEffect } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import appHelper from "@/AppHelper";
+import { useUserStore } from "@/stores/useUserStore";
 
 const Header = () => {
   const theme = useMantineTheme();
@@ -28,12 +29,17 @@ const Header = () => {
     isUserSettingOpen,
     { open: openUserSetting, close: closeUserSetting },
   ] = useDisclosure(false);
+  const { userStore, setUserStore } = useUserStore();
 
   const currentRoute = useLocation();
 
   const isActive = (route) => {
     return currentRoute.pathname.startsWith(route);
   };
+
+  useEffect(() => {
+    console.log("用户信息", userStore);
+  }, [userStore]);
 
   //region 方法
 
@@ -42,6 +48,13 @@ const Header = () => {
     nav({
       pathname: "/user/login",
     });
+  };
+
+  const getActiveTenant = () => {
+    if (userStore.tenants && userStore.tenants.length > 0) {
+      return userStore.tenants[0];
+    }
+    return null;
   };
 
   //endregion

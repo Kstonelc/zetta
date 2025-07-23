@@ -18,6 +18,7 @@ import { CircleAlert, CircleUser, Mail, ShieldUser } from "lucide-react";
 import zettaLogo from "@/assets/zetta-logo.svg";
 import React, { useEffect, useState } from "react";
 import { useNotify } from "@/utils/notify";
+import { useUserStore } from "@/stores/useUserStore";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "@mantine/form";
 import appHelper from "@/AppHelper.js";
@@ -26,6 +27,7 @@ const UserLogin = () => {
   const { notify } = useNotify();
   const nav = useNavigate();
   const theme = useMantineTheme();
+  const { userStore, setUserStore } = useUserStore();
   const formAdmin = useForm({
     mode: "uncontrolled",
     initialValues: {
@@ -94,7 +96,7 @@ const UserLogin = () => {
   };
 
   const onPressLogin = async (values) => {
-    const response = await appHelper.apiPost("/user/email-login", {
+    let response = await appHelper.apiPost("/user/email-login", {
       userEmail: values.email,
       userPassword: values.password,
     });
@@ -106,6 +108,17 @@ const UserLogin = () => {
       return;
     }
     appHelper.setAccessToken(response.data.access_token);
+    response = await appHelper.apiPost("/user/find-user", {
+      userEmail: values.email,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
+    setUserStore(response.data);
     nav({
       pathname: "/",
     });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Text,
   Grid,
@@ -22,9 +22,11 @@ import classes from "./WikiHome.module.scss";
 import { useDisclosure } from "@mantine/hooks";
 import { WikiDataType } from "@/enum";
 import appHelper from "@/AppHelper.js";
+import { useUserStore } from "@/stores/useUserStore.js";
 
 const WikiHome = () => {
   const theme = useMantineTheme();
+  const { userStore, setUserStore } = useUserStore();
   const [
     isWikiAddModalOpen,
     { open: openWikiAddModal, close: closeWikiAddModal },
@@ -42,7 +44,9 @@ const WikiHome = () => {
     };
   }, []);
 
-  const initialize = async () => {};
+  const initialize = async () => {
+    console.log("用户信息", userStore);
+  };
 
   const destroy = async () => {};
   //endregion
