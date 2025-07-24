@@ -9,14 +9,21 @@ import {
   Text,
   useMantineTheme,
   Divider,
+  Stack,
 } from "@mantine/core";
 import zettaLogo from "@/assets/zetta-logo.svg";
-import { Modal } from "@/components";
 import { useLocation, Link, useNavigate } from "react-router-dom";
-import { BookOpenText, Bot, SettingsIcon, LogOut } from "lucide-react";
+import {
+  BookOpenText,
+  Bot,
+  SettingsIcon,
+  Users,
+  LogOut,
+  ChevronsUpDown,
+} from "lucide-react";
 import { UserSettings } from "@/pages";
 import classes from "./Header.module.scss";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useDisclosure } from "@mantine/hooks";
 import appHelper from "@/AppHelper";
 import { useUserStore } from "@/stores/useUserStore";
@@ -33,15 +40,32 @@ const Header = () => {
 
   const currentRoute = useLocation();
 
+  const [currentTenant, setCurrentTenant] = useState(null);
+  const [allTenants, setAllTenants] = useState([]);
+
+  // region 初始化
+
+  useEffect(() => {
+    initialize();
+    return () => {
+      destroy();
+    };
+  }, [userStore]);
+
+  const initialize = async () => {
+    setCurrentTenant(userStore.current_tenant);
+    setAllTenants(userStore.tenants);
+  };
+
+  const destroy = async () => {};
+
+  //endregion
+
+  //region 方法
+
   const isActive = (route) => {
     return currentRoute.pathname.startsWith(route);
   };
-
-  useEffect(() => {
-    console.log("用户信息", userStore);
-  }, [userStore]);
-
-  //region 方法
 
   const onPressLogOut = async () => {
     appHelper.setAccessToken(null);
@@ -49,14 +73,6 @@ const Header = () => {
       pathname: "/user/login",
     });
   };
-
-  const getActiveTenant = () => {
-    if (userStore.tenants && userStore.tenants.length > 0) {
-      return userStore.tenants[0];
-    }
-    return null;
-  };
-
   //endregion
 
   return (
@@ -66,8 +82,59 @@ const Header = () => {
       justify={"space-between"}
       align={"center"}
     >
-      <Image src={zettaLogo} className={classes.logo} />
-      <Flex gap={"md"}>
+      <Group>
+        <Image src={zettaLogo} className={classes.logo} />
+        {currentTenant && (
+          <Menu shadow="md" width={200} radius={"md"}>
+            <Menu.Target>
+              <Button
+                variant={"light"}
+                color={theme.colors.gray[6]}
+                leftSection={
+                  <Avatar color={theme.colors.blue[8]} radius="xl" size={"sm"}>
+                    KS
+                  </Avatar>
+                }
+                rightSection={<ChevronsUpDown size={16} />}
+              >
+                <Stack gap={0} align={"flex-start"}>
+                  <Text size={"xs"} fw={"bold"} c={theme.colors.gray[7]}>
+                    {currentTenant.name}的工作空间
+                  </Text>
+                </Stack>
+              </Button>
+            </Menu.Target>
+
+            <Menu.Dropdown p={"xs"}>
+              <Text size={"xs"} mb={"xs"}>
+                工作空间
+              </Text>
+              {appHelper.getLength(allTenants) > 0 &&
+                allTenants.map((tenant) => {
+                  return (
+                    <Menu.Item
+                      disabled={tenant.id === currentTenant.id}
+                      leftSection={
+                        <Users size={16} color={theme.colors.blue[6]} />
+                      }
+                    >
+                      <Text size={"sm"} c={theme.colors.gray[8]}>
+                        {tenant.name}
+                      </Text>
+                    </Menu.Item>
+                  );
+                })}
+            </Menu.Dropdown>
+          </Menu>
+        )}
+      </Group>
+      <Group
+        pos="absolute"
+        style={{
+          left: "50%",
+          transform: "translateX(-50%)",
+        }}
+      >
         <Link to="/wiki">
           <Button
             variant={isActive("/wiki") ? "light" : "subtle"}
@@ -86,7 +153,7 @@ const Header = () => {
             AI
           </Button>
         </Link>
-      </Flex>
+      </Group>
       <Menu shadow="md" width={250} radius={"md"}>
         <Menu.Target>
           <Avatar color={theme.colors.blue[8]} radius="xl">

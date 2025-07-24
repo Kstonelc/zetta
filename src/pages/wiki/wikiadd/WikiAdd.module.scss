@@ -1,0 +1,13 @@
+.container {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  flex: 1
+}
+
+
+.absoluteCenter {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+}

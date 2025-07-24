@@ -13,6 +13,7 @@ import {
   ActionIcon,
   TextInput,
   Textarea,
+  ScrollArea,
   useMantineTheme,
 } from "@mantine/core";
 import { WikiHomeCard } from "./WikiHomeCard.jsx";
@@ -23,9 +24,11 @@ import { useDisclosure } from "@mantine/hooks";
 import { WikiDataType } from "@/enum";
 import appHelper from "@/AppHelper.js";
 import { useUserStore } from "@/stores/useUserStore.js";
+import { useNavigate } from "react-router-dom";
 
 const WikiHome = () => {
   const theme = useMantineTheme();
+  const nav = useNavigate();
   const { userStore, setUserStore } = useUserStore();
   const [
     isWikiAddModalOpen,
@@ -34,7 +37,8 @@ const WikiHome = () => {
 
   const [wikiName, setWikiName] = useState("");
   const [wikiDataType, setWikiDataType] = useState(null);
-  const cards = [1, 2, 3];
+  // 100个数据
+  const cards = [1];
 
   //region 初始化
   useEffect(() => {
@@ -58,7 +62,7 @@ const WikiHome = () => {
   //endregion
 
   return (
-    <Stack className={classes.container}>
+    <Stack p={"lg"} flex={1}>
       <Title order={3}>知识库</Title>
       <Flex gap={"sm"} justify={"space-between"}>
         <Select
@@ -69,7 +73,10 @@ const WikiHome = () => {
         <Button
           leftSection={<Grid2x2Plus size={16} />}
           onClick={() => {
-            openWikiAddModal();
+            // openWikiAddModal();
+            nav({
+              pathname: "/wiki/add",
+            });
           }}
         >
           新建知识库
@@ -172,7 +179,7 @@ const WikiHome = () => {
           </Group>
         </Modal>
       </Flex>
-      <Loading visible={false}>
+      <ScrollArea>
         <Grid gutter="md">
           {cards.map((card) => (
             <Grid.Col key={card} span={{ base: 12, sm: 6, md: 3 }}>
@@ -180,7 +187,7 @@ const WikiHome = () => {
             </Grid.Col>
           ))}
         </Grid>
-      </Loading>
+      </ScrollArea>
     </Stack>
   );
 };

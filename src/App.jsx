@@ -10,10 +10,13 @@ import {
   Button,
   ColorSchemeScript,
   TextInput,
+  NumberInput,
   Textarea,
+  Stack,
   Select,
   Card,
   Switch,
+  ScrollArea,
 } from "@mantine/core";
 import routerConfig from "@/routers";
 import { Notifications } from "@mantine/notifications";
@@ -24,6 +27,11 @@ const theme = createTheme({
   fontFamily:
     'HarmonyOS Sans", "Segoe UI", "SF Pro Display", -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif, "HarmonyOS Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft Yahei UI", "Microsoft Yahei", "Source Han Sans CN", sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Twemoji Mozilla", "Noto Color Emoji", "Android Emoji',
   components: {
+    Stack: Stack.extend({
+      defaultProps: {
+        mih: 0,
+      },
+    }),
     Button: Button.extend({
       defaultProps: {
         radius: "md",
@@ -34,6 +42,12 @@ const theme = createTheme({
         radius: "md",
         variant: "filled",
         autoComplete: "new-password",
+      },
+    }),
+    NumberInput: NumberInput.extend({
+      defaultProps: {
+        radius: "md",
+        variant: "filled",
       },
     }),
     Textarea: Textarea.extend({
@@ -61,6 +75,12 @@ const theme = createTheme({
       defaultProps: {
         shadow: "sm",
         radius: "md",
+      },
+    }),
+    ScrollArea: ScrollArea.extend({
+      defaultProps: {
+        offsetScrollbars: true,
+        type: "never",
       },
     }),
   },

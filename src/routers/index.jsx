@@ -9,6 +9,7 @@ import {
   UserRegister,
   UserForgotPassword,
   WikiDetail,
+  WikiAdd,
   WikiDetailEdit,
   NotFound,
 } from "../pages";
@@ -38,6 +39,10 @@ const Router = createBrowserRouter([
       {
         path: "wiki",
         element: <WikiHome />,
+      },
+      {
+        path: "wiki/add",
+        element: <WikiAdd />,
       },
       {
         path: "wiki",

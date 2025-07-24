@@ -1,6 +1,16 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
-export const useUserStore = create((set) => ({
-  userStore: null, // 初始用户数据
-  setUserStore: (userStore) => set({ userStore }),
-}));
+export const useUserStore = create(
+  persist(
+    (set) => ({
+      userStore: null,
+      setUserStore: (userStore) => set({ userStore }),
+    }),
+    {
+      name: "zetta-user-info",
+      // 可选：只持久化特定字段
+      partialize: (state) => ({ userStore: state.userStore }),
+    },
+  ),
+);
