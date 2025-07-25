@@ -67,7 +67,7 @@ const Header = () => {
     return currentRoute.pathname.startsWith(route);
   };
 
-  const onPressLogOut = async () => {
+  const onClickLogOut = async () => {
     appHelper.setAccessToken(null);
     nav({
       pathname: "/user/login",
@@ -184,17 +184,13 @@ const Header = () => {
               <SettingsIcon size={16} color={theme.colors.gray[6]} />
             }
           >
-            <Text size={"sm"} c={"dimmed"}>
-              设置
-            </Text>
+            <Text size={"sm"}>设置</Text>
           </Menu.Item>
           <Menu.Item
-            onClick={onPressLogOut}
+            onClick={onClickLogOut}
             leftSection={<LogOut size={16} color={theme.colors.gray[6]} />}
           >
-            <Text size={"sm"} c={"dimmed"}>
-              登出
-            </Text>
+            <Text size={"sm"}>登出</Text>
           </Menu.Item>
         </Menu.Dropdown>
       </Menu>

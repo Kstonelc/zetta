@@ -89,13 +89,13 @@ const UserLogin = () => {
 
   //region 方法
 
-  const onPressReset = async () => {
+  const onClickReset = async () => {
     nav({
       pathname: "/user/reset-password",
     });
   };
 
-  const onPressLogin = async (values) => {
+  const onClickLogin = async (values) => {
     let response = await appHelper.apiPost("/user/email-login", {
       userEmail: values.email,
       userPassword: values.password,
@@ -139,7 +139,7 @@ const UserLogin = () => {
                 </Text>
               </Flex>
               <form
-                onSubmit={formLogin.onSubmit((values) => onPressLogin(values))}
+                onSubmit={formLogin.onSubmit((values) => onClickLogin(values))}
               >
                 <Stack mb={"md"}>
                   <TextInput
@@ -161,7 +161,7 @@ const UserLogin = () => {
                   </Button>
                 </Stack>
                 <Stack gap={"xs"} align={"center"}>
-                  <Button variant="transparent" p={0} onClick={onPressReset}>
+                  <Button variant="transparent" p={0} onClick={onClickReset}>
                     <Text td="underline" size={"sm"} c={"dimmed"}>
                       糟糕, 忘记密码？
                     </Text>

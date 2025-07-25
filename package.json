@@ -34,10 +34,13 @@
     "@tiptap/react": "^2.24.1",
     "@tiptap/starter-kit": "^2.24.1",
     "axios": "^1.10.0",
+    "i18next": "^25.3.2",
+    "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.523.0",
     "prettier": "^3.6.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-i18next": "^15.6.1",
     "react-router-dom": "^7.6.2",
     "tiptap-extension-resize-image": "^1.2.2",
     "zustand": "^5.0.6"

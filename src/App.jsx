@@ -20,6 +20,7 @@ import {
 } from "@mantine/core";
 import routerConfig from "@/routers";
 import { Notifications } from "@mantine/notifications";
+import "./i18n";
 import { RouterProvider } from "react-router-dom";
 import { ColorScheme } from "@/enum";
 

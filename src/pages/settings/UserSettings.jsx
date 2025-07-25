@@ -8,10 +8,11 @@ import {
   Badge,
   Flex,
   Button,
-  Center,
+  Title,
   useMantineTheme,
   ActionIcon,
   TextInput,
+  Avatar,
 } from "@mantine/core";
 import { Modal, Drawer } from "@/components";
 import {
@@ -23,6 +24,8 @@ import {
   Settings,
   Blocks,
   Check,
+  UserRoundPlus,
+  SquarePen,
 } from "lucide-react";
 import QWen from "@/assets/models/qwen.svg";
 import NoData from "@/assets/no-data.png";
@@ -32,6 +35,7 @@ import { ModelSetting } from "../model/ModelSetting.jsx";
 import { ModelGlobalSetting } from "@/pages/model/ModelGlobalSetting.jsx";
 import { useNotify } from "@/utils/notify.js";
 import { useNavigate } from "react-router-dom";
+import { MemberSetting } from "@/pages/settings/MemberSetting.jsx";
 
 const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const theme = useMantineTheme();
@@ -79,6 +83,12 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
 
   const destroy = async () => {};
 
+  //region 方法
+  const onClickMembersTab = () => {};
+
+  const onClickModelsTab = () => {};
+  //endregion
+
   return (
     <Modal
       fullScreen={true}
@@ -106,6 +116,9 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
         orientation="vertical"
         variant="pills"
         radius="md"
+        onChange={(value) => {
+          console.log(value);
+        }}
       >
         <Tabs.List>
           <Tabs.Tab value="models" leftSection={<Brain size={16} />}>
@@ -169,7 +182,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="members" px={"lg"}>
-          Messages tab content
+          <MemberSetting />
         </Tabs.Panel>
       </Tabs>
       <ModelSetting
