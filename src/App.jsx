@@ -16,6 +16,7 @@ import {
   Select,
   Card,
   Switch,
+  TagsInput,
   ScrollArea,
 } from "@mantine/core";
 import routerConfig from "@/routers";
@@ -57,6 +58,12 @@ const theme = createTheme({
         variant: "filled",
         autosize: true,
         minRows: 3,
+      },
+    }),
+    TagsInput: TagsInput.extend({
+      defaultProps: {
+        radius: "md",
+        variant: "filled",
       },
     }),
     Select: Select.extend({

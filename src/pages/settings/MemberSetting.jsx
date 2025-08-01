@@ -7,9 +7,11 @@ import {
   Text,
   Table,
   Badge,
+  Select,
   useMantineTheme,
   Menu,
   Divider,
+  TagsInput,
 } from "@mantine/core";
 import {
   SquarePen,
@@ -18,8 +20,12 @@ import {
   UserRoundCheck,
   Trash2,
 } from "lucide-react";
+import { Modal } from "@/components";
 import { useTranslation } from "react-i18next";
 import React, { useState } from "react";
+import { useForm } from "@mantine/form";
+import { UserRole } from "@/enum.js";
+import appHelper from "@/AppHelper.js";
 
 const MemberSetting = () => {
   const theme = useMantineTheme();
@@ -28,10 +34,32 @@ const MemberSetting = () => {
     {
       name: "admin",
       email: "2609753201@qq.com",
-      updated_at: "",
+      status: "active",
       role: "管理员",
     },
   ]);
+  const [isAddUserModalVisible, setIsAddUserModalVisible] = useState(false);
+
+  const addUserForm = useForm({
+    mode: "uncontrolled",
+    initialValues: {
+      emails: [],
+      role: "",
+    },
+
+    validate: {
+      emails: (values) => {
+        if (!appHelper.isArray(values) || values.length === 0) {
+          return "请输入邮箱";
+        }
+        const isValid = values.every((email) => /^\S+@\S+$/.test(email));
+        return isValid ? null : "无效邮箱";
+      },
+      role: (value) => {
+        return value.trim() ? null : "角色不能为空";
+      },
+    },
+  });
 
   //region 方法
   const renderMembersColumns = () => {
@@ -40,7 +68,7 @@ const MemberSetting = () => {
         <Table.Tr>
           <Table.Th>姓名</Table.Th>
           <Table.Th>邮箱</Table.Th>
-          <Table.Th>上次更新时间</Table.Th>
+          <Table.Th>状态</Table.Th>
           <Table.Th>角色</Table.Th>
         </Table.Tr>
       </Table.Thead>
@@ -60,7 +88,7 @@ const MemberSetting = () => {
               </Group>
             </Table.Td>
             <Table.Td>{element.email}</Table.Td>
-            <Table.Td>{element.updated_at}</Table.Td>
+            <Table.Td>{element.status}</Table.Td>
             <Table.Td>
               <Menu radius={"md"} width={200}>
                 <Menu.Target>
@@ -106,10 +134,9 @@ const MemberSetting = () => {
                       </Text>
                     </Stack>
                   </Menu.Item>
-                  <Divider />
+                  <Divider my={2} />
                   <Menu.Item>
-                    <Group>
-                      <Trash2 size={20} color={theme.colors.red[8]} />
+                    <Group justify={"space-between"}>
                       <Stack gap={"0"}>
                         <Text size={"sm"} fw={"bold"} c={theme.colors.red[8]}>
                           禁用
@@ -118,6 +145,7 @@ const MemberSetting = () => {
                           回收所有权限
                         </Text>
                       </Stack>
+                      <Trash2 size={20} color={theme.colors.red[8]} />
                     </Group>
                   </Menu.Item>
                 </Menu.Dropdown>
@@ -160,14 +188,53 @@ const MemberSetting = () => {
             </Text>
           </Stack>
         </Group>
-        <Button leftSection={<UserRoundPlus size={18} />} size={"xs"}>
-          添加
+        <Button
+          leftSection={<UserRoundPlus size={18} />}
+          size={"xs"}
+          onClick={() => {
+            setIsAddUserModalVisible(true);
+          }}
+        >
+          邀请
         </Button>
       </Group>
       <Table stickyHeader stickyHeaderOffset={60}>
         {renderMembersColumns()}
         {renderMembers()}
       </Table>
+
+      <Modal
+        opened={isAddUserModalVisible}
+        onClose={() => {
+          setIsAddUserModalVisible(false);
+        }}
+        keepMounted={false}
+        title={<Text fw={"bold"}>邀请新成员</Text>}
+      >
+        <form onSubmit={addUserForm.onSubmit((values) => console.log(values))}>
+          <Stack gap={"xs"}>
+            <TagsInput
+              label="邮箱"
+              key={addUserForm.key("emails")}
+              withAsterisk
+              placeholder="请填写邮箱地址"
+              description={"一次可填写多个邮箱"}
+              {...addUserForm.getInputProps("emails")}
+            />
+            <Select
+              withAsterisk
+              label="角色"
+              key={addUserForm.key("role")}
+              data={UserRole.getOptions()}
+              {...addUserForm.getInputProps("role")}
+            />
+            <Group grow mt={"xs"}>
+              <Button variant={"subtle"}>取消</Button>
+              <Button type="submit">确认</Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
     </Stack>
   );
 };

@@ -28,7 +28,7 @@ class AppHelper {
           Authorization: `Bearer ${accessToken}`,
         },
       });
-      return axiosResponse.status === HttpStatus.OK
+      return axiosResponse.status === HttpStatus.Ok
         ? axiosResponse.data // {ok, data?, message?}
         : { ok: false, message: axiosResponse.statusText };
     } catch (e) {

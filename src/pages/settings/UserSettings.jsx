@@ -36,10 +36,12 @@ import { ModelGlobalSetting } from "@/pages/model/ModelGlobalSetting.jsx";
 import { useNotify } from "@/utils/notify.js";
 import { useNavigate } from "react-router-dom";
 import { MemberSetting } from "@/pages/settings/MemberSetting.jsx";
+import { useUserStore } from "@/stores/useUserStore.js";
 
 const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const theme = useMantineTheme();
   const nav = useNavigate();
+  const { userStore, setUserStore } = useUserStore();
   const { notify } = useNotify();
 
   const [isModelSettingVisible, setIsModelSettingVisible] = useState(false);
@@ -84,7 +86,18 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const destroy = async () => {};
 
   //region 方法
-  const onClickMembersTab = () => {};
+  const getTenantUsers = async () => {
+    const response = await appHelper.apiPost("tenant/find-users", {
+      tenantId: userStore?.current_tenant.id,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
+  };
 
   const onClickModelsTab = () => {};
   //endregion
@@ -116,8 +129,14 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
         orientation="vertical"
         variant="pills"
         radius="md"
-        onChange={(value) => {
+        onChange={async (value) => {
           console.log(value);
+          // 切换Tab的时候 请求数据
+          if (value === "models") {
+          }
+          if (value === "members") {
+            await getTenantUsers();
+          }
         }}
       >
         <Tabs.List>
