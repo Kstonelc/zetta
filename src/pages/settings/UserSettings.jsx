@@ -35,7 +35,7 @@ import { ModelSetting } from "../model/ModelSetting.jsx";
 import { ModelGlobalSetting } from "@/pages/model/ModelGlobalSetting.jsx";
 import { useNotify } from "@/utils/notify.js";
 import { useNavigate } from "react-router-dom";
-import { MemberSetting } from "@/pages/settings/MemberSetting.jsx";
+import { TenantUsersSetting } from "@/pages/settings/TenantUsersSetting.jsx";
 import { useUserStore } from "@/stores/useUserStore.js";
 
 const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
@@ -49,6 +49,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
     useState(false);
   const [modelProviders, setModelProviders] = useState([]);
   const [currentModelProvider, setCurrentModelProvider] = useState(null);
+  const [tenant, setTenant] = useState([]);
 
   const onOpenModelSetting = (provider) => {
     setCurrentModelProvider(provider);
@@ -86,8 +87,8 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const destroy = async () => {};
 
   //region 方法
-  const getTenantUsers = async () => {
-    const response = await appHelper.apiPost("tenant/find-users", {
+  const getTenant = async () => {
+    const response = await appHelper.apiPost("/tenant/find-tenant", {
       tenantId: userStore?.current_tenant.id,
     });
     if (!response.ok) {
@@ -97,9 +98,11 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
       });
       return;
     }
+    setTenant(response.data);
   };
 
   const onClickModelsTab = () => {};
+
   //endregion
 
   return (
@@ -135,7 +138,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
           if (value === "models") {
           }
           if (value === "members") {
-            await getTenantUsers();
+            await getTenant();
           }
         }}
       >
@@ -201,7 +204,7 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
           </Stack>
         </Tabs.Panel>
         <Tabs.Panel value="members" px={"lg"}>
-          <MemberSetting />
+          <TenantUsersSetting tenant={tenant} />
         </Tabs.Panel>
       </Tabs>
       <ModelSetting

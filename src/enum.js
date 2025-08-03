@@ -41,9 +41,9 @@ export class ModelProviderUpdateType {
 
 export class ModelType {
   static {
-    this.TextEmbedding = "TextEmbedding";
-    this.TextGeneration = "TextGeneration";
-    this.ReRank = "ReRank";
+    this.TextEmbedding = "textEmbedding";
+    this.TextGeneration = "textGeneration";
+    this.ReRank = "reRank";
 
     this.text = {};
     this.text[this.TextEmbedding] = "文本向量";
@@ -60,6 +60,20 @@ export class WikiDataType {
     this.text = {};
     this.text[this.Structured] = "结构化";
     this.text[this.Unstructured] = "非结构化";
+  }
+}
+
+export class UserStatus {
+  static {
+    // 枚举值
+    this.Active = "active";
+    this.Pending = "pending";
+    this.Banned = "banned";
+    // 文本
+    this.text = {};
+    this.text[this.Active] = "正常";
+    this.text[this.Pending] = "待接受";
+    this.text[this.Banned] = "禁用";
   }
 }
 

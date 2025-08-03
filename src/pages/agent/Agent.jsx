@@ -13,23 +13,31 @@ import {
 import { ChatBox } from "@/components";
 
 import classes from "./Agent.module.scss";
+import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 
 const Agent = () => {
   const theme = useMantineTheme();
 
   return (
-    <Stack className={classes.container}>
-      {/* <Group align='flex-start'>
-        <Paper shadow='xs' radius='md' p={"sm"} w={200} withBorder>
-          <Text fw={"bold"} size={"sm"} mb={8}>
-            摘要
+    <Stack p={"lg"} flex={1}>
+      <Dropzone
+        w={400}
+        onDrop={(files) => console.log("accepted files", files)}
+        onReject={(files) => console.log("rejected files", files)}
+        maxSize={5 * 1024 ** 2}
+        accept={IMAGE_MIME_TYPE}
+      >
+        <Group
+          justify="center"
+          gap="xl"
+          mih={220}
+          style={{ pointerEvents: "none" }}
+        >
+          <Text size="xl" inline>
+            上传文件
           </Text>
-          <Divider mb={8} />
-          <Text size={"sm"}>暂无内容</Text>
-        </Paper>
-        <WikiDetailEdit />
-      </Group> */}
-      <ChatBox></ChatBox>
+        </Group>
+      </Dropzone>
     </Stack>
   );
 };
