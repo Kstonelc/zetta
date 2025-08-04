@@ -212,7 +212,7 @@ const WikiCreate = () => {
       </Group>
 
       <WikiCreateCancelModal
-        opened={true}
+        opened={false}
         onClose={() => {}}
       ></WikiCreateCancelModal>
     </Stack>
