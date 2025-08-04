@@ -316,7 +316,12 @@ const TenantUsersSetting = ({ tenant }) => {
               {...addUserForm.getInputProps("userRole")}
             />
             <Group grow mt={"xs"}>
-              <Button variant={"subtle"} onClick={() => {}}>
+              <Button
+                variant={"subtle"}
+                onClick={() => {
+                  setIsAddUserModalVisible(false);
+                }}
+              >
                 取消
               </Button>
               <Button type="submit">确认</Button>
