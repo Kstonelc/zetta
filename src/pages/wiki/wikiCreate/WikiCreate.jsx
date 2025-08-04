@@ -16,17 +16,22 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import React, { useEffect, useState } from "react";
+import { useForm } from "@mantine/form";
 import { ArrowLeft, FileText, LayoutPanelTop } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WikiDataType } from "@/enum";
-import classes from "./WikiAdd.module.scss";
+import classes from "./WikiCreate.module.scss";
+import { WikiCreateCancelModal } from "@/pages/wiki/wikiCreate/modal/WikiCreateCancelModal.jsx";
 
-const WikiAdd = () => {
+const WikiCreate = () => {
   const theme = useMantineTheme();
   const nav = useNavigate();
+  const wikiCreateForm = useForm();
+
   const [active, setActive] = useState(1);
   const [wikiDataType, setWikiDataType] = useState(null);
   const [similarityThreshold, setSimilarityThreshold] = useState(0.1);
+
   const nextStep = () =>
     setActive((current) => (current < 3 ? current + 1 : current));
   const prevStep = () =>
@@ -194,12 +199,24 @@ const WikiAdd = () => {
       <Divider />
       <Group>
         <Button>下一步</Button>
-        <Button variant={"light"} color={theme.colors.gray[7]}>
+        <Button variant={"subtle"}>创建空的知识库</Button>
+        <Button
+          variant={"light"}
+          color={theme.colors.gray[7]}
+          onClick={() => {
+            nav(-1);
+          }}
+        >
           取消
         </Button>
       </Group>
+
+      <WikiCreateCancelModal
+        opened={true}
+        onClose={() => {}}
+      ></WikiCreateCancelModal>
     </Stack>
   );
 };
 
-export { WikiAdd };
+export { WikiCreate };

@@ -31,8 +31,8 @@ const WikiHome = () => {
   const nav = useNavigate();
   const { userStore, setUserStore } = useUserStore();
   const [
-    isWikiAddModalOpen,
-    { open: openWikiAddModal, close: closeWikiAddModal },
+    isWikiCreateModalOpen,
+    { open: openWikiCreateModal, close: closeWikiCreateModal },
   ] = useDisclosure(false);
 
   const [wikiName, setWikiName] = useState("");
@@ -73,9 +73,9 @@ const WikiHome = () => {
         <Button
           leftSection={<Grid2x2Plus size={16} />}
           onClick={() => {
-            // openWikiAddModal();
+            // openWikiCreateModal();
             nav({
-              pathname: "/wiki/add",
+              pathname: "/wiki/create",
             });
           }}
         >
@@ -83,8 +83,8 @@ const WikiHome = () => {
         </Button>
         <Modal
           keepMounted={false}
-          opened={isWikiAddModalOpen}
-          onClose={closeWikiAddModal}
+          opened={isWikiCreateModalOpen}
+          onClose={closeWikiCreateModal}
           title={
             <Group gap={"sm"}>
               <Blocks size={20} color={theme.colors.blue[8]} />

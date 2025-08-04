@@ -1,6 +1,6 @@
 export * from "./wiki/WikiHome";
 export * from "./wiki/WikiDetail";
-export * from "./wiki/wikiadd/WikiAdd.jsx";
+export * from "./wiki/wikiCreate/WikiCreate.jsx";
 export * from "./wiki/WikiDetailEdit";
 export * from "./agent/Agent";
 export * from "./settings/UserSettings";
