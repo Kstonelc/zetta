@@ -52,7 +52,7 @@ export class ModelType {
   }
 }
 
-export class WikiDataType {
+export class WikiType {
   static {
     this.Structured = 1 << 0;
     this.Unstructured = 1 << 1;

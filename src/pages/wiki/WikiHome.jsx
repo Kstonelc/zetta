@@ -21,7 +21,7 @@ import { Modal, Loading } from "@/components";
 import { Grid2x2Plus, Blocks, LayoutPanelTop, FileText } from "lucide-react";
 import classes from "./WikiHome.module.scss";
 import { useDisclosure } from "@mantine/hooks";
-import { WikiDataType } from "@/enum";
+import { WikiType } from "@/enum";
 import appHelper from "@/AppHelper.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 import { useNavigate } from "react-router-dom";
@@ -36,7 +36,7 @@ const WikiHome = () => {
   ] = useDisclosure(false);
 
   const [wikiName, setWikiName] = useState("");
-  const [wikiDataType, setWikiDataType] = useState(null);
+  const [wikiType, setWikiType] = useState("");
   // 100个数据
   const cards = [1];
 
@@ -57,7 +57,7 @@ const WikiHome = () => {
 
   //region 方法
   const isCanNext = () => {
-    return appHelper.getLength(wikiName) > 0 && wikiDataType !== null;
+    return appHelper.getLength(wikiName) > 0 && wikiType !== null;
   };
   //endregion
 
@@ -110,17 +110,17 @@ const WikiHome = () => {
           <Group>
             <Card
               onClick={() => {
-                setWikiDataType(WikiDataType.Structured);
+                setWikiType(WikiType.Structured);
               }}
               flex={1}
               bg={
-                wikiDataType === WikiDataType.Structured
+                wikiType === WikiType.Structured
                   ? theme.colors.blue[0]
                   : "transparent"
               }
               style={{
                 border:
-                  wikiDataType === WikiDataType.Structured &&
+                  wikiType === WikiType.Structured &&
                   `1px solid ${theme.colors.blue[3]}`,
               }}
             >
@@ -129,10 +129,7 @@ const WikiHome = () => {
                   <LayoutPanelTop size={20} color={theme.colors.blue[8]} />
                   <Text size={"sm"}>结构化数据</Text>
                 </Group>
-                <Radio
-                  size={"xs"}
-                  checked={wikiDataType === WikiDataType.Structured}
-                />
+                <Radio size={"xs"} checked={wikiType === WikiType.Structured} />
               </Group>
               <Text c={"dimmed"} size={"xs"}>
                 标准数据集
@@ -140,17 +137,17 @@ const WikiHome = () => {
             </Card>
             <Card
               onClick={() => {
-                setWikiDataType(WikiDataType.Unstructured);
+                setWikiType(WikiType.Unstructured);
               }}
               bg={
-                wikiDataType === WikiDataType.Unstructured
+                wikiType === WikiType.Unstructured
                   ? theme.colors.blue[0]
                   : "transparent"
               }
               flex={1}
               style={{
                 border:
-                  wikiDataType === WikiDataType.Unstructured &&
+                  wikiType === WikiType.Unstructured &&
                   `1px solid ${theme.colors.blue[3]}`,
               }}
             >
@@ -161,7 +158,7 @@ const WikiHome = () => {
                 </Group>
                 <Radio
                   size={"xs"}
-                  checked={wikiDataType === WikiDataType.Unstructured}
+                  checked={wikiType === WikiType.Unstructured}
                 />
               </Group>
               <Text c={"dimmed"} size={"xs"}>
