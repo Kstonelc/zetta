@@ -24,10 +24,12 @@ import classes from "./WikiCreate.module.scss";
 import { WikiCreateCancelModal } from "@/pages/wiki/wikiCreate/modal/WikiCreateCancelModal.jsx";
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
+import { useUserStore } from "@/stores/useUserStore.js";
 
 const WikiCreate = () => {
   const theme = useMantineTheme();
   const nav = useNavigate();
+  const { userStore, setUserStore } = useUserStore();
   const { notify } = useNotify();
   const wikiCreateForm = useForm();
 
@@ -63,8 +65,26 @@ const WikiCreate = () => {
   //region 方法
 
   const onCreateBlankWiki = async (values) => {
+    const userId = userStore.id;
+    const tenantId = userStore.current_tenant.id;
     values.wikiType = wikiType;
     values.wikiSimThresh = similarityThreshold;
+    values.userId = userId;
+    values.tenantId = tenantId;
+    if (!wikiType) {
+      notify({
+        type: "error",
+        message: "请选择知识库类型",
+      });
+      return;
+    }
+    if (!values.wikiSimThresh) {
+      notify({
+        type: "error",
+        message: "请选择相似度阈值",
+      });
+      return;
+    }
     const response = await appHelper.apiPost("/wiki/create-wiki", values);
     if (!response.ok) {
       notify({

@@ -16,7 +16,7 @@ import { Ellipsis, Tags, SquarePen, Trash, Star } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const WikiHomeCard = () => {
+const WikiHomeCard = ({ name, desc }) => {
   const theme = useMantineTheme();
   const nav = useNavigate();
   return (
@@ -43,7 +43,7 @@ const WikiHomeCard = () => {
             <Image src={WikiIcon} w={18} h={18} />
           </Center>
           <Flex direction={"column"}>
-            <Text fw={"bold"}>知识库</Text>
+            <Text fw={"bold"}>{name}</Text>
             <Text size={"xs"} c="dimmed">
               3文档 | 1600字符 | 关联1应用
             </Text>
@@ -88,7 +88,7 @@ const WikiHomeCard = () => {
       </Group>
       <Flex mb={"xl"}>
         <Text size={"sm"} color={theme.colors.gray[6]}>
-          Relink产品描述
+          {desc}
         </Text>
       </Flex>
       <Group justify={"space-between"}>

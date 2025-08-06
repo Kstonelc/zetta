@@ -25,18 +25,22 @@ import { WikiType } from "@/enum";
 import appHelper from "@/AppHelper.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 import { useNavigate } from "react-router-dom";
+import { useNotify } from "@/utils/notify.js";
 
 const WikiHome = () => {
   const theme = useMantineTheme();
   const nav = useNavigate();
+  const { notify } = useNotify();
   const { userStore, setUserStore } = useUserStore();
   const [
     isWikiCreateModalOpen,
     { open: openWikiCreateModal, close: closeWikiCreateModal },
   ] = useDisclosure(false);
 
+  const [isLoading, setIsLoading] = useState(false);
   const [wikiName, setWikiName] = useState("");
   const [wikiType, setWikiType] = useState("");
+  const [wikiData, setWikiData] = useState([]);
   // 100个数据
   const cards = [1];
 
@@ -50,6 +54,7 @@ const WikiHome = () => {
 
   const initialize = async () => {
     console.log("用户信息", userStore);
+    await getWiki();
   };
 
   const destroy = async () => {};
@@ -58,6 +63,24 @@ const WikiHome = () => {
   //region 方法
   const isCanNext = () => {
     return appHelper.getLength(wikiName) > 0 && wikiType !== null;
+  };
+
+  const getWiki = async () => {
+    setIsLoading(true);
+    const response = await appHelper.apiPost("/wiki/find-wikis", {
+      userId: userStore.id,
+      tenantId: userStore.current_tenant.id,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      setIsLoading(false);
+      return;
+    }
+    setWikiData(response.data);
+    setIsLoading(false);
   };
   //endregion
 
@@ -153,7 +176,7 @@ const WikiHome = () => {
             >
               <Group mb={"md"} justify={"space-between"}>
                 <Group gap={"xs"}>
-                  <FileText size={20} color={theme.colors.violet[8]}></FileText>
+                  <FileText size={20} color={theme.colors.violet[8]} />
                   <Text size={"sm"}>非结构化数据</Text>
                 </Group>
                 <Radio
@@ -176,15 +199,17 @@ const WikiHome = () => {
           </Group>
         </Modal>
       </Flex>
-      <ScrollArea>
-        <Grid gutter="md">
-          {cards.map((card) => (
-            <Grid.Col key={card} span={{ base: 12, sm: 6, md: 3 }}>
-              <WikiHomeCard />
-            </Grid.Col>
-          ))}
-        </Grid>
-      </ScrollArea>
+      <Loading visible={isLoading} size={"lg"}>
+        <ScrollArea>
+          <Grid gutter="md">
+            {wikiData.map((item, index) => (
+              <Grid.Col key={index} span={{ base: 12, sm: 6, md: 3 }}>
+                <WikiHomeCard name={item.name} desc={item.desc} />
+              </Grid.Col>
+            ))}
+          </Grid>
+        </ScrollArea>
+      </Loading>
     </Stack>
   );
 };
