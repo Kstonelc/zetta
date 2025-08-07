@@ -16,7 +16,7 @@ import { Ellipsis, Tags, SquarePen, Trash, Star } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const WikiHomeCard = ({ name, desc }) => {
+const WikiHomeCard = ({ wikiId, name, desc }) => {
   const theme = useMantineTheme();
   const nav = useNavigate();
   return (
@@ -24,9 +24,16 @@ const WikiHomeCard = ({ name, desc }) => {
       padding="lg"
       withBorder
       onClick={() => {
-        nav({
-          pathname: "/wiki/123456/docs",
-        });
+        nav(
+          {
+            pathname: "/wiki/detail",
+          },
+          {
+            state: {
+              wikiId: wikiId,
+            },
+          },
+        );
       }}
     >
       <Group mb={"md"} justify="space-between">

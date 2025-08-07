@@ -36,9 +36,13 @@ const WikiSideBar = ({ wikiId }) => {
     {
       icon: <FileText size={16} />,
       label: "文档",
-      path: `/wiki/${wikiId}/docs`,
+      path: `/wiki/detail/docs`,
     },
-    { icon: <FolderCog size={16} />, label: "设置", path: "/wiki/detail/edit" },
+    {
+      icon: <FolderCog size={16} />,
+      label: "设置",
+      path: "/wiki/detail/settings",
+    },
   ];
 
   //region 方法

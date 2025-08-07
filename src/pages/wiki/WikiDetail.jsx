@@ -1,35 +1,50 @@
-import { Flex, Table } from "@mantine/core";
+import {
+  Flex,
+  Stack,
+  Text,
+  Title,
+  Card,
+  ScrollArea,
+  Paper,
+  useMantineTheme,
+} from "@mantine/core";
+import { Table } from "@/components";
 
 const WikiDetail = () => {
-  const elements = [
-    { position: 6, mass: 12.011, symbol: "C", name: "Carbon" },
-    { position: 7, mass: 14.007, symbol: "N", name: "Nitrogen" },
-    { position: 39, mass: 88.906, symbol: "Y", name: "Yttrium" },
-    { position: 56, mass: 137.33, symbol: "Ba", name: "Barium" },
-    { position: 58, mass: 140.12, symbol: "Ce", name: "Cerium" },
+  const theme = useMantineTheme();
+  const columns = [
+    { accessorKey: "name", header: "Name" },
+    { accessorKey: "age", header: "Age" },
   ];
-  const rows = elements.map((element) => (
-    <Table.Tr key={element.name}>
-      <Table.Td>{element.position}</Table.Td>
-      <Table.Td>{element.name}</Table.Td>
-      <Table.Td>{element.symbol}</Table.Td>
-      <Table.Td>{element.mass}</Table.Td>
-    </Table.Tr>
-  ));
+
+  const data = [
+    { name: "Alice", age: 22 },
+    { name: "Bob", age: 30 },
+  ];
   return (
-    <Flex>
-      <Table>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Element position</Table.Th>
-            <Table.Th>Element name</Table.Th>
-            <Table.Th>Symbol</Table.Th>
-            <Table.Th>Atomic mass</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{rows}</Table.Tbody>
-      </Table>
-    </Flex>
+    <Stack flex={1} h={"calc(100vh - 120px)"}>
+      <Title order={3}>文档</Title>
+      <Flex direction={"row"} flex={1} mih={0}>
+        <Stack flex={1}>
+          <Card shadow={"sm"} withBorder={true} h={"100%"}>
+            <Text fw={"bold"} size={"lg"}>
+              分类管理
+            </Text>
+            <ScrollArea>
+              <Text mt={"md"}>目录1</Text>
+              <Text>目录2</Text>
+              <Text>目录3</Text>
+            </ScrollArea>
+          </Card>
+        </Stack>
+        <Stack flex={5} px={"md"} mih={0}>
+          <Table />
+          {/*<ScrollArea flex={1} h={"100%"}>*/}
+          {/*  <Table />*/}
+          {/*</ScrollArea>*/}
+        </Stack>
+      </Flex>
+    </Stack>
   );
 };
 

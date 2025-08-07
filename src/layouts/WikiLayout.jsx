@@ -4,8 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { WikiSideBar } from "@/components";
 import { useParams } from "react-router-dom";
 
-const WikiLayout = () => {
-  const { wikiId } = useParams();
+const WikiLayout = ({ wikiId }) => {
   // region 初始化
 
   useEffect(() => {
@@ -15,7 +14,9 @@ const WikiLayout = () => {
     };
   }, []);
 
-  const initialize = async () => {};
+  const initialize = async () => {
+    console.log("知识库", wikiId);
+  };
 
   const onDestroy = async () => {};
 

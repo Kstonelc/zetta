@@ -38,6 +38,7 @@ const WikiCreate = () => {
   const [active, setActive] = useState(1);
   const [wikiType, setWikiType] = useState(null);
   const [similarityThreshold, setSimilarityThreshold] = useState(0.1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nextStep = () =>
     setActive((current) => (current < 3 ? current + 1 : current));
@@ -85,18 +86,21 @@ const WikiCreate = () => {
       });
       return;
     }
+    setIsSubmitting(true);
     const response = await appHelper.apiPost("/wiki/create-wiki", values);
     if (!response.ok) {
       notify({
         type: "error",
         message: response.message,
       });
+      setIsSubmitting(false);
       return;
     }
     notify({
       type: "success",
       message: response.message,
     });
+    setIsSubmitting(false);
     nav(-1);
   };
 
@@ -314,8 +318,7 @@ const WikiCreate = () => {
         </ScrollArea>
         <Divider my={"sm"} />
         <Group>
-          <Button>下一步</Button>
-          <Button variant={"subtle"} type={"submit"}>
+          <Button variant={"subtle"} type={"submit"} disabled={isSubmitting}>
             创建空的知识库
           </Button>
           <Button
@@ -327,6 +330,7 @@ const WikiCreate = () => {
           >
             取消
           </Button>
+          <Button>下一步</Button>
         </Group>
       </form>
       <WikiCreateCancelModal

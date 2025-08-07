@@ -45,15 +45,19 @@ const Router = createBrowserRouter([
         element: <WikiCreate />,
       },
       {
-        path: "wiki",
+        path: "wiki/detail",
         element: <WikiLayout />,
         children: [
           {
-            path: ":wikiId/docs",
+            index: true,
+            element: <Navigate to="docs" replace />,
+          },
+          {
+            path: "docs",
             element: <WikiDetail />,
           },
           {
-            path: "detail/edit",
+            path: "settings",
             element: <WikiDetailEdit />,
           },
         ],

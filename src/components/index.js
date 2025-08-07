@@ -5,3 +5,4 @@ export * from "./common/Drawer";
 export * from "./chatbox";
 export * from "./tiptap";
 export * from "./sidebar/WikiSideBar";
+export * from "./common/Table";

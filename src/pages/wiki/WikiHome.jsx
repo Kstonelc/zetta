@@ -204,7 +204,11 @@ const WikiHome = () => {
           <Grid gutter="md">
             {wikiData.map((item, index) => (
               <Grid.Col key={index} span={{ base: 12, sm: 6, md: 3 }}>
-                <WikiHomeCard name={item.name} desc={item.desc} />
+                <WikiHomeCard
+                  name={item.name}
+                  desc={item.desc}
+                  wikiId={item.id}
+                />
               </Grid.Col>
             ))}
           </Grid>
