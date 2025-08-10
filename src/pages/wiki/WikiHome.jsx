@@ -68,7 +68,6 @@ const WikiHome = () => {
   const getWiki = async () => {
     setIsLoading(true);
     const response = await appHelper.apiPost("/wiki/find-wikis", {
-      userId: userStore.id,
       tenantId: userStore.current_tenant.id,
     });
     if (!response.ok) {

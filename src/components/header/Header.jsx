@@ -92,7 +92,7 @@ const Header = () => {
                 color={theme.colors.gray[6]}
                 leftSection={
                   <Avatar color={theme.colors.blue[8]} radius="xl" size={"sm"}>
-                    KS
+                    {userStore.name.slice(0, 2).toUpperCase()}
                   </Avatar>
                 }
                 rightSection={<ChevronsUpDown size={16} />}
@@ -157,7 +157,7 @@ const Header = () => {
       <Menu shadow="md" width={250} radius={"md"}>
         <Menu.Target>
           <Avatar color={theme.colors.blue[8]} radius="xl">
-            KS
+            {userStore.name.slice(0, 2).toUpperCase()}
           </Avatar>
         </Menu.Target>
 
@@ -165,15 +165,17 @@ const Header = () => {
           <Menu.Item>
             <Group justify={"space-between"}>
               <Flex direction={"column"}>
-                <Text fw={"bold"}>liuchang</Text>
+                <Text fw={"bold"} maw={120}>
+                  {userStore.name}
+                </Text>
                 <Box w={"160"}>
                   <Text size={"sm"} c={"dimmed"} truncate="end">
-                    liuchang@yrobot.com
+                    {userStore.email}
                   </Text>
                 </Box>
               </Flex>
               <Avatar color={theme.colors.blue[8]} radius="xl">
-                KS
+                {userStore.name.slice(0, 2).toUpperCase()}
               </Avatar>
             </Group>
           </Menu.Item>

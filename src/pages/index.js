@@ -6,5 +6,6 @@ export * from "./agent/Agent";
 export * from "./settings/UserSettings";
 export * from "./user/UserLogin";
 export * from "./user/UserRegister";
+export * from "./user/UserActivate";
 export * from "./user/UserForgotPassword";
 export * from "./NotFound";

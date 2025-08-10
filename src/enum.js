@@ -80,11 +80,13 @@ export class UserStatus {
 export class UserRole {
   static {
     // 枚举值
+    this.Owner = "owner";
     this.Admin = "admin";
     this.Editor = "editor";
     this.Visitor = "visitor";
     // 文本
     this.text = {};
+    this.text[this.Owner] = "所有者";
     this.text[this.Admin] = "管理员";
     this.text[this.Editor] = "编辑";
     this.text[this.Visitor] = "访客";

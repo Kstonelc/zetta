@@ -46,7 +46,8 @@ const UserRegister = () => {
       },
       firstName: (value) => (value.trim() ? null : "名不能为空"),
       email: (value) => (/^\S+@\S+$/.test(value) ? null : "邮箱地址无效"),
-      password: (value) => (value.length >= 8 ? null : "密码至少需要8个字符"),
+      password: (value) =>
+        value.length >= 8 && value.length <= 32 ? null : "密码6-32个字符",
       confirmPassword: (value, values) =>
         value === values.password ? null : "密码不匹配",
     },

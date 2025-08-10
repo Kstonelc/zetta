@@ -78,6 +78,7 @@ const TenantUsersSetting = ({ tenant }) => {
   }, [tenant]);
 
   const initialize = async () => {
+    console.log(111, userStore.role);
     setTenantInfo(tenant);
     editTenantForm.setValues({ tenantName: tenant.name });
   };
@@ -89,9 +90,9 @@ const TenantUsersSetting = ({ tenant }) => {
     return (
       <Table.Thead>
         <Table.Tr>
-          <Table.Th>姓名</Table.Th>
+          <Table.Th miw={150}>姓名</Table.Th>
           <Table.Th>邮箱</Table.Th>
-          <Table.Th>状态</Table.Th>
+          <Table.Th miw={80}>状态</Table.Th>
           <Table.Th>角色</Table.Th>
         </Table.Tr>
       </Table.Thead>
@@ -141,7 +142,7 @@ const TenantUsersSetting = ({ tenant }) => {
                 <Menu
                   radius={"md"}
                   width={200}
-                  disabled={userStore.id === user.id && true}
+                  disabled={!(userStore.role === UserRole.Owner)}
                 >
                   <Menu.Target>
                     <Button
@@ -229,6 +230,16 @@ const TenantUsersSetting = ({ tenant }) => {
     setTenantInfo(response.data);
     setIsEditTenantModalVisible(false);
   };
+
+  const isOwner = () => {
+    return (
+      appHelper.getLength(tenantInfo) &&
+      tenantInfo.users.some(
+        (user) => user.id === userStore.id && user.role === UserRole.Owner,
+      )
+    );
+  };
+
   //endregion
 
   return (
@@ -259,30 +270,34 @@ const TenantUsersSetting = ({ tenant }) => {
               >
                 {tenantInfo.name}的工作空间
               </Text>
-              <ActionIcon
-                variant={"subtle"}
-                color={theme.colors.gray[7]}
-                onClick={() => {
-                  setIsEditTenantModalVisible(true);
-                }}
-              >
-                <SquarePen size={16} color={theme.colors.gray[7]} />
-              </ActionIcon>
+              {isOwner() && (
+                <ActionIcon
+                  variant={"subtle"}
+                  color={theme.colors.gray[7]}
+                  onClick={() => {
+                    setIsEditTenantModalVisible(true);
+                  }}
+                >
+                  <SquarePen size={16} color={theme.colors.gray[7]} />
+                </ActionIcon>
+              )}
             </Group>
             <Text size={"xs"} c={"dimmed"}>
               {appHelper.getLength(tenant.users)}个成员
             </Text>
           </Stack>
         </Group>
-        <Button
-          leftSection={<UserRoundPlus size={18} />}
-          size={"xs"}
-          onClick={() => {
-            setIsAddUserModalVisible(true);
-          }}
-        >
-          邀请
-        </Button>
+        {isOwner() && (
+          <Button
+            leftSection={<UserRoundPlus size={18} />}
+            size={"xs"}
+            onClick={() => {
+              setIsAddUserModalVisible(true);
+            }}
+          >
+            邀请
+          </Button>
+        )}
       </Group>
       <Table stickyHeader stickyHeaderOffset={60}>
         {renderTenantUsersColumns()}

@@ -161,7 +161,7 @@ const WikiCreate = () => {
         </Stepper>
       </Group>
       <form onSubmit={wikiCreateForm.onSubmit(onCreateBlankWiki)}>
-        <ScrollArea>
+        <ScrollArea h={"75vh"}>
           <Text size={"lg"} fw={"bold"} mb={"md"}>
             知识库配置
           </Text>
@@ -333,10 +333,7 @@ const WikiCreate = () => {
           <Button>下一步</Button>
         </Group>
       </form>
-      <WikiCreateCancelModal
-        opened={false}
-        onClose={() => {}}
-      ></WikiCreateCancelModal>
+      <WikiCreateCancelModal opened={false} onClose={() => {}} />
     </Stack>
   );
 };

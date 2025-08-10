@@ -12,6 +12,7 @@ import {
   WikiCreate,
   WikiDetailEdit,
   NotFound,
+  UserActivate,
 } from "../pages";
 
 const AuthGuard = ({ children }) => {
@@ -74,6 +75,7 @@ const Router = createBrowserRouter([
       { index: true, element: <UserLogin /> },
       { path: "login", element: <UserLogin /> },
       { path: "register", element: <UserRegister /> },
+      { path: "activate", element: <UserActivate /> },
       { path: "reset-password", element: <UserForgotPassword /> },
     ],
   },

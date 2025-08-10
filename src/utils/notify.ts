@@ -16,7 +16,7 @@ export function useNotify() {
   const notify = ({
     message,
     type = "info",
-    position = "top-left",
+    position = "top-right",
     autoClose = 3000,
   }: {
     message: string;
