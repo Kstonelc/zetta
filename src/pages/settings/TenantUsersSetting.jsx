@@ -48,14 +48,14 @@ const TenantUsersSetting = ({ tenant }) => {
     },
 
     validate: {
-      emails: (values) => {
+      userEmails: (values) => {
         if (!appHelper.isArray(values) || values.length === 0) {
           return "请输入邮箱";
         }
         const isValid = values.every((email) => /^\S+@\S+$/.test(email));
         return isValid ? null : "无效邮箱";
       },
-      role: (value) => {
+      userRole: (value) => {
         return value.trim() ? null : "角色不能为空";
       },
     },
@@ -231,6 +231,27 @@ const TenantUsersSetting = ({ tenant }) => {
     setIsEditTenantModalVisible(false);
   };
 
+  const onInviteUsers = async (values) => {
+    const response = await appHelper.apiPost("/user/invite-user", {
+      userEmail: values.userEmails,
+      fromUserId: userStore.id,
+      userRole: values.userRole,
+      tenantId: tenantInfo.id,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
+    notify({
+      type: "success",
+      message: response.message,
+    });
+    setIsAddUserModalVisible(false);
+  };
+
   const isOwner = () => {
     return (
       appHelper.getLength(tenantInfo) &&
@@ -312,7 +333,9 @@ const TenantUsersSetting = ({ tenant }) => {
         keepMounted={false}
         title={<Text fw={"bold"}>邀请新成员</Text>}
       >
-        <form onSubmit={addUserForm.onSubmit((values) => console.log(values))}>
+        <form
+          onSubmit={addUserForm.onSubmit((values) => onInviteUsers(values))}
+        >
           <Stack gap={"xs"}>
             <TagsInput
               label="邮箱"

@@ -14,7 +14,7 @@ import {
 import zettaLogo from "@/assets/zetta-logo.svg";
 import { Sparkles } from "lucide-react";
 import React, { useEffect, useRef } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useForm } from "@mantine/form";
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify";
@@ -22,6 +22,7 @@ import { useNotify } from "@/utils/notify";
 const UserActivate = () => {
   const { search } = useLocation(); // 获取 "?email=...&token=..."
   const query = new URLSearchParams(search);
+  const nav = useNavigate();
   const { notify } = useNotify();
   const formActivate = useForm({
     initialValues: {
@@ -30,7 +31,7 @@ const UserActivate = () => {
     },
     validate: {
       password: (value) =>
-        value.length >= 8 && value.length <= 32 ? null : "密码6-32个字符",
+        value.length >= 6 && value.length <= 32 ? null : "密码6-32个字符",
       confirmPassword: (value, values) =>
         value === values.password ? null : "密码不一致",
     },
@@ -74,6 +75,14 @@ const UserActivate = () => {
       });
       return;
     }
+    notify({
+      type: "success",
+      message: response.message,
+    });
+    // 应该直接登录
+    nav({
+      pathname: "/user/login",
+    });
   };
 
   //endregion

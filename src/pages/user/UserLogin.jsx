@@ -40,9 +40,7 @@ const UserLogin = () => {
       name: (value) => (value.trim() ? null : "名不能为空"),
       email: (value) => (/^\S+@\S+$/.test(value) ? null : "邮箱地址无效"),
       password: (value) =>
-        /^(?=.*[A-Za-z])(?=.*\d).{8,}$/.test(value)
-          ? null
-          : "至少8位, 包含数字和字母",
+        value.length >= 6 && value.length <= 32 ? null : "密码6-32个字符",
     },
   });
 
@@ -56,7 +54,7 @@ const UserLogin = () => {
     validate: {
       email: (value) => (/^\S+@\S+$/.test(value) ? null : "邮箱地址无效"),
       password: (value) =>
-        value.length >= 8 && value.length <= 32 ? null : "密码6-32个字符",
+        value.length >= 6 && value.length <= 32 ? null : "密码6-32个字符",
     },
   });
 

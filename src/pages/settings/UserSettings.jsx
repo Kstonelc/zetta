@@ -111,12 +111,12 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
       keepMounted={false}
       styles={{
         header: {
-          paddingLeft: "30%",
-          paddingRight: "30%",
+          paddingLeft: "20%",
+          paddingRight: "20%",
         },
         body: {
-          paddingLeft: "30%",
-          paddingRight: "30%",
+          paddingLeft: "25%",
+          paddingRight: "25%",
         },
       }}
       opened={isUserSettingOpen}
