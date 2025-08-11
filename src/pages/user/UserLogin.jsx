@@ -4,7 +4,6 @@ import {
   Card,
   Button,
   Group,
-  Divider,
   Image,
   Stack,
   Center,
