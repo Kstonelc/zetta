@@ -17,12 +17,14 @@ import {
   ScrollArea,
   Avatar,
 } from "@mantine/core";
+import ReactMarkdown from "react-markdown";
 import { ChatBox } from "@/components";
 
 import classes from "./Agent.module.scss";
 import { MessagesSquare, FileUp, Box, Sparkles, ArrowUp } from "lucide-react";
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import appHelper from "@/AppHelper.js";
 
 const Agent = () => {
   const theme = useMantineTheme();
@@ -39,18 +41,53 @@ const Agent = () => {
 
   const chatContentRef = useRef(null);
 
-  const handleSend = () => {
+  useEffect(() => {
+    if (chatContentRef.current) {
+      chatContentRef.current.scrollTo({
+        top: chatContentRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
     if (!input.trim()) return;
 
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
+    // 清空输入框
     setInput("");
 
-    // 模拟 AI 回复
-    setTimeout(() => {
-      const botReply = { role: "assistant", content: "收到！" };
-      setMessages((prev) => [...prev, botReply]);
-    }, 600);
+    const assistantMessage = { role: "assistant", content: "" };
+
+    // 先占位空 assistant 回复
+    setMessages((prev) => [...prev, assistantMessage]);
+
+    const result = await appHelper.apiFetch("/conversation/send-message", {
+      prompt: input,
+    });
+
+    const reader = result.response.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value, { stream: true });
+
+      // 实时更新 assistant 的内容
+      setMessages((prev) => {
+        const updated = [...prev];
+        const last = updated[updated.length - 1];
+        updated[updated.length - 1] = {
+          role: "assistant", // 强制带上 role
+          content: last.content + chunk,
+        };
+        console.log(111, updated);
+        return updated;
+      });
+    }
   };
   const renderChatBox = () => {
     return (
@@ -64,34 +101,35 @@ const Agent = () => {
         type="never"
       >
         <Stack gap="md" py="xs">
-          {messages.map((msg, idx) => (
+          {messages.map((msg, id) => (
             <Flex
-              key={idx}
+              key={id}
               justify={msg.role === "user" ? "flex-end" : "flex-start"}
             >
-              <Group>
+              <Group justify={msg.role === "user" ? "flex-end" : "flex-start"}>
                 {msg.role === "assistant" && (
                   <Avatar variant={"light"} color={theme.colors.violet[7]}>
                     ZE
                   </Avatar>
                 )}
                 <Paper
+                  flex={1}
                   bg={
                     msg.role === "user"
                       ? theme.colors.blue[5]
                       : theme.colors.gray[1]
                   }
-                  p="sm"
+                  px={"xs"}
                   radius="md"
                   withBorder
                   shadow="xs"
-                  maw="80%"
+                  maw="70%"
                 >
                   <Text
                     size="sm"
                     c={msg.role === "user" ? theme.white : theme.colors.dark[8]}
                   >
-                    {msg.content}
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
                   </Text>
                 </Paper>
                 {msg.role === "user" && (

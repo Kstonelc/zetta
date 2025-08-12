@@ -89,7 +89,14 @@ export class UserRole {
     this.text[this.Owner] = "所有者";
     this.text[this.Admin] = "管理员";
     this.text[this.Editor] = "编辑";
-    this.text[this.Visitor] = "访客";
+    this.text[this.Visitor] = "查看";
+
+    // 描述
+    this.desc = {};
+    this.desc[this.Owner] = "所有功能";
+    this.desc[this.Admin] = "管理所有功能";
+    this.desc[this.Editor] = "编辑功能";
+    this.desc[this.Visitor] = "查看使用";
   }
 
   static getOptions() {
@@ -97,14 +104,17 @@ export class UserRole {
       {
         value: this.Admin,
         label: this.text[this.Admin],
+        desc: this.desc[this.Admin],
       },
       {
         value: this.Editor,
         label: this.text[this.Editor],
+        desc: this.desc[this.Editor],
       },
       {
         value: this.Visitor,
         label: this.text[this.Visitor],
+        desc: this.desc[this.Visitor],
       },
     ];
   }

@@ -142,7 +142,10 @@ const TenantUsersSetting = ({ tenant }) => {
                 <Menu
                   radius={"md"}
                   width={200}
-                  disabled={!(userStore.role === UserRole.Owner)}
+                  disabled={
+                    !(userStore.role === UserRole.Owner) ||
+                    userStore.id === user.id
+                  }
                 >
                   <Menu.Target>
                     <Button
@@ -154,42 +157,62 @@ const TenantUsersSetting = ({ tenant }) => {
                     </Button>
                   </Menu.Target>
                   <Menu.Dropdown p={4}>
-                    <Menu.Item>
-                      <Group justify={"space-between"}>
+                    {UserRole.getOptions().map((option) => (
+                      <Menu.Item key={option} onClick={() => {}}>
                         <Stack gap={"0"}>
-                          <Text size={"sm"} fw={"bold"}>
-                            管理员
-                          </Text>
+                          <Group justify={"space-between"}>
+                            <Text size={"sm"} fw={"bold"}>
+                              {option.label}
+                            </Text>
+                            {user.role === option.value && (
+                              <UserRoundCheck
+                                size={20}
+                                color={theme.colors.blue[8]}
+                              />
+                            )}
+                          </Group>
                           <Text size={"xs"} c={"dimmed"}>
-                            拥有最高权限
+                            {option.desc}
                           </Text>
                         </Stack>
-                        <UserRoundCheck
-                          size={20}
-                          color={theme.colors.blue[8]}
-                        />
-                      </Group>
-                    </Menu.Item>
-                    <Menu.Item>
-                      <Stack gap={"0"}>
-                        <Text size={"sm"} fw={"bold"}>
-                          编辑
-                        </Text>
-                        <Text size={"xs"} c={"dimmed"}>
-                          可以编辑创建应用程序
-                        </Text>
-                      </Stack>
-                    </Menu.Item>
-                    <Menu.Item>
-                      <Stack gap={"0"}>
-                        <Text size={"sm"} fw={"bold"}>
-                          查看
-                        </Text>
-                        <Text size={"xs"} c={"dimmed"}>
-                          仅使用
-                        </Text>
-                      </Stack>
-                    </Menu.Item>
+                      </Menu.Item>
+                    ))}
+                    {/*<Menu.Item>*/}
+                    {/*  <Group justify={"space-between"}>*/}
+                    {/*    <Stack gap={"0"}>*/}
+                    {/*      <Text size={"sm"} fw={"bold"}>*/}
+                    {/*        管理员*/}
+                    {/*      </Text>*/}
+                    {/*      <Text size={"xs"} c={"dimmed"}>*/}
+                    {/*        拥有最高权限*/}
+                    {/*      </Text>*/}
+                    {/*    </Stack>*/}
+                    {/*    <UserRoundCheck*/}
+                    {/*      size={20}*/}
+                    {/*      color={theme.colors.blue[8]}*/}
+                    {/*    />*/}
+                    {/*  </Group>*/}
+                    {/*</Menu.Item>*/}
+                    {/*<Menu.Item>*/}
+                    {/*  <Stack gap={"0"}>*/}
+                    {/*    <Text size={"sm"} fw={"bold"}>*/}
+                    {/*      编辑*/}
+                    {/*    </Text>*/}
+                    {/*    <Text size={"xs"} c={"dimmed"}>*/}
+                    {/*      可以编辑创建应用程序*/}
+                    {/*    </Text>*/}
+                    {/*  </Stack>*/}
+                    {/*</Menu.Item>*/}
+                    {/*<Menu.Item>*/}
+                    {/*  <Stack gap={"0"}>*/}
+                    {/*    <Text size={"sm"} fw={"bold"}>*/}
+                    {/*      查看*/}
+                    {/*    </Text>*/}
+                    {/*    <Text size={"xs"} c={"dimmed"}>*/}
+                    {/*      仅使用*/}
+                    {/*    </Text>*/}
+                    {/*  </Stack>*/}
+                    {/*</Menu.Item>*/}
                     <Divider my={2} />
                     <Menu.Item>
                       <Group justify={"space-between"}>

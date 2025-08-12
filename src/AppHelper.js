@@ -48,6 +48,42 @@ class AppHelper {
     }
   }
 
+  async apiFetch(url, data) {
+    try {
+      if (!data) data = {};
+
+      const accessToken = this.getAccessToken();
+      const apiUrl = url.startsWith("http")
+        ? url
+        : this.combineUrls(this.config.apiUrl, url);
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        return { ok: false, message: response.statusText, response };
+      }
+
+      return { ok: true, response };
+    } catch (e) {
+      return {
+        ok: false,
+        message:
+          e.name === "AbortError"
+            ? "请求超时"
+            : e.name === "TypeError"
+              ? "网络错误或服务不可达"
+              : e.message,
+      };
+    }
+  }
+
   //endregion
 
   //region LocalStorage 持久化数据
