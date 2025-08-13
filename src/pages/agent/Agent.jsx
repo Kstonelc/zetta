@@ -7,6 +7,7 @@ import {
   Select,
   Title,
   ActionIcon,
+  Popover,
   Textarea,
   useMantineTheme,
   Menu,
@@ -14,12 +15,11 @@ import {
   Button,
   Paper,
   Divider,
-  Pill,
-  Transition,
   ScrollArea,
   Avatar,
 } from "@mantine/core";
 import ReactMarkdown from "react-markdown";
+import { getHotkeyHandler } from "@mantine/hooks";
 import { ChatBox } from "@/components";
 
 import classes from "./Agent.module.scss";
@@ -34,9 +34,12 @@ import {
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import React, { useEffect, useRef, useState } from "react";
 import appHelper from "@/AppHelper.js";
+import { useNotify } from "@/utils/notify.js";
 
 const Agent = () => {
   const theme = useMantineTheme();
+  const notify = useNotify();
+
   const [input, setInput] = useState("");
   const [isNewChat, setIsNewChat] = useState(false);
   const [messages, setMessages] = useState([
@@ -177,83 +180,92 @@ const Agent = () => {
         ) : (
           renderChatBox()
         )}
-        <Card shadow={"sm"} w={"70%"} mb={"lg"} withBorder>
-          <Transition
-            transition="slide-up"
-            duration={500}
-            mounted={isWikiEnable}
-          >
-            {(styles) => (
-              <Group style={styles}>
-                <Pill withRemoveButton c={theme.colors.blue[7]}>
-                  Zetta
-                </Pill>
-              </Group>
-            )}
-          </Transition>
-          <Textarea
-            autosize
-            minRows={1}
-            maxRows={4}
-            value={input}
-            variant={"unstyled"}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            placeholder={"@知识库或直接提问"}
-            w={"100%"}
-            size={"md"}
-            mb={"xs"}
-          />
-          <Group justify={"space-between"}>
-            <Group>
-              <ActionIcon
-                variant={"subtle"}
-                bg={theme.colors.gray[1]}
-                onClick={() => {
-                  setIsWikiEnable(!isWikiEnable);
+        <Popover
+          width={200}
+          opened={isWikiEnable}
+          position="left-end"
+          offset={5}
+        >
+          <Popover.Target>
+            <Card shadow={"sm"} w={"70%"} mb={"lg"} withBorder>
+              <Textarea
+                disabled={isWikiEnable}
+                autosize
+                onKeyDown={getHotkeyHandler([
+                  ["enter", () => handleSend()],
+                  ["mod+Enter", () => handleSend()],
+                ])}
+                minRows={1}
+                maxRows={4}
+                value={input}
+                variant={"unstyled"}
+                onChange={(e) => {
+                  const inputValue = e.currentTarget.value;
+                  if (inputValue.length === 1 && inputValue[0] === "@") {
+                    setIsWikiEnable(true);
+                  } else if (inputValue.length === 0) {
+                    setIsWikiEnable(false);
+                  }
+                  setInput(inputValue);
                 }}
-              >
-                <BookOpen size={18} color={theme.colors.gray[7]} />
-              </ActionIcon>
-              <ActionIcon variant={"subtle"} bg={theme.colors.gray[1]}>
-                <FileUp size={18} color={theme.colors.gray[7]} />
-              </ActionIcon>
-              <Select
-                maw={200}
-                withCheckIcon={true}
-                leftSectionPointerEvents="none"
-                leftSection={
-                  <Box
-                    size={16}
-                    color={theme.colors.gray[7]}
-                    style={{
-                      marginTop: 2,
-                    }}
-                  />
-                }
-                data={["DeepSeek", "Qwen"]}
-                size={"xs"}
-              ></Select>
-              <Button
-                variant="gradient"
-                leftSection={<Sparkles size={16} />}
-                size={"xs"}
-                gradient={{ from: "grape", to: "cyan", deg: 90 }}
-              >
-                深度思考
-              </Button>
-            </Group>
-            <ActionIcon
-              size="lg"
-              variant={"light"}
-              bdrs={"lg"}
-              onClick={() => {
-                handleSend();
-              }}
-            >
-              <ArrowUp size={24} />
-            </ActionIcon>
-          </Group>
-        </Card>
+                placeholder={"@知识库或直接提问"}
+                w={"100%"}
+                size={"md"}
+                mb={"xs"}
+              />
+              <Group justify={"space-between"}>
+                <Group>
+                  <ActionIcon variant={"subtle"} bg={theme.colors.gray[1]}>
+                    <FileUp size={18} color={theme.colors.gray[7]} />
+                  </ActionIcon>
+                  <Select
+                    maw={200}
+                    withCheckIcon={true}
+                    leftSectionPointerEvents="none"
+                    leftSection={
+                      <Box
+                        size={16}
+                        color={theme.colors.gray[7]}
+                        style={{
+                          marginTop: 2,
+                        }}
+                      />
+                    }
+                    data={["DeepSeek", "Qwen"]}
+                    size={"xs"}
+                  ></Select>
+                  <Button
+                    variant="gradient"
+                    leftSection={
+                      <Sparkles size={16} color={theme.colors.yellow[3]} />
+                    }
+                    size={"xs"}
+                    gradient={{ from: "grape", to: "cyan", deg: 90 }}
+                  >
+                    深度思考
+                  </Button>
+                </Group>
+                <ActionIcon
+                  size="lg"
+                  variant={"light"}
+                  bdrs={"lg"}
+                  onClick={async () => {
+                    await handleSend();
+                  }}
+                >
+                  <ArrowUp size={24} />
+                </ActionIcon>
+              </Group>
+            </Card>
+          </Popover.Target>
+          <Popover.Dropdown>
+            <Menu>
+              <Menu.Item>
+                <Text size={"xs"}>Zetta</Text>
+              </Menu.Item>
+            </Menu>
+          </Popover.Dropdown>
+        </Popover>
       </Stack>
     </Flex>
   );
