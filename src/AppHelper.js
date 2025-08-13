@@ -1,5 +1,6 @@
 import axios from "axios";
 import { HttpStatus } from "@/enum";
+import React from "react";
 import config from "../app.json";
 
 class AppHelper {
@@ -49,6 +50,10 @@ class AppHelper {
   }
 
   async apiFetch(url, data) {
+    const TIMEOUT_MS = 5000; // 5s 超时
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
     try {
       if (!data) data = {};
 
@@ -64,12 +69,12 @@ class AppHelper {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(data),
+        signal: controller.signal,
       });
 
       if (!response.ok) {
         return { ok: false, message: response.statusText, response };
       }
-
       return { ok: true, response };
     } catch (e) {
       return {
@@ -81,6 +86,8 @@ class AppHelper {
               ? "网络错误或服务不可达"
               : e.message,
       };
+    } finally {
+      clearTimeout(timer);
     }
   }
 
@@ -183,6 +190,10 @@ class AppHelper {
       }
     }
     return url;
+  }
+
+  isReactElement(element) {
+    return React.isValidElement(element);
   }
 
   //endregion

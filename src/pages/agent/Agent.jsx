@@ -14,6 +14,8 @@ import {
   Button,
   Paper,
   Divider,
+  Pill,
+  Transition,
   ScrollArea,
   Avatar,
 } from "@mantine/core";
@@ -21,7 +23,14 @@ import ReactMarkdown from "react-markdown";
 import { ChatBox } from "@/components";
 
 import classes from "./Agent.module.scss";
-import { MessagesSquare, FileUp, Box, Sparkles, ArrowUp } from "lucide-react";
+import {
+  MessagesSquare,
+  FileUp,
+  Box,
+  Sparkles,
+  ArrowUp,
+  BookOpen,
+} from "lucide-react";
 import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import React, { useEffect, useRef, useState } from "react";
 import appHelper from "@/AppHelper.js";
@@ -34,10 +43,10 @@ const Agent = () => {
     { role: "user", content: "你好!" },
     {
       role: "assistant",
-      content:
-        "你好，我是 AI，有什么可以帮你？你好，我是 AI，有什么可以帮你？你好，我是好，我是 AI，有什么可以帮你？你好，好，我是 AI，有什么可以帮你？你好，好，我是 AI，有什么可以帮你？你好，好，我是 AI，有什么可以帮你？你好，好，我是 AI，有什么可以帮你？你好，？ AI，有什么可以帮你？ AI，有什么可以帮你？ AI，有什么可以帮你？ AI，有什么可以帮你？",
+      content: "你好，我是 AI，有什么可以帮你？",
     },
   ]);
+  const [isWikiEnable, setIsWikiEnable] = useState(false);
 
   const chatContentRef = useRef(null);
 
@@ -81,10 +90,10 @@ const Agent = () => {
         const updated = [...prev];
         const last = updated[updated.length - 1];
         updated[updated.length - 1] = {
-          role: "assistant", // 强制带上 role
+          role: "assistant",
           content: last.content + chunk,
         };
-        console.log(111, updated);
+        console.log("updated", updated);
         return updated;
       });
     }
@@ -169,6 +178,19 @@ const Agent = () => {
           renderChatBox()
         )}
         <Card shadow={"sm"} w={"70%"} mb={"lg"} withBorder>
+          <Transition
+            transition="slide-up"
+            duration={500}
+            mounted={isWikiEnable}
+          >
+            {(styles) => (
+              <Group style={styles}>
+                <Pill withRemoveButton c={theme.colors.blue[7]}>
+                  Zetta
+                </Pill>
+              </Group>
+            )}
+          </Transition>
           <Textarea
             autosize
             minRows={1}
@@ -176,13 +198,22 @@ const Agent = () => {
             value={input}
             variant={"unstyled"}
             onChange={(e) => setInput(e.currentTarget.value)}
-            placeholder={"请输入你的问题"}
+            placeholder={"@知识库或直接提问"}
             w={"100%"}
             size={"md"}
             mb={"xs"}
           />
           <Group justify={"space-between"}>
             <Group>
+              <ActionIcon
+                variant={"subtle"}
+                bg={theme.colors.gray[1]}
+                onClick={() => {
+                  setIsWikiEnable(!isWikiEnable);
+                }}
+              >
+                <BookOpen size={18} color={theme.colors.gray[7]} />
+              </ActionIcon>
               <ActionIcon variant={"subtle"} bg={theme.colors.gray[1]}>
                 <FileUp size={18} color={theme.colors.gray[7]} />
               </ActionIcon>
