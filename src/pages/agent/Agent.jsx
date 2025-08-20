@@ -189,7 +189,6 @@ const Agent = () => {
           <Popover.Target>
             <Card shadow={"sm"} w={"70%"} mb={"lg"} withBorder>
               <Textarea
-                disabled={isWikiEnable}
                 autosize
                 onKeyDown={getHotkeyHandler([
                   ["enter", () => handleSend()],
