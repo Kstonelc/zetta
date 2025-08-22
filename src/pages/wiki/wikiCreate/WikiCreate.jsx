@@ -8,6 +8,7 @@ import {
   TextInput,
   Card,
   Divider,
+  Image,
   Radio,
   Select,
   Textarea,
@@ -17,12 +18,13 @@ import {
 } from "@mantine/core";
 import React, { useEffect, useState } from "react";
 import { useForm } from "@mantine/form";
-import { ArrowLeft, FileText, LayoutPanelTop } from "lucide-react";
+import { ArrowLeft, FileText, LayoutPanelTop, Files } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ModelType, WikiType } from "@/enum";
 import classes from "./WikiCreate.module.scss";
 import { WikiCreateCancelModal } from "@/pages/wiki/wikiCreate/modal/WikiCreateCancelModal.jsx";
 import appHelper from "@/AppHelper.js";
+import Notion from "@/assets/wiki/notion.svg";
 import { useNotify } from "@/utils/notify.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 
@@ -31,19 +33,33 @@ const WikiCreate = () => {
   const nav = useNavigate();
   const { userStore, setUserStore } = useUserStore();
   const { notify } = useNotify();
-  const wikiCreateForm = useForm();
+  const wikiCreateForm = useForm({
+    initialValues: {
+      wikiName: "",
+      wikiDesc: "",
+      wikiSimThresh: 0.1,
+      embeddingModel: "",
+      rerankModel: "",
+    },
+    validate: {
+      wikiName: (value) => (value.trim() ? null : "名称不能为空"),
+      wikiDesc: (value) => (value.trim() ? null : "描述不能为空"),
+      wikiEmbeddingId: (value) => (value ? null : "请选择Embedding模型"),
+      wikiRerankId: (value) => (value ? null : "请选择Rerank模型"),
+    },
+  });
 
   const [embeddingModels, setEmbeddingModels] = useState([]);
   const [rerankModels, setRerankModels] = useState([]);
-  const [active, setActive] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1);
   const [wikiType, setWikiType] = useState(null);
   const [similarityThreshold, setSimilarityThreshold] = useState(0.1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nextStep = () =>
-    setActive((current) => (current < 3 ? current + 1 : current));
+    setCurrentStep((current) => (current < 3 ? current + 1 : current));
   const prevStep = () =>
-    setActive((current) => (current > 0 ? current - 1 : current));
+    setCurrentStep((current) => (current > 0 ? current - 1 : current));
 
   // region 初始化
 
@@ -148,8 +164,8 @@ const WikiCreate = () => {
           返回
         </Button>
         <Stepper
-          active={active}
-          onStepClick={setActive}
+          active={currentStep}
+          onStepClick={setCurrentStep}
           allowNextStepsSelect={false}
           size={"xs"}
           className={classes.absoluteCenter}
@@ -160,179 +176,213 @@ const WikiCreate = () => {
           <Stepper.Step label="完成" />
         </Stepper>
       </Group>
-      <form onSubmit={wikiCreateForm.onSubmit(onCreateBlankWiki)}>
-        <ScrollArea h={"75vh"}>
-          <Text size={"lg"} fw={"bold"} mb={"md"}>
-            知识库配置
-          </Text>
-          <Stack w={"600"}>
-            <TextInput
-              label={"名称"}
-              key={wikiCreateForm.key("wikiName")}
-              placeholder={"请输入知识库名称"}
-              withAsterisk
-              {...wikiCreateForm.getInputProps("wikiName")}
-            />
-            <Textarea
-              label={"描述"}
-              key={wikiCreateForm.key("wikiDesc")}
-              description={"简单介绍一下知识库"}
-              placeholder={"请输入知识库描述"}
-              {...wikiCreateForm.getInputProps("wikiDesc")}
-            />
-            <Group gap={2}>
-              <Text size={"sm"} fw={"bold"}>
-                数据类型
-              </Text>
-              <Text c={theme.colors.red[8]}>*</Text>
-            </Group>
-            <Group>
-              <Card
-                onClick={() => {
-                  setWikiType(WikiType.Structured);
-                }}
-                flex={1}
-                bg={
-                  wikiType === WikiType.Structured
-                    ? theme.colors.blue[0]
-                    : "transparent"
-                }
-                style={{
-                  border:
-                    wikiType === WikiType.Structured &&
-                    `1px solid ${theme.colors.blue[3]}`,
-                }}
-              >
-                <Group justify={"space-between"} mb={"md"}>
-                  <Group gap={"xs"}>
-                    <LayoutPanelTop size={30} color={theme.colors.blue[8]} />
-                    <Text size={"sm"}>结构化数据</Text>
-                  </Group>
-                  <Radio
-                    size={"xs"}
-                    checked={wikiType === WikiType.Structured}
-                  />
-                </Group>
-                <Text c={"dimmed"} size={"xs"}>
-                  标准结构化数据
+      {currentStep === 1 && (
+        <form onSubmit={wikiCreateForm.onSubmit(onCreateBlankWiki)}>
+          <ScrollArea h={"75vh"}>
+            <Text size={"lg"} fw={"bold"} mb={"md"}>
+              知识库配置
+            </Text>
+            <Stack w={"600"}>
+              <TextInput
+                label={"名称"}
+                key={wikiCreateForm.key("wikiName")}
+                placeholder={"请输入知识库名称"}
+                withAsterisk
+                {...wikiCreateForm.getInputProps("wikiName")}
+              />
+              <Textarea
+                label={"描述"}
+                key={wikiCreateForm.key("wikiDesc")}
+                description={"简单介绍一下知识库"}
+                placeholder={"请输入知识库描述"}
+                {...wikiCreateForm.getInputProps("wikiDesc")}
+              />
+              <Group gap={2}>
+                <Text size={"sm"} fw={"bold"}>
+                  数据类型
                 </Text>
-              </Card>
-              <Card
-                onClick={() => {
-                  setWikiType(WikiType.Unstructured);
-                }}
-                bg={
-                  wikiType === WikiType.Unstructured
-                    ? theme.colors.blue[0]
-                    : "transparent"
-                }
-                flex={1}
-                style={{
-                  border:
-                    wikiType === WikiType.Unstructured &&
-                    `1px solid ${theme.colors.blue[3]}`,
-                }}
-              >
-                <Group mb={"md"} justify={"space-between"}>
-                  <Group gap={"xs"}>
-                    <FileText
-                      size={30}
-                      color={theme.colors.violet[8]}
-                    ></FileText>
-                    <Text size={"sm"}>非结构化数据</Text>
-                  </Group>
-                  <Radio
-                    size={"xs"}
-                    checked={wikiType === WikiType.Unstructured}
-                  />
-                </Group>
-                <Text c={"dimmed"} size={"xs"}>
-                  txt, doc, pdf等非结构化数据
-                </Text>
-              </Card>
-            </Group>
-            <Select
-              label={"Embedding模型"}
-              description={"用于将文本转换为向量"}
-              key={wikiCreateForm.key("wikiEmbeddingId")}
-              placeholder={"请选择Embedding模型"}
-              data={embeddingModels.map((model) => {
-                return {
-                  value: model.id,
-                  label: model.name,
-                };
-              })}
-              withAsterisk
-              {...wikiCreateForm.getInputProps("wikiEmbeddingId")}
-            />
-            <Select
-              label={"Rerank模型"}
-              description={"用于将向量进行排序"}
-              key={wikiCreateForm.key("wikiRerankId")}
-              placeholder={"请选择Rerank模型"}
-              data={rerankModels.map((model) => {
-                return {
-                  value: model.id,
-                  label: model.name,
-                };
-              })}
-              withAsterisk
-              {...wikiCreateForm.getInputProps("wikiRerankId")}
-            />
-            <Stack>
-              <Text fw={"bold"} size={"sm"}>
-                相似度阈值
-              </Text>
-              <Group>
-                <Slider
-                  flex={1}
-                  mx={"xs"}
-                  mb={"md"}
-                  min={0.1}
-                  max={1.0}
-                  value={similarityThreshold}
-                  onChange={(value) => {
-                    setSimilarityThreshold(value);
-                  }}
-                  step={0.05}
-                  defaultValue={0.1}
-                  size="sm"
-                  marks={[
-                    { value: 0.1, label: "最小" },
-                    { value: 1.0, label: "最大" },
-                  ]}
-                />
-                <NumberInput
-                  min={0.1}
-                  max={1.0}
-                  step={0.1}
-                  w={"100"}
-                  value={similarityThreshold}
-                  onChange={(value) => {
-                    setSimilarityThreshold(value);
-                  }}
-                />
+                <Text c={theme.colors.red[8]}>*</Text>
               </Group>
+              <Group>
+                <Card
+                  onClick={() => {
+                    setWikiType(WikiType.Structured);
+                  }}
+                  flex={1}
+                  bg={
+                    wikiType === WikiType.Structured
+                      ? theme.colors.blue[0]
+                      : "transparent"
+                  }
+                  style={{
+                    border:
+                      wikiType === WikiType.Structured &&
+                      `1px solid ${theme.colors.blue[3]}`,
+                  }}
+                >
+                  <Group justify={"space-between"} mb={"md"}>
+                    <Group gap={"xs"}>
+                      <LayoutPanelTop size={30} color={theme.colors.blue[8]} />
+                      <Text size={"sm"}>结构化数据</Text>
+                    </Group>
+                    <Radio
+                      size={"xs"}
+                      checked={wikiType === WikiType.Structured}
+                    />
+                  </Group>
+                  <Text c={"dimmed"} size={"xs"}>
+                    标准结构化数据
+                  </Text>
+                </Card>
+                <Card
+                  onClick={() => {
+                    setWikiType(WikiType.Unstructured);
+                  }}
+                  bg={
+                    wikiType === WikiType.Unstructured
+                      ? theme.colors.blue[0]
+                      : "transparent"
+                  }
+                  flex={1}
+                  style={{
+                    border:
+                      wikiType === WikiType.Unstructured &&
+                      `1px solid ${theme.colors.blue[3]}`,
+                  }}
+                >
+                  <Group mb={"md"} justify={"space-between"}>
+                    <Group gap={"xs"}>
+                      <FileText
+                        size={30}
+                        color={theme.colors.violet[8]}
+                      ></FileText>
+                      <Text size={"sm"}>非结构化数据</Text>
+                    </Group>
+                    <Radio
+                      size={"xs"}
+                      checked={wikiType === WikiType.Unstructured}
+                    />
+                  </Group>
+                  <Text c={"dimmed"} size={"xs"}>
+                    txt, doc, pdf等非结构化数据
+                  </Text>
+                </Card>
+              </Group>
+              <Select
+                label={"Embedding模型"}
+                description={"用于将文本转换为向量"}
+                key={wikiCreateForm.key("wikiEmbeddingId")}
+                placeholder={"请选择Embedding模型"}
+                data={embeddingModels.map((model) => {
+                  return {
+                    value: model.id,
+                    label: model.name,
+                  };
+                })}
+                withAsterisk
+                {...wikiCreateForm.getInputProps("wikiEmbeddingId")}
+              />
+              <Select
+                label={"Rerank模型"}
+                description={"用于将向量进行排序"}
+                key={wikiCreateForm.key("wikiRerankId")}
+                placeholder={"请选择Rerank模型"}
+                data={rerankModels.map((model) => {
+                  return {
+                    value: model.id,
+                    label: model.name,
+                  };
+                })}
+                withAsterisk
+                {...wikiCreateForm.getInputProps("wikiRerankId")}
+              />
+              <Stack>
+                <Text fw={"bold"} size={"sm"}>
+                  相似度阈值
+                </Text>
+                <Group>
+                  <Slider
+                    flex={1}
+                    mx={"xs"}
+                    mb={"md"}
+                    min={0.1}
+                    max={1.0}
+                    value={similarityThreshold}
+                    onChange={(value) => {
+                      setSimilarityThreshold(value);
+                    }}
+                    step={0.05}
+                    defaultValue={0.1}
+                    size="sm"
+                    marks={[
+                      { value: 0.1, label: "最小" },
+                      { value: 1.0, label: "最大" },
+                    ]}
+                  />
+                  <NumberInput
+                    min={0.1}
+                    max={1.0}
+                    step={0.1}
+                    w={"100"}
+                    value={similarityThreshold}
+                    onChange={(value) => {
+                      setSimilarityThreshold(value);
+                    }}
+                  />
+                </Group>
+              </Stack>
             </Stack>
-          </Stack>
-        </ScrollArea>
-        <Divider my={"sm"} />
+          </ScrollArea>
+          <Divider my={"sm"} />
+          <Group>
+            <Button variant={"subtle"} type={"submit"} disabled={isSubmitting}>
+              创建空的知识库
+            </Button>
+            <Button
+              variant={"light"}
+              color={theme.colors.gray[7]}
+              onClick={() => {
+                nav(-1);
+              }}
+            >
+              取消
+            </Button>
+            {currentStep > 1 && (
+              <Button
+                variant={"subtle"}
+                onClick={() => {
+                  prevStep();
+                }}
+              >
+                上一步
+              </Button>
+            )}
+            <Button
+              onClick={() => {
+                nextStep();
+              }}
+            >
+              下一步
+            </Button>
+          </Group>
+        </form>
+      )}
+      <Stack>
         <Group>
-          <Button variant={"subtle"} type={"submit"} disabled={isSubmitting}>
-            创建空的知识库
-          </Button>
-          <Button
-            variant={"light"}
-            color={theme.colors.gray[7]}
-            onClick={() => {
-              nav(-1);
-            }}
-          >
-            取消
-          </Button>
-          <Button>下一步</Button>
+          <Card withBorder>
+            <Group gap={"sm"}>
+              <Files size={25} color={theme.colors.violet[8]} />
+              <Text size={"sm"}>本地文件</Text>
+            </Group>
+          </Card>
+          <Card withBorder>
+            <Group gap={"sm"}>
+              <Image src={Notion} w={25} h={25} />
+              <Text size={"sm"}>Notion</Text>
+            </Group>
+          </Card>
         </Group>
-      </form>
+      </Stack>
       <WikiCreateCancelModal opened={false} onClose={() => {}} />
     </Stack>
   );

@@ -10,9 +10,13 @@ import {
   Paper,
   Badge,
   useMantineTheme,
+  Image,
 } from "@mantine/core";
+import FatherSon from "@/assets/wiki/father-son.svg";
 import { FolderUp } from "lucide-react";
 import { Table } from "@/components";
+import QWen from "@/assets/models/qwen.svg";
+import React from "react";
 
 const WikiDetail = () => {
   const theme = useMantineTheme();
@@ -33,7 +37,15 @@ const WikiDetail = () => {
       accessor: "docSplitType",
       title: "分段模式",
       textAlign: "center",
-      render: ({ docSplitType }) => <Badge size={"xs"}>{docSplitType}</Badge>,
+      render: ({ docSplitType }) => (
+        <Badge
+          variant={"light"}
+          size={"sm"}
+          leftSection={<Image src={FatherSon} w={12} h={12} />}
+        >
+          {docSplitType}
+        </Badge>
+      ),
     },
     {
       accessor: "docStatus",

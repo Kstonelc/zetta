@@ -198,8 +198,8 @@ const WikiHome = () => {
           </Group>
         </Modal>
       </Flex>
-      <Loading visible={isLoading} size={"lg"}>
-        <ScrollArea>
+      <Loading visible={isLoading}>
+        <ScrollArea mih={"xl"}>
           <Grid gutter="md">
             {wikiData.map((item, index) => (
               <Grid.Col key={index} span={{ base: 12, sm: 6, md: 3 }}>
