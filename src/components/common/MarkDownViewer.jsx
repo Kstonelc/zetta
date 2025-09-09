@@ -9,7 +9,7 @@ const MarkDownViewer = () => {
     <ReactMarkdown
       children={markdown}
       remarkPlugins={[remarkGfm, remarkMath]}
-      rehypePlugins={[rehypeHighlight, rehypeKatex]} // or rehype-mathjax
+      rehypePlugins={[rehypeHighlight, rehypeKatex]}
       components={{
         code({ node, inline, className, children, ...props }) {
           const match = /language-(\w+)/.exec(className || "");

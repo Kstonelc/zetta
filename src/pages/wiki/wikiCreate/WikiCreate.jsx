@@ -14,17 +14,26 @@ import {
   Textarea,
   NumberInput,
   Slider,
+  Modal,
   useMantineTheme,
 } from "@mantine/core";
+import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
 import React, { useEffect, useState } from "react";
 import { useForm } from "@mantine/form";
-import { ArrowLeft, FileText, LayoutPanelTop, Files } from "lucide-react";
+import {
+  ArrowLeft,
+  FileText,
+  LayoutPanelTop,
+  Files,
+  CircleAlert,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ModelType, WikiType } from "@/enum";
 import classes from "./WikiCreate.module.scss";
-import { WikiCreateCancelModal } from "@/pages/wiki/wikiCreate/modal/WikiCreateCancelModal.jsx";
 import appHelper from "@/AppHelper.js";
 import Notion from "@/assets/wiki/notion.svg";
+import LocalFile from "@/assets/wiki/local-file.png";
+import InBox from "@/assets/inbox.svg";
 import { useNotify } from "@/utils/notify.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 
@@ -55,6 +64,7 @@ const WikiCreate = () => {
   const [wikiType, setWikiType] = useState(null);
   const [similarityThreshold, setSimilarityThreshold] = useState(0.1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isExitModalVisible, setIsExitModalVisible] = useState(false);
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 3 ? current + 1 : current));
@@ -158,14 +168,49 @@ const WikiCreate = () => {
           variant={"subtle"}
           size={"md"}
           onClick={() => {
-            nav(-1);
+            setIsExitModalVisible(true);
           }}
         >
           返回
         </Button>
+        <Modal
+          opened={isExitModalVisible}
+          onClose={() => {
+            setIsExitModalVisible(false);
+          }}
+          title={
+            <Group gap={"sm"} align={"center"}>
+              <CircleAlert size={20} color={theme.colors.yellow[6]} />
+              <Text size={"md"} fw={"bold"}>
+                温馨提示
+              </Text>
+            </Group>
+          }
+        >
+          <Text size={"sm"} c={"dimmed"} mb={"md"}>
+            临时数据将不会被保存，确定退出吗?
+          </Text>
+          <Group grow>
+            <Button
+              variant={"subtle"}
+              onClick={() => {
+                setIsExitModalVisible(false);
+              }}
+            >
+              取消
+            </Button>
+            <Button
+              onClick={() => {
+                setIsExitModalVisible(false);
+                nav(-1);
+              }}
+            >
+              确定
+            </Button>
+          </Group>
+        </Modal>
         <Stepper
           active={currentStep}
-          onStepClick={setCurrentStep}
           allowNextStepsSelect={false}
           size={"xs"}
           className={classes.absoluteCenter}
@@ -342,21 +387,11 @@ const WikiCreate = () => {
               variant={"light"}
               color={theme.colors.gray[7]}
               onClick={() => {
-                nav(-1);
+                setIsExitModalVisible(true);
               }}
             >
               取消
             </Button>
-            {currentStep > 1 && (
-              <Button
-                variant={"subtle"}
-                onClick={() => {
-                  prevStep();
-                }}
-              >
-                上一步
-              </Button>
-            )}
             <Button
               onClick={() => {
                 nextStep();
@@ -367,23 +402,67 @@ const WikiCreate = () => {
           </Group>
         </form>
       )}
-      <Stack>
-        <Group>
-          <Card withBorder>
-            <Group gap={"sm"}>
-              <Files size={25} color={theme.colors.violet[8]} />
-              <Text size={"sm"}>本地文件</Text>
+      {currentStep === 2 && (
+        <>
+          <ScrollArea h={"75vh"}>
+            <Group mb={"xl"}>
+              <Card withBorder py={"xs"}>
+                <Group gap={"xs"}>
+                  <Image src={LocalFile} w={25} h={25} />
+                  <Text size={"sm"}>本地文件</Text>
+                </Group>
+              </Card>
+              <Card withBorder py={"xs"}>
+                <Group gap={"xs"}>
+                  <Image src={Notion} w={25} h={25} />
+                  <Text size={"sm"}>Notion</Text>
+                </Group>
+              </Card>
             </Group>
-          </Card>
-          <Card withBorder>
-            <Group gap={"sm"}>
-              <Image src={Notion} w={25} h={25} />
-              <Text size={"sm"}>Notion</Text>
-            </Group>
-          </Card>
-        </Group>
-      </Stack>
-      <WikiCreateCancelModal opened={false} onClose={() => {}} />
+            <Dropzone
+              onDrop={(files) => console.log("accepted files", files)}
+              onReject={(files) => console.log("rejected files", files)}
+              maxSize={5 * 1024 ** 2}
+              accept={{
+                "text/markdown": [".md", ".markdown"],
+                "text/plain": [".md", ".markdown"], // 兜底
+              }}
+              w={"40%"}
+            >
+              <Group justify="center" gap="xl" mih={150}>
+                <Image src={InBox} w={50} h={50} />
+                <div>
+                  <Text size="xl" inline mb={"sm"}>
+                    拖拽或点击文件上传
+                  </Text>
+                  <Text size={"sm"} c={"dimmed"}>
+                    每个文件不超过5M, 支持md, markdown等格式
+                  </Text>
+                </div>
+              </Group>
+            </Dropzone>
+          </ScrollArea>
+          <Divider my={"sm"} />
+          <Group>
+            <Button
+              variant={"light"}
+              color={theme.colors.gray[7]}
+              onClick={() => {
+                prevStep();
+              }}
+            >
+              上一步
+            </Button>
+            <Button
+              onClick={() => {
+                nextStep();
+              }}
+            >
+              下一步
+            </Button>
+          </Group>
+        </>
+      )}
     </Stack>
   );
 };

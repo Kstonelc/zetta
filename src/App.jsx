@@ -18,6 +18,7 @@ import {
   Switch,
   TagsInput,
   ScrollArea,
+  Modal,
 } from "@mantine/core";
 import routerConfig from "@/routers";
 import { Notifications } from "@mantine/notifications";
@@ -36,6 +37,12 @@ const theme = createTheme({
     Stack: Stack.extend({
       defaultProps: {
         mih: 0,
+      },
+    }),
+    Modal: Modal.extend({
+      defaultProps: {
+        radius: "md",
+        centered: true,
       },
     }),
     Button: Button.extend({

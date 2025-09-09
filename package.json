@@ -17,6 +17,7 @@
     "@mantine/hooks": "^8.1.2",
     "@mantine/notifications": "^8.1.2",
     "@mantine/tiptap": "^8.1.2",
+    "@reduxjs/toolkit": "^2.8.2",
     "@tiptap/core": "^2.25.0",
     "@tiptap/extension-color": "^2.24.1",
     "@tiptap/extension-highlight": "^2.24.0",
@@ -44,6 +45,7 @@
     "react-dom": "^19.1.0",
     "react-i18next": "^15.6.1",
     "react-markdown": "^10.1.0",
+    "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.2",
     "tiptap-extension-resize-image": "^1.2.2",
     "zustand": "^5.0.6"
