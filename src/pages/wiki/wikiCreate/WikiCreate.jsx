@@ -1,38 +1,37 @@
 import {
-  Stack,
-  Text,
-  Stepper,
-  ScrollArea,
-  Group,
+  ActionIcon,
   Button,
-  TextInput,
   Card,
   Divider,
+  Group,
   Image,
-  Radio,
-  Select,
-  Textarea,
-  NumberInput,
-  ActionIcon,
-  Slider,
   Modal,
+  NumberInput,
+  Radio,
+  ScrollArea,
+  Select,
+  Slider,
+  Stack,
+  Stepper,
+  Text,
+  Textarea,
+  TextInput,
   useMantineTheme,
 } from "@mantine/core";
-import { Dropzone, MIME_TYPES } from "@mantine/dropzone";
+import { Dropzone } from "@mantine/dropzone";
 import React, { useEffect, useState } from "react";
 import { useForm } from "@mantine/form";
 import {
   ArrowLeft,
+  CircleAlert,
   FileText,
   LayoutPanelTop,
   Trash2,
-  CircleAlert,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ModelType, WikiType } from "@/enum";
+import { FileType, ModelType, WikiType } from "@/enum";
 import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
-import Notion from "@/assets/wiki/notion.svg";
 import LocalFile from "@/assets/wiki/local-file.png";
 import MarkDown from "@/assets/markdown.png";
 import Chrome from "@/assets/chrome.png";
@@ -68,6 +67,7 @@ const WikiCreate = () => {
   const [similarityThreshold, setSimilarityThreshold] = useState(0.1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 3 ? current + 1 : current));
@@ -161,11 +161,63 @@ const WikiCreate = () => {
     setRerankModels(response.data);
   };
 
-  const uploadFile = async (files) => {
-    const response = await appHelper.apiPost("/wiki/upload-file", {
-      files: files,
+  const onUploadFile = async (files) => {
+    const fileMap = new Map();
+    for (const file of files) {
+      const response = await appHelper.apiPost("/wiki/upload-file", file);
+      if (response.ok) {
+        const fileInfo = response.data;
+        const fileName = fileInfo.fileName;
+        fileMap.set(fileName, fileInfo);
+      }
+    }
+    // 本次上传的文件信息列表
+    const results = Array.from(fileMap.values());
+    setUploadedFiles((prev) => {
+      const prevMap = new Map();
+      for (const item of prev) {
+        if (!fileMap.has(item.fileName)) {
+          prevMap.set(item.fileName, item);
+        }
+      }
+      return [...prevMap.values(), ...results];
     });
-    console.log(111, response);
+  };
+
+  //endregion
+
+  //region 组件渲染
+
+  const renderUploadedFiles = () => {
+    if (appHelper.getLength(uploadedFiles) > 0) {
+      return uploadedFiles.map((file) => {
+        const fileType = FileType.getFileType(file.fileExt);
+        return (
+          <Card w={"35%"} withBorder p={"xs"} mb={"xs"}>
+            <Group justify={"space-between"}>
+              <Group gap={"sm"}>
+                <Image src={MarkDown} w={25} h={20} />
+                <div>
+                  <Text size={"xs"} fw={"bold"}>
+                    {file.fileName}
+                  </Text>
+                  <Text size={"xs"} c={"dimmed"}>
+                    {FileType.text[fileType]} {file.fileSize}M
+                  </Text>
+                </div>
+              </Group>
+              <ActionIcon
+                variant={"subtle"}
+                size={"sm"}
+                color={theme.colors.gray[6]}
+              >
+                <Trash2 size={16} />
+              </ActionIcon>
+            </Group>
+          </Card>
+        );
+      });
+    }
   };
 
   //endregion
@@ -443,7 +495,7 @@ const WikiCreate = () => {
             </Text>
             <Dropzone
               onDrop={async (files) => {
-                await uploadFile(files);
+                await onUploadFile(files);
               }}
               onReject={(files) => console.log("rejected files", files)}
               maxSize={5 * 1024 ** 2}
@@ -458,37 +510,16 @@ const WikiCreate = () => {
               <Group justify="center" gap="xl" mih={150}>
                 <Image src={InBox} w={50} h={50} />
                 <div>
-                  <Text size="xl" inline mb={"sm"}>
+                  <Text inline mb={"sm"}>
                     拖拽或点击文件上传
                   </Text>
-                  <Text size={"sm"} c={"dimmed"}>
+                  <Text size={"xs"} c={"dimmed"}>
                     每个文件不超过5M, 支持md, markdown等格式
                   </Text>
                 </div>
               </Group>
             </Dropzone>
-            <Card w={"35%"} withBorder p={"sm"}>
-              <Group justify={"space-between"}>
-                <Group gap={"sm"}>
-                  <Image src={MarkDown} w={25} h={20} />
-                  <div>
-                    <Text size={"xs"} fw={"bold"}>
-                      Gin.md
-                    </Text>
-                    <Text size={"xs"} c={"dimmed"}>
-                      MarkDown 0.6M
-                    </Text>
-                  </div>
-                </Group>
-                <ActionIcon
-                  variant={"subtle"}
-                  size={"sm"}
-                  color={theme.colors.gray[6]}
-                >
-                  <Trash2 size={16} />
-                </ActionIcon>
-              </Group>
-            </Card>
+            {renderUploadedFiles()}
           </ScrollArea>
           <Divider my={"sm"} />
           <Group>

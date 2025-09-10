@@ -23,6 +23,11 @@ class AppHelper {
       const apiUrl = url.startsWith("http")
         ? url
         : this.combineUrls(this.config.apiUrl, url);
+      if (data instanceof File) {
+        const formData = new FormData();
+        formData.append("file", data);
+        data = formData;
+      }
       const axiosResponse = await axios.post(apiUrl, data, {
         timeout: 5000,
         headers: {

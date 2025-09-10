@@ -119,3 +119,29 @@ export class UserRole {
     ];
   }
 }
+
+export class FileType {
+  static {
+    this.Md = 1 << 0;
+    this.Doc = 1 << 1;
+    this.Pdf = 1 << 2;
+
+    this.text = {};
+    this.text[this.Md] = "MarkDown";
+    this.text[this.Doc] = "Doc";
+    this.text[this.Pdf] = "Pdf";
+
+    this.suffix = {};
+    this.suffix[this.Md] = [".md"];
+    this.suffix[this.Doc] = [".doc", ".docx"];
+    this.suffix[this.Pdf] = [".pdf"];
+
+    this.icon = {};
+
+    this.getFileType = (fileExt) => {
+      return Object.keys(this.suffix).find((key) =>
+        this.suffix[key].includes(fileExt.toLowerCase()),
+      );
+    };
+  }
+}

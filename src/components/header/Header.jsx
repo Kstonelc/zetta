@@ -53,8 +53,8 @@ const Header = () => {
   }, [userStore]);
 
   const initialize = async () => {
-    setCurrentTenant(userStore.current_tenant);
-    setAllTenants(userStore.tenants);
+    setCurrentTenant(userStore?.current_tenant);
+    setAllTenants(userStore?.tenants);
   };
 
   const destroy = async () => {};
@@ -92,7 +92,7 @@ const Header = () => {
                 color={theme.colors.gray[6]}
                 leftSection={
                   <Avatar color={theme.colors.blue[8]} radius="xl" size={"sm"}>
-                    {userStore.name.slice(0, 2).toUpperCase()}
+                    {userStore && userStore.name.slice(0, 2).toUpperCase()}
                   </Avatar>
                 }
                 rightSection={<ChevronsUpDown size={16} />}
@@ -157,7 +157,7 @@ const Header = () => {
       <Menu shadow="md" width={250} radius={"md"}>
         <Menu.Target>
           <Avatar color={theme.colors.blue[8]} radius="xl">
-            {userStore.name.slice(0, 2).toUpperCase()}
+            {userStore && userStore.name.slice(0, 2).toUpperCase()}
           </Avatar>
         </Menu.Target>
 
@@ -166,16 +166,16 @@ const Header = () => {
             <Group justify={"space-between"}>
               <Flex direction={"column"}>
                 <Text fw={"bold"} maw={120}>
-                  {userStore.name}
+                  {userStore && userStore.name}
                 </Text>
                 <Box w={"160"}>
                   <Text size={"sm"} c={"dimmed"} truncate="end">
-                    {userStore.email}
+                    {userStore && userStore.email}
                   </Text>
                 </Box>
               </Flex>
               <Avatar color={theme.colors.blue[8]} radius="xl">
-                {userStore.name.slice(0, 2).toUpperCase()}
+                {userStore && userStore.name.slice(0, 2).toUpperCase()}
               </Avatar>
             </Group>
           </Menu.Item>
