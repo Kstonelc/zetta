@@ -78,7 +78,6 @@ const TenantUsersSetting = ({ tenant }) => {
   }, [tenant]);
 
   const initialize = async () => {
-    console.log(111, userStore.role);
     setTenantInfo(tenant);
     editTenantForm.setValues({ tenantName: tenant.name });
   };
@@ -177,42 +176,6 @@ const TenantUsersSetting = ({ tenant }) => {
                         </Stack>
                       </Menu.Item>
                     ))}
-                    {/*<Menu.Item>*/}
-                    {/*  <Group justify={"space-between"}>*/}
-                    {/*    <Stack gap={"0"}>*/}
-                    {/*      <Text size={"sm"} fw={"bold"}>*/}
-                    {/*        管理员*/}
-                    {/*      </Text>*/}
-                    {/*      <Text size={"xs"} c={"dimmed"}>*/}
-                    {/*        拥有最高权限*/}
-                    {/*      </Text>*/}
-                    {/*    </Stack>*/}
-                    {/*    <UserRoundCheck*/}
-                    {/*      size={20}*/}
-                    {/*      color={theme.colors.blue[8]}*/}
-                    {/*    />*/}
-                    {/*  </Group>*/}
-                    {/*</Menu.Item>*/}
-                    {/*<Menu.Item>*/}
-                    {/*  <Stack gap={"0"}>*/}
-                    {/*    <Text size={"sm"} fw={"bold"}>*/}
-                    {/*      编辑*/}
-                    {/*    </Text>*/}
-                    {/*    <Text size={"xs"} c={"dimmed"}>*/}
-                    {/*      可以编辑创建应用程序*/}
-                    {/*    </Text>*/}
-                    {/*  </Stack>*/}
-                    {/*</Menu.Item>*/}
-                    {/*<Menu.Item>*/}
-                    {/*  <Stack gap={"0"}>*/}
-                    {/*    <Text size={"sm"} fw={"bold"}>*/}
-                    {/*      查看*/}
-                    {/*    </Text>*/}
-                    {/*    <Text size={"xs"} c={"dimmed"}>*/}
-                    {/*      仅使用*/}
-                    {/*    </Text>*/}
-                    {/*  </Stack>*/}
-                    {/*</Menu.Item>*/}
                     <Divider my={2} />
                     <Menu.Item>
                       <Group justify={"space-between"}>
@@ -250,6 +213,7 @@ const TenantUsersSetting = ({ tenant }) => {
       });
       return;
     }
+    console.log(222, response.data);
     setTenantInfo(response.data);
     setIsEditTenantModalVisible(false);
   };

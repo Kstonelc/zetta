@@ -34,7 +34,6 @@ const ModelGlobalSetting = ({ modelProviders, opened, onUpdated, onClose }) => {
   }, [modelProviders]);
 
   const initialize = async () => {
-    console.log("数据", modelProviders);
     groupModelsByCapability(modelProviders);
   };
   const destroy = async () => {};

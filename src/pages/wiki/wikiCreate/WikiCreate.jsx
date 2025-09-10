@@ -13,6 +13,7 @@ import {
   Select,
   Textarea,
   NumberInput,
+  ActionIcon,
   Slider,
   Modal,
   useMantineTheme,
@@ -24,7 +25,7 @@ import {
   ArrowLeft,
   FileText,
   LayoutPanelTop,
-  Files,
+  Trash2,
   CircleAlert,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -33,6 +34,8 @@ import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
 import Notion from "@/assets/wiki/notion.svg";
 import LocalFile from "@/assets/wiki/local-file.png";
+import MarkDown from "@/assets/markdown.png";
+import Chrome from "@/assets/chrome.png";
 import InBox from "@/assets/inbox.svg";
 import { useNotify } from "@/utils/notify.js";
 import { useUserStore } from "@/stores/useUserStore.js";
@@ -156,6 +159,13 @@ const WikiCreate = () => {
       return;
     }
     setRerankModels(response.data);
+  };
+
+  const uploadFile = async (files) => {
+    const response = await appHelper.apiPost("/wiki/upload-file", {
+      files: files,
+    });
+    console.log(111, response);
   };
 
   //endregion
@@ -405,29 +415,45 @@ const WikiCreate = () => {
       {currentStep === 2 && (
         <>
           <ScrollArea h={"75vh"}>
+            <Text size={"sm"} mb={"md"} fw={"bold"}>
+              选择数据源
+            </Text>
             <Group mb={"xl"}>
               <Card withBorder py={"xs"}>
                 <Group gap={"xs"}>
                   <Image src={LocalFile} w={25} h={25} />
-                  <Text size={"sm"}>本地文件</Text>
+                  <Text size={"sm"}>上传本地文件</Text>
                 </Group>
               </Card>
+              {/*<Card withBorder py={"xs"}>*/}
+              {/*  <Group gap={"xs"}>*/}
+              {/*    <Image src={Notion} w={25} h={25} />*/}
+              {/*    <Text size={"sm"}>同步Notion</Text>*/}
+              {/*  </Group>*/}
+              {/*</Card>*/}
               <Card withBorder py={"xs"}>
                 <Group gap={"xs"}>
-                  <Image src={Notion} w={25} h={25} />
-                  <Text size={"sm"}>Notion</Text>
+                  <Image src={Chrome} w={25} h={25} />
+                  <Text size={"sm"}>同步Web站点</Text>
                 </Group>
               </Card>
             </Group>
+            <Text size={"sm"} mb={"md"} fw={"bold"}>
+              上传文件
+            </Text>
             <Dropzone
-              onDrop={(files) => console.log("accepted files", files)}
+              onDrop={async (files) => {
+                await uploadFile(files);
+              }}
               onReject={(files) => console.log("rejected files", files)}
               maxSize={5 * 1024 ** 2}
+              maxFiles={10}
               accept={{
                 "text/markdown": [".md", ".markdown"],
-                "text/plain": [".md", ".markdown"], // 兜底
+                "text/plain": [".md", ".markdown"],
               }}
-              w={"40%"}
+              mb={"sm"}
+              w={"35%"}
             >
               <Group justify="center" gap="xl" mih={150}>
                 <Image src={InBox} w={50} h={50} />
@@ -441,6 +467,28 @@ const WikiCreate = () => {
                 </div>
               </Group>
             </Dropzone>
+            <Card w={"35%"} withBorder p={"sm"}>
+              <Group justify={"space-between"}>
+                <Group gap={"sm"}>
+                  <Image src={MarkDown} w={25} h={20} />
+                  <div>
+                    <Text size={"xs"} fw={"bold"}>
+                      Gin.md
+                    </Text>
+                    <Text size={"xs"} c={"dimmed"}>
+                      MarkDown 0.6M
+                    </Text>
+                  </div>
+                </Group>
+                <ActionIcon
+                  variant={"subtle"}
+                  size={"sm"}
+                  color={theme.colors.gray[6]}
+                >
+                  <Trash2 size={16} />
+                </ActionIcon>
+              </Group>
+            </Card>
           </ScrollArea>
           <Divider my={"sm"} />
           <Group>

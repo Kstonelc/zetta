@@ -41,7 +41,6 @@ const UserRegister = () => {
 
     validate: {
       lastName: (value) => {
-        console.log(111, value);
         return value.trim() ? null : "姓不能为空";
       },
       firstName: (value) => (value.trim() ? null : "名不能为空"),
