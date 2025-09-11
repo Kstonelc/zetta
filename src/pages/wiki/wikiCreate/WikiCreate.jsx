@@ -19,6 +19,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
+import { Loading } from "@/components";
 import React, { useEffect, useState } from "react";
 import { useForm } from "@mantine/form";
 import {
@@ -27,6 +28,7 @@ import {
   FileText,
   LayoutPanelTop,
   Trash2,
+  FileBox,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FileType, ModelType, WikiType } from "@/enum";
@@ -68,6 +70,9 @@ const WikiCreate = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [chunks, setChunks] = useState([]);
+  const [isPreviewingChunks, setIsPreviewingChunks] = useState(false);
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 3 ? current + 1 : current));
@@ -165,13 +170,17 @@ const WikiCreate = () => {
     const fileMap = new Map();
     for (const file of files) {
       const response = await appHelper.apiPost("/wiki/upload-file", file);
-      if (response.ok) {
+      if (!response.ok) {
+        notify({
+          type: "error",
+          message: response.message,
+        });
+      } else {
         const fileInfo = response.data;
         const fileName = fileInfo.fileName;
         fileMap.set(fileName, fileInfo);
       }
     }
-    // 本次上传的文件信息列表
     const results = Array.from(fileMap.values());
     setUploadedFiles((prev) => {
       const prevMap = new Map();
@@ -182,6 +191,26 @@ const WikiCreate = () => {
       }
       return [...prevMap.values(), ...results];
     });
+    setIsUploading(false);
+  };
+
+  const onDeleteFile = (fileName) => {
+    setUploadedFiles((prev) => {
+      return prev.filter((item) => item.fileName !== fileName);
+    });
+  };
+
+  const onPreviewChunks = async () => {
+    setIsPreviewingChunks(true);
+    const response = await appHelper.apiPost("/wiki/preview-file-chunks", {
+      filePath:
+        "C:\\\\projetcs\\\\zetta-api\\\\data\\\\禹神：Typescript速通教程.md",
+    });
+    if (response.ok) {
+      setChunks(response.data);
+      setIsPreviewingChunks(false);
+    }
+    setIsPreviewingChunks(false);
   };
 
   //endregion
@@ -190,10 +219,16 @@ const WikiCreate = () => {
 
   const renderUploadedFiles = () => {
     if (appHelper.getLength(uploadedFiles) > 0) {
-      return uploadedFiles.map((file) => {
+      return uploadedFiles.map((file, index) => {
         const fileType = FileType.getFileType(file.fileExt);
+        let fileSize = file.fileSize;
+        if (fileSize > 100) {
+          fileSize = (fileSize / 100).toFixed(2) + "M";
+        } else {
+          fileSize = fileSize + "K";
+        }
         return (
-          <Card w={"35%"} withBorder p={"xs"} mb={"xs"}>
+          <Card miw={300} maw={600} withBorder p={"xs"} mb={"xs"} key={index}>
             <Group justify={"space-between"}>
               <Group gap={"sm"}>
                 <Image src={MarkDown} w={25} h={20} />
@@ -202,7 +237,7 @@ const WikiCreate = () => {
                     {file.fileName}
                   </Text>
                   <Text size={"xs"} c={"dimmed"}>
-                    {FileType.text[fileType]} {file.fileSize}M
+                    {FileType.text[fileType]} {fileSize}
                   </Text>
                 </div>
               </Group>
@@ -210,6 +245,9 @@ const WikiCreate = () => {
                 variant={"subtle"}
                 size={"sm"}
                 color={theme.colors.gray[6]}
+                onClick={() => {
+                  onDeleteFile(file.fileName);
+                }}
               >
                 <Trash2 size={16} />
               </ActionIcon>
@@ -223,7 +261,7 @@ const WikiCreate = () => {
   //endregion
 
   return (
-    <Stack p={"lg"}>
+    <Stack p={"lg"} flex={1}>
       <Group>
         <Button
           leftSection={<ArrowLeft size={16} />}
@@ -495,9 +533,10 @@ const WikiCreate = () => {
             </Text>
             <Dropzone
               onDrop={async (files) => {
+                setIsUploading(true);
                 await onUploadFile(files);
               }}
-              onReject={(files) => console.log("rejected files", files)}
+              loading={isUploading}
               maxSize={5 * 1024 ** 2}
               maxFiles={10}
               accept={{
@@ -505,7 +544,8 @@ const WikiCreate = () => {
                 "text/plain": [".md", ".markdown"],
               }}
               mb={"sm"}
-              w={"35%"}
+              miw={300}
+              maw={600}
             >
               <Group justify="center" gap="xl" mih={150}>
                 <Image src={InBox} w={50} h={50} />
@@ -514,7 +554,7 @@ const WikiCreate = () => {
                     拖拽或点击文件上传
                   </Text>
                   <Text size={"xs"} c={"dimmed"}>
-                    每个文件不超过5M, 支持md, markdown等格式
+                    每个文件不超过10M, 支持md, markdown, 最多每次上传10个文件
                   </Text>
                 </div>
               </Group>
@@ -541,6 +581,45 @@ const WikiCreate = () => {
             </Button>
           </Group>
         </>
+      )}
+      {currentStep === 3 && (
+        <Card withBorder flex={1}>
+          <Group mb={"sm"}>
+            <Text size={"sm"} fw={"bold"}>
+              预览分块
+            </Text>
+            <Button size={"xs"} onClick={onPreviewChunks}>
+              预览
+            </Button>
+          </Group>
+          <ScrollArea h={"100%"} type={"auto"}>
+            <Loading visible={isPreviewingChunks} size={"sm"}>
+              {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}
+              <Stack pr={"md"}>
+                {appHelper.getLength(chunks) > 0 &&
+                  chunks.map((chunk, index) => {
+                    return (
+                      <div key={index}>
+                        <Group gap={"sm"} mb={"xs"}>
+                          <FileBox
+                            style={{
+                              width: 15,
+                              height: 15,
+                              color: theme.colors.gray[5],
+                            }}
+                          ></FileBox>
+                          <Text size={"xs"} c={"dimmed"}>
+                            Chunk-{index + 1}
+                          </Text>
+                        </Group>
+                        <Text size={"sm"}>{chunk?.page_content}</Text>
+                      </div>
+                    );
+                  })}
+              </Stack>
+            </Loading>
+          </ScrollArea>
+        </Card>
       )}
     </Stack>
   );

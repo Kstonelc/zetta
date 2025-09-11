@@ -29,7 +29,7 @@ class AppHelper {
         data = formData;
       }
       const axiosResponse = await axios.post(apiUrl, data, {
-        timeout: 5000,
+        timeout: 10000,
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -55,7 +55,7 @@ class AppHelper {
   }
 
   async apiFetch(url, data) {
-    const TIMEOUT_MS = 5000; // 5s 超时
+    const TIMEOUT_MS = 10000; // 10s 超时
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
