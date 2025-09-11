@@ -29,6 +29,8 @@ import {
   LayoutPanelTop,
   Trash2,
   FileBox,
+  SquareSplitHorizontal,
+  Eye,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { FileType, ModelType, WikiType } from "@/enum";
@@ -204,7 +206,7 @@ const WikiCreate = () => {
     setIsPreviewingChunks(true);
     const response = await appHelper.apiPost("/wiki/preview-file-chunks", {
       filePath:
-        "C:\\\\projetcs\\\\zetta-api\\\\data\\\\禹神：Typescript速通教程.md",
+        "/Users/kstone/Desktop/projects/zetta-api/data/禹神：Typescript速通教程.md",
     });
     if (response.ok) {
       setChunks(response.data);
@@ -583,43 +585,75 @@ const WikiCreate = () => {
         </>
       )}
       {currentStep === 3 && (
-        <Card withBorder flex={1}>
-          <Group mb={"sm"}>
-            <Text size={"sm"} fw={"bold"}>
-              预览分块
-            </Text>
-            <Button size={"xs"} onClick={onPreviewChunks}>
-              预览
-            </Button>
-          </Group>
-          <ScrollArea h={"100%"} type={"auto"}>
-            <Loading visible={isPreviewingChunks} size={"sm"}>
-              {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}
-              <Stack pr={"md"}>
-                {appHelper.getLength(chunks) > 0 &&
-                  chunks.map((chunk, index) => {
-                    return (
-                      <div key={index}>
-                        <Group gap={"sm"} mb={"xs"}>
-                          <FileBox
-                            style={{
-                              width: 15,
-                              height: 15,
-                              color: theme.colors.gray[5],
-                            }}
-                          ></FileBox>
-                          <Text size={"xs"} c={"dimmed"}>
-                            Chunk-{index + 1}
+        <Group h={"80vh"}>
+          <Card withBorder h={"100%"} flex={1}>
+            <Card shadow="xs">
+              <Group gap={"xs"} mb={"xs"}>
+                <SquareSplitHorizontal
+                  w={12}
+                  h={12}
+                  color={theme.colors.violet[6]}
+                />
+                <Text size={"sm"} fw={"bold"}>
+                  分段配置
+                </Text>
+              </Group>
+              <Group grow mb={"md"}>
+                <Select
+                  description="切分方式"
+                  data={["按长度切分", "按语义切分"]}
+                />
+                <NumberInput defaultValue={1024} description={"分段预估长度"} />
+                <NumberInput defaultValue={50} description={"分段重叠长度"} />
+              </Group>
+              <Group>
+                <Button
+                  size={"xs"}
+                  onClick={onPreviewChunks}
+                  leftSection={<Eye size={16} />}
+                >
+                  预览
+                </Button>
+              </Group>
+            </Card>
+          </Card>
+          <Card withBorder flex={1} h={"80vh"}>
+            <ScrollArea type={"auto"} style={{ height: "100%" }} pr={"sm"}>
+              <Group mb={"sm"}>
+                <Text size={"sm"} fw={"bold"}>
+                  预览分块
+                </Text>
+              </Group>
+              <Loading visible={isPreviewingChunks} size={"sm"}>
+                {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}
+                <Stack>
+                  {appHelper.getLength(chunks) > 0 &&
+                    chunks.map((chunk, index) => {
+                      return (
+                        <Card key={index}>
+                          <Group gap={"sm"} mb={"xs"}>
+                            <FileBox
+                              style={{
+                                width: 15,
+                                height: 15,
+                                color: theme.colors.gray[5],
+                              }}
+                            />
+                            <Text size={"xs"} c={"dimmed"} fw={"bold"}>
+                              Chunk-{index + 1}
+                            </Text>
+                          </Group>
+                          <Text className={classes.chunkContent} size={"xs"}>
+                            {chunk?.page_content}
                           </Text>
-                        </Group>
-                        <Text size={"sm"}>{chunk?.page_content}</Text>
-                      </div>
-                    );
-                  })}
-              </Stack>
-            </Loading>
-          </ScrollArea>
-        </Card>
+                        </Card>
+                      );
+                    })}
+                </Stack>
+              </Loading>
+            </ScrollArea>
+          </Card>
+        </Group>
       )}
     </Stack>
   );

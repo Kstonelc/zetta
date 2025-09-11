@@ -19,6 +19,7 @@ import {
   TagsInput,
   ScrollArea,
   Modal,
+  MultiSelect,
 } from "@mantine/core";
 import routerConfig from "@/routers";
 import { Notifications } from "@mantine/notifications";
