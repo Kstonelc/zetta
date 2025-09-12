@@ -16,11 +16,13 @@ import {
   Text,
   Textarea,
   TextInput,
+  Chip,
+  Accordion,
   useMantineTheme,
 } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
 import { Loading } from "@/components";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "@mantine/form";
 import {
   ArrowLeft,
@@ -29,11 +31,12 @@ import {
   LayoutPanelTop,
   Trash2,
   FileBox,
-  SquareSplitHorizontal,
+  TextQuote,
   Eye,
+  Cog,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { FileType, ModelType, WikiType } from "@/enum";
+import { ChunkMode, FileType, ModelType, WikiType } from "@/enum";
 import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
 import LocalFile from "@/assets/wiki/local-file.png";
@@ -75,6 +78,10 @@ const WikiCreate = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [chunks, setChunks] = useState([]);
   const [isPreviewingChunks, setIsPreviewingChunks] = useState(false);
+
+  const currentChunkModeRef = useRef(ChunkMode.Classic);
+  const chunkSizeRef = useRef(1024);
+  const chunkOverlapRef = useRef(50);
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 3 ? current + 1 : current));
@@ -205,8 +212,9 @@ const WikiCreate = () => {
   const onPreviewChunks = async () => {
     setIsPreviewingChunks(true);
     const response = await appHelper.apiPost("/wiki/preview-file-chunks", {
-      filePath:
-        "/Users/kstone/Desktop/projects/zetta-api/data/禹神：Typescript速通教程.md",
+      filePath: "C:\\projetcs\\zetta-api\\data\\禹神：Typescript速通教程.md",
+      chunkSize: chunkSizeRef.current,
+      chunkOverlap: chunkOverlapRef.current,
     });
     if (response.ok) {
       setChunks(response.data);
@@ -587,48 +595,165 @@ const WikiCreate = () => {
       {currentStep === 3 && (
         <Group h={"80vh"}>
           <Card withBorder h={"100%"} flex={1}>
-            <Card shadow="xs">
-              <Group gap={"xs"} mb={"xs"}>
-                <SquareSplitHorizontal
-                  w={12}
-                  h={12}
-                  color={theme.colors.violet[6]}
-                />
-                <Text size={"sm"} fw={"bold"}>
-                  分段配置
-                </Text>
-              </Group>
-              <Group grow mb={"md"}>
-                <Select
-                  description="切分方式"
-                  data={["按长度切分", "按语义切分"]}
-                />
-                <NumberInput defaultValue={1024} description={"分段预估长度"} />
-                <NumberInput defaultValue={50} description={"分段重叠长度"} />
-              </Group>
+            <Stack justify={"space-between"} h={"100%"}>
+              <ScrollArea mb={"md"}>
+                <Card shadow="xs" mb={"md"}>
+                  <Group gap={"xs"} mb={"md"} justify={"space-between"}>
+                    <Text size={"sm"} fw={"bold"}>
+                      分段配置
+                    </Text>
+                    <Group>
+                      <Button
+                        size={"xs"}
+                        onClick={onPreviewChunks}
+                        leftSection={<Eye size={16} />}
+                      >
+                        预览
+                      </Button>
+                    </Group>
+                  </Group>
+                  <Accordion
+                    defaultValue={ChunkMode.text[ChunkMode.Classic]}
+                    variant="separated"
+                    onChange={(value) => {
+                      switch (value) {
+                        case ChunkMode.text[ChunkMode.Classic]:
+                          currentChunkModeRef.current = ChunkMode.Classic;
+                          break;
+                        case ChunkMode.text[ChunkMode.FeatherSon]:
+                          currentChunkModeRef.current = ChunkMode.FeatherSon;
+                          break;
+                      }
+                    }}
+                  >
+                    <Accordion.Item value={ChunkMode.text[ChunkMode.Classic]}>
+                      <Accordion.Control
+                        value={ChunkMode.text[ChunkMode.Classic]}
+                      >
+                        <Group>
+                          <Cog w={20} h={20} color={theme.colors.violet[6]} />
+                          <div>
+                            <Text size={"sm"}>经典模式</Text>
+                            <Text size={"xs"} c={"dimmed"}>
+                              直接按固定长度或规则切块
+                            </Text>
+                          </div>
+                        </Group>
+                      </Accordion.Control>
+                      <Accordion.Panel>
+                        <Group grow mb={"md"}>
+                          <Select
+                            description="切分方式"
+                            defaultValue={"按长度切分"}
+                            data={["按长度切分", "按语义切分"]}
+                          />
+                          <NumberInput
+                            defaultValue={1024}
+                            onChange={(value) => {
+                              chunkSizeRef.current = value;
+                            }}
+                            description={"分段预估长度(字符)"}
+                          />
+                          <NumberInput
+                            defaultValue={50}
+                            description={"分段重叠长度(字符)"}
+                            onChange={(value) => {
+                              chunkOverlapRef.current = value;
+                            }}
+                          />
+                        </Group>
+                      </Accordion.Panel>
+                    </Accordion.Item>
+                    <Accordion.Item
+                      value={ChunkMode.text[ChunkMode.FeatherSon]}
+                    >
+                      <Accordion.Control
+                        value={ChunkMode.text[ChunkMode.FeatherSon]}
+                      >
+                        <Group>
+                          <TextQuote
+                            w={20}
+                            h={20}
+                            color={theme.colors.yellow[6]}
+                          />
+                          <div>
+                            <Text size={"sm"}>父子模式</Text>
+                            <Text size={"xs"} c={"dimmed"}>
+                              先按大块保留上下文，再在内部切小块用于精确检索
+                            </Text>
+                          </div>
+                        </Group>
+                      </Accordion.Control>
+                      <Accordion.Panel>
+                        <Group grow mb={"md"}>
+                          <Select
+                            description="切分方式"
+                            defaultValue={"按长度切分"}
+                            data={["按长度切分", "按语义切分"]}
+                          />
+                          <NumberInput
+                            defaultValue={1024}
+                            description={"分段预估长度(字符)"}
+                          />
+                          <NumberInput
+                            defaultValue={50}
+                            description={"分段重叠长度(字符)"}
+                          />
+                        </Group>
+                      </Accordion.Panel>
+                    </Accordion.Item>
+                  </Accordion>
+                </Card>
+                <Card shadow="xs" mb={"md"}>
+                  <Text size={"sm"} fw={"bold"} mb={"md"}>
+                    向量化模型
+                  </Text>
+                  <Select description={"Embedding模型"} />
+                </Card>
+                <Card shadow="xs">
+                  <Text size={"sm"} fw={"bold"} mb={"md"}>
+                    向量检索
+                  </Text>
+                  <Select description={"Rerank模型"} mb={"sm"} />
+                  <Group grow>
+                    <NumberInput description={"TopK(提取前几?)"}></NumberInput>
+                    <NumberInput description={"Score(匹配程度)"}></NumberInput>
+                  </Group>
+                </Card>
+              </ScrollArea>
               <Group>
-                <Button
-                  size={"xs"}
-                  onClick={onPreviewChunks}
-                  leftSection={<Eye size={16} />}
-                >
-                  预览
+                <Button variant={"subtle"} onClick={prevStep}>
+                  上一步
                 </Button>
+                <Button>保存</Button>
               </Group>
-            </Card>
+            </Stack>
           </Card>
           <Card withBorder flex={1} h={"80vh"}>
             <ScrollArea type={"auto"} style={{ height: "100%" }} pr={"sm"}>
+              <Text size={"sm"} fw={"bold"} mb={"md"}>
+                预览分块
+              </Text>
               <Group mb={"sm"}>
-                <Text size={"sm"} fw={"bold"}>
-                  预览分块
-                </Text>
+                <Select
+                  size={"xs"}
+                  defaultValue={uploadedFiles.map((file) => file.fileName)[0]}
+                  data={uploadedFiles.map((file) => file.fileName)}
+                />
+                <Chip
+                  color={theme.colors.blue[6]}
+                  variant="light"
+                  size={"xs"}
+                  checked={true}
+                >
+                  {appHelper.getLength(chunks)}个预览块
+                </Chip>
               </Group>
               <Loading visible={isPreviewingChunks} size={"sm"}>
                 {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}
                 <Stack>
                   {appHelper.getLength(chunks) > 0 &&
-                    chunks.map((chunk, index) => {
+                    chunks.slice(0, 10).map((chunk, index) => {
                       return (
                         <Card key={index}>
                           <Group gap={"sm"} mb={"xs"}>

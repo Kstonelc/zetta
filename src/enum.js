@@ -145,3 +145,14 @@ export class FileType {
     };
   }
 }
+
+export class ChunkMode {
+  static {
+    this.Classic = 1 << 0;
+    this.FeatherSon = 1 << 1;
+
+    this.text = {};
+    this.text[this.Classic] = "经典模式";
+    this.text[this.FeatherSon] = "父子模式";
+  }
+}
