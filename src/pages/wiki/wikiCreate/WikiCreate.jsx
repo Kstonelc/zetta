@@ -34,6 +34,8 @@ import {
   TextQuote,
   Eye,
   Cog,
+  ScanEye,
+  ChartScatter,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { ChunkMode, FileType, ModelType, WikiType } from "@/enum";
@@ -59,6 +61,11 @@ const WikiCreate = () => {
       embeddingModel: "",
       rerankModel: "",
     },
+    onValuesChange: (changedValues) => {
+      if (changedValues.wikiEmbeddingId !== undefined) {
+        defaultEmbeddingModelRef.current = changedValues.wikiEmbeddingId;
+      }
+    },
     validate: {
       wikiName: (value) => (value.trim() ? null : "名称不能为空"),
       wikiDesc: (value) => (value.trim() ? null : "描述不能为空"),
@@ -82,6 +89,7 @@ const WikiCreate = () => {
   const currentChunkModeRef = useRef(ChunkMode.Classic);
   const chunkSizeRef = useRef(1024);
   const chunkOverlapRef = useRef(50);
+  const defaultEmbeddingModelRef = useRef("");
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 3 ? current + 1 : current));
@@ -212,7 +220,7 @@ const WikiCreate = () => {
   const onPreviewChunks = async () => {
     setIsPreviewingChunks(true);
     const response = await appHelper.apiPost("/wiki/preview-file-chunks", {
-      filePath: "C:\\projetcs\\zetta-api\\data\\禹神：Typescript速通教程.md",
+      filePath: uploadedFiles[0].filePath,
       chunkSize: chunkSizeRef.current,
       chunkOverlap: chunkOverlapRef.current,
     });
@@ -297,7 +305,7 @@ const WikiCreate = () => {
             </Group>
           }
         >
-          <Text size={"sm"} c={"dimmed"} mb={"md"}>
+          <Text size={"sm"} c={"dimmed"} mb={"xl"}>
             临时数据将不会被保存，确定退出吗?
           </Text>
           <Group grow>
@@ -327,8 +335,8 @@ const WikiCreate = () => {
           miw={500}
         >
           <Stepper.Step label="知识库配置" />
+          <Stepper.Step label="数据上传" />
           <Stepper.Step label="数据处理" />
-          <Stepper.Step label="完成" />
         </Stepper>
       </Group>
       {currentStep === 1 && (
@@ -645,7 +653,7 @@ const WikiCreate = () => {
                           <Select
                             description="切分方式"
                             defaultValue={"按长度切分"}
-                            data={["按长度切分", "按语义切分"]}
+                            data={["按长度切分"]}
                           />
                           <NumberInput
                             defaultValue={1024}
@@ -704,22 +712,51 @@ const WikiCreate = () => {
                     </Accordion.Item>
                   </Accordion>
                 </Card>
-                <Card shadow="xs" mb={"md"}>
-                  <Text size={"sm"} fw={"bold"} mb={"md"}>
-                    向量化模型
-                  </Text>
-                  <Select description={"Embedding模型"} />
-                </Card>
-                <Card shadow="xs">
-                  <Text size={"sm"} fw={"bold"} mb={"md"}>
-                    向量检索
-                  </Text>
-                  <Select description={"Rerank模型"} mb={"sm"} />
-                  <Group grow>
-                    <NumberInput description={"TopK(提取前几?)"}></NumberInput>
-                    <NumberInput description={"Score(匹配程度)"}></NumberInput>
-                  </Group>
-                </Card>
+                <Group gap={"xs"} grow align={"flex-start"}>
+                  <Card shadow="xs" mb={"md"}>
+                    <Group gap={"xs"} mb={"md"}>
+                      <ChartScatter
+                        w={16}
+                        h={16}
+                        color={theme.colors.green[6]}
+                      ></ChartScatter>
+                      <Text size={"sm"} fw={"bold"}>
+                        向量化模型
+                      </Text>
+                    </Group>
+                    <Select
+                      description={"Embedding模型"}
+                      defaultValue={defaultEmbeddingModelRef.current}
+                      data={embeddingModels.map((model) => {
+                        return {
+                          value: model.id,
+                          label: model.name,
+                        };
+                      })}
+                    />
+                  </Card>
+                  <Card shadow="xs">
+                    <Group gap={"xs"} mb={"md"}>
+                      <ScanEye
+                        color={theme.colors.blue[6]}
+                        w={16}
+                        h={16}
+                      ></ScanEye>
+                      <Text size={"sm"} fw={"bold"}>
+                        向量检索
+                      </Text>
+                    </Group>
+                    <Select description={"Rerank模型"} mb={"sm"} />
+                    <Group grow>
+                      <NumberInput
+                        description={"TopK(提取前几?)"}
+                      ></NumberInput>
+                      <NumberInput
+                        description={"Score(匹配程度)"}
+                      ></NumberInput>
+                    </Group>
+                  </Card>
+                </Group>
               </ScrollArea>
               <Group>
                 <Button variant={"subtle"} onClick={prevStep}>
