@@ -1,6 +1,6 @@
 {
   "name": "Zetta",
   "version": "1.0.0",
-  "apiUrl": "http://127.0.0.1:8001/api",
+  "apiUrl": "http://121.5.5.83:8001/api",
   "qWenUrl": "https://bailian.console.aliyun.com/"
 }
