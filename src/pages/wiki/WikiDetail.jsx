@@ -12,10 +12,10 @@ import {
   useMantineTheme,
   Image,
 } from "@mantine/core";
-import FatherSon from "@/assets/wiki/father-son.svg";
+import FatherSon from "/assets/wiki/father-son.svg";
 import { FolderUp } from "lucide-react";
 import { Table } from "@/components";
-import QWen from "@/assets/models/qwen.svg";
+import QWen from "/assets/models/qwen.svg";
 import React from "react";
 
 const WikiDetail = () => {

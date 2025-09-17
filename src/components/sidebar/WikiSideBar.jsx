@@ -23,7 +23,7 @@ import {
   ChevronLeft,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import WikiIcon from "@/assets/wiki.svg";
+import WikiIcon from "/wiki.svg";
 
 const WikiSideBar = ({ wikiId }) => {
   const theme = useMantineTheme();

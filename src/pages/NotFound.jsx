@@ -1,6 +1,6 @@
 import { Flex, Text, Center, Image, Stack, Button } from "@mantine/core";
 import { House } from "lucide-react";
-import NotFoundImage from "@/assets/404-not-found.png";
+import NotFoundImage from "/404-not-found.png";
 
 const NotFound = () => {
   return (

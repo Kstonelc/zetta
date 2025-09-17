@@ -11,7 +11,7 @@ import {
   Divider,
   Stack,
 } from "@mantine/core";
-import zettaLogo from "@/assets/zetta-logo.svg";
+import zettaLogo from "/zetta-logo.svg";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
   BookOpenText,

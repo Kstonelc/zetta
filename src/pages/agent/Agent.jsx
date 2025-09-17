@@ -22,16 +22,8 @@ import ReactMarkdown from "react-markdown";
 import { getHotkeyHandler } from "@mantine/hooks";
 import { ChatBox } from "@/components";
 
-import classes from "./Agent.module.scss";
-import {
-  MessagesSquare,
-  FileUp,
-  Box,
-  Sparkles,
-  ArrowUp,
-  BookOpen,
-} from "lucide-react";
-import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
+import { MessagesSquare, FileUp, Box, Sparkles, ArrowUp } from "lucide-react";
+import { SelectOptionComponent } from "@/components";
 import React, { useEffect, useRef, useState } from "react";
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
@@ -217,22 +209,23 @@ const Agent = () => {
                   <ActionIcon variant={"subtle"} bg={theme.colors.gray[1]}>
                     <FileUp size={18} color={theme.colors.gray[7]} />
                   </ActionIcon>
-                  <Select
-                    maw={200}
-                    withCheckIcon={true}
-                    leftSectionPointerEvents="none"
-                    leftSection={
-                      <Box
-                        size={16}
-                        color={theme.colors.gray[7]}
-                        style={{
-                          marginTop: 2,
-                        }}
-                      />
-                    }
-                    data={["DeepSeek", "Qwen"]}
-                    size={"xs"}
-                  ></Select>
+                  {/*<Select*/}
+                  {/*  maw={200}*/}
+                  {/*  withCheckIcon={true}*/}
+                  {/*  leftSectionPointerEvents="none"*/}
+                  {/*  leftSection={*/}
+                  {/*    <Box*/}
+                  {/*      size={16}*/}
+                  {/*      color={theme.colors.gray[7]}*/}
+                  {/*      style={{*/}
+                  {/*        marginTop: 2,*/}
+                  {/*      }}*/}
+                  {/*    />*/}
+                  {/*  }*/}
+                  {/*  data={["DeepSeek", "Qwen"]}*/}
+                  {/*  size={"xs"}*/}
+                  {/*></Select>*/}
+                  <SelectOptionComponent></SelectOptionComponent>
                   <Button
                     variant="gradient"
                     leftSection={

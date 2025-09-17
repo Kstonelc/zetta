@@ -17,9 +17,9 @@ import {
 import { useForm } from "@mantine/form";
 
 import { Mail, ArrowLeft, CircleAlert, CircleUser } from "lucide-react";
-import GoogleIcon from "@/assets/google-icon.svg";
-import GithubIcon from "@/assets/github-icon.svg";
-import zettaLogo from "@/assets/zetta-logo.svg";
+import GoogleIcon from "/google-icon.svg";
+import GithubIcon from "/github-icon.svg";
+import zettaLogo from "/zetta-logo.svg";
 import React from "react";
 import { useNotify } from "@/utils/notify.js";
 import { useNavigate } from "react-router-dom";

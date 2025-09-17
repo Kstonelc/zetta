@@ -27,8 +27,8 @@ import {
   UserRoundPlus,
   SquarePen,
 } from "lucide-react";
-import QWen from "@/assets/models/qwen.svg";
-import NoData from "@/assets/no-data.png";
+import QWen from "/assets/models/qwen.svg";
+import NoData from "/no-data.png";
 import React, { useEffect, useState } from "react";
 import appHelper from "@/AppHelper";
 import { ModelSetting } from "../model/ModelSetting.jsx";
@@ -189,13 +189,13 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
             </Card>
             <Group justify={"space-between"}>
               <Text size={"sm"}>提供商列表</Text>
-              <Button
-                variant={"light"}
-                leftSection={<Blocks size={16} />}
-                size={"xs"}
-              >
-                添加模型
-              </Button>
+              {/*<Button*/}
+              {/*  variant={"light"}*/}
+              {/*  leftSection={<Blocks size={16} />}*/}
+              {/*  size={"xs"}*/}
+              {/*>*/}
+              {/*  添加模型*/}
+              {/*</Button>*/}
             </Group>
             <ModelProviderCard
               onOpenModelSetting={onOpenModelSetting}
@@ -236,10 +236,10 @@ const ModelProviderCard = ({ onOpenModelSetting, modelProviders }) => {
               <Flex direction="column">
                 <Group mb="xs" justify="space-between">
                   <Group gap="sm" align="space-between">
-                    <Image src={QWen} w={45} h={45} />
+                    <Image src={provider.logo} w={45} h={45} />
                     <Flex direction="column" justify="space-between">
                       <Text size="sm" fw="bold">
-                        {provider.name}
+                        {provider.display_name}
                       </Text>
                       {!provider.api_key ? (
                         <Badge

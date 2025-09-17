@@ -41,10 +41,11 @@ import { useNavigate } from "react-router-dom";
 import { ChunkMode, FileType, ModelType, WikiType } from "@/enum";
 import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
-import LocalFile from "@/assets/wiki/local-file.png";
-import MarkDown from "@/assets/markdown.png";
-import Chrome from "@/assets/chrome.png";
-import InBox from "@/assets/inbox.svg";
+import LocalFile from "/assets/wiki/local-file.png";
+import MarkDown from "/markdown.png";
+import Pdf from "/pdf.png";
+import Chrome from "/chrome.png";
+import InBox from "/inbox.svg";
 import { useNotify } from "@/utils/notify.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 
@@ -235,13 +236,19 @@ const WikiCreate = () => {
 
   //region 组件渲染
 
+  const renderFileIcon = (fileExt) => {
+    return (
+      <Image src={FileType.icon[FileType.getFileType(fileExt)]} w={20} h={20} />
+    );
+  };
+
   const renderUploadedFiles = () => {
     if (appHelper.getLength(uploadedFiles) > 0) {
       return uploadedFiles.map((file, index) => {
         const fileType = FileType.getFileType(file.fileExt);
         let fileSize = file.fileSize;
         if (fileSize > 100) {
-          fileSize = (fileSize / 100).toFixed(2) + "M";
+          fileSize = (fileSize / 1000).toFixed(2) + "M";
         } else {
           fileSize = fileSize + "K";
         }
@@ -249,13 +256,13 @@ const WikiCreate = () => {
           <Card miw={300} maw={600} withBorder p={"xs"} mb={"xs"} key={index}>
             <Group justify={"space-between"}>
               <Group gap={"sm"}>
-                <Image src={MarkDown} w={25} h={20} />
+                {renderFileIcon(file.fileExt)}
                 <div>
                   <Text size={"xs"} fw={"bold"}>
                     {file.fileName}
                   </Text>
                   <Text size={"xs"} c={"dimmed"}>
-                    {FileType.text[fileType]} {fileSize}
+                    {FileType.text[fileType]}&nbsp;&nbsp;{fileSize}
                   </Text>
                 </div>
               </Group>
@@ -554,12 +561,27 @@ const WikiCreate = () => {
                 setIsUploading(true);
                 await onUploadFile(files);
               }}
+              onReject={(files) => {
+                for (const file of files) {
+                  notify({
+                    type: "error",
+                    message: `${file.file.name} - ${file.errors[0].message}`,
+                  });
+                }
+              }}
               loading={isUploading}
-              maxSize={5 * 1024 ** 2}
+              maxSize={10 * 1024 * 1024}
               maxFiles={10}
               accept={{
                 "text/markdown": [".md", ".markdown"],
-                "text/plain": [".md", ".markdown"],
+                "text/plain": [".md", ".markdown", ".txt"],
+                // PDF
+                "application/pdf": [".pdf"],
+
+                // Word（.doc / .docx）
+                "application/msword": [".doc"],
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+                  [".docx"],
               }}
               mb={"sm"}
               miw={300}
@@ -572,7 +594,8 @@ const WikiCreate = () => {
                     拖拽或点击文件上传
                   </Text>
                   <Text size={"xs"} c={"dimmed"}>
-                    每个文件不超过10M, 支持md, markdown, 最多每次上传10个文件
+                    每个文件不超过10M, 支持md, markdown,doc, docx, pdf
+                    最多每次上传10个文件
                   </Text>
                 </div>
               </Group>
@@ -792,7 +815,7 @@ const WikiCreate = () => {
                   {appHelper.getLength(chunks) > 0 &&
                     chunks.slice(0, 10).map((chunk, index) => {
                       return (
-                        <Card key={index}>
+                        <Card key={index} shadow={"xs"}>
                           <Group gap={"sm"} mb={"xs"}>
                             <FileBox
                               style={{

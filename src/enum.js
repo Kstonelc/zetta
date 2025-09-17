@@ -122,21 +122,28 @@ export class UserRole {
 
 export class FileType {
   static {
-    this.Md = 1 << 0;
-    this.Doc = 1 << 1;
-    this.Pdf = 1 << 2;
+    this.Txt = 1 << 0;
+    this.Md = 1 << 1;
+    this.Doc = 1 << 2;
+    this.Pdf = 1 << 3;
 
     this.text = {};
+    this.text[this.Txt] = "Txt";
     this.text[this.Md] = "MarkDown";
     this.text[this.Doc] = "Doc";
     this.text[this.Pdf] = "Pdf";
 
     this.suffix = {};
+    this.suffix[this.Txt] = [".txt"];
     this.suffix[this.Md] = [".md"];
     this.suffix[this.Doc] = [".doc", ".docx"];
     this.suffix[this.Pdf] = [".pdf"];
 
     this.icon = {};
+    this.icon[this.Txt] = "/txt.png";
+    this.icon[this.Md] = "/markdown.png";
+    this.icon[this.Doc] = "/doc.png";
+    this.icon[this.Pdf] = "/pdf.png";
 
     this.getFileType = (fileExt) => {
       return Object.keys(this.suffix).find((key) =>

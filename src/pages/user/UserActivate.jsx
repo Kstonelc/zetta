@@ -11,7 +11,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import zettaLogo from "@/assets/zetta-logo.svg";
+import zettaLogo from "/zetta-logo.svg";
 import { Sparkles } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";

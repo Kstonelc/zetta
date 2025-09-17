@@ -15,7 +15,7 @@ import {
   Blockquote,
 } from "@mantine/core";
 import { Mail, ArrowLeft, CircleAlert, Send } from "lucide-react";
-import zettaLogo from "@/assets/zetta-logo.svg";
+import zettaLogo from "/zetta-logo.svg";
 import React, { useRef, useState } from "react";
 import { useNotify } from "@/utils/notify.js";
 import { useNavigate } from "react-router-dom";

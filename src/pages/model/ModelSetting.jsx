@@ -12,7 +12,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Save, SquareArrowOutUpRight } from "lucide-react";
-import QWen from "@/assets/models/qwen.svg";
+import QWen from "/assets/models/qwen.svg";
 import { Drawer } from "@/components/index.js";
 import React, { useEffect, useRef, useState } from "react";
 import { useNotify } from "@/utils/notify.ts";

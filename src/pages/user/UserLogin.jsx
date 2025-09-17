@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { Loading } from "@/components";
 import { CircleAlert, CircleUser, Mail, ShieldUser } from "lucide-react";
-import zettaLogo from "@/assets/zetta-logo.svg";
+import zettaLogo from "/zetta-logo.svg";
 import React, { useEffect, useState } from "react";
 import { useNotify } from "@/utils/notify";
 import { useUserStore } from "@/stores/useUserStore";

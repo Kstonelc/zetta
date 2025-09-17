@@ -11,7 +11,7 @@ import {
   Text,
   useMantineTheme,
 } from "@mantine/core";
-import WikiIcon from "@/assets/wiki.svg";
+import WikiIcon from "/wiki.svg";
 import { Ellipsis, Tags, SquarePen, Trash, Star } from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
