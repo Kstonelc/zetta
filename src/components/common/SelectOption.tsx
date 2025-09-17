@@ -6,7 +6,7 @@ import {
   Text,
   useCombobox,
 } from "@mantine/core";
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useEffect, useState } from "react";
 
 interface Item {
   icon: ReactNode;
@@ -19,6 +19,8 @@ interface Props {
   placeholder?: string;
   leftSection?: ReactNode;
   size?: "xs" | "sm" | "md" | "lg" | "xl";
+  defaultValue?: string;
+  onChange?: (value: string) => void;
 }
 
 function SelectOption({ icon, title, description }: Item) {
@@ -26,10 +28,10 @@ function SelectOption({ icon, title, description }: Item) {
     <Group>
       <Text fz={20}>{icon}</Text>
       <div>
-        <Text fz="sm" fw={500}>
+        <Text size={"sm"} fw={"bold"}>
           {title}
         </Text>
-        <Text fz="xs" opacity={0.6}>
+        <Text size={"xs"} c={"dimmed"}>
           {description}
         </Text>
       </div>
@@ -39,9 +41,11 @@ function SelectOption({ icon, title, description }: Item) {
 
 const SelectOptionComponent = ({
   options = [],
-  placeholder = "Please Pick Up",
+  placeholder = "请选择",
   leftSection,
   size = "sm",
+  defaultValue,
+  onChange,
 }: Props) => {
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -49,6 +53,12 @@ const SelectOptionComponent = ({
 
   const [value, setValue] = useState<string | null>(null);
   const selectedOption = options.find((item) => item.title === value);
+
+  useEffect(() => {
+    if (defaultValue) {
+      setValue(defaultValue);
+    }
+  }, [defaultValue]);
 
   const selectOptions = options.map((item) => (
     <Combobox.Option value={item.title} key={item.title}>
@@ -61,6 +71,9 @@ const SelectOptionComponent = ({
       store={combobox}
       onOptionSubmit={(val) => {
         setValue(val);
+        if (onChange) {
+          onChange(val);
+        }
         combobox.closeDropdown();
       }}
     >
@@ -69,9 +82,9 @@ const SelectOptionComponent = ({
           component="button"
           type="button"
           size={size}
-          w={200}
           leftSection={leftSection}
           pointer
+          miw={180}
           rightSection={<Combobox.Chevron />}
           onClick={() => combobox.toggleDropdown()}
           rightSectionPointerEvents="none"

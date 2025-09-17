@@ -15,6 +15,7 @@ import {
   Button,
   Paper,
   Divider,
+  Image,
   ScrollArea,
   Avatar,
 } from "@mantine/core";
@@ -27,6 +28,7 @@ import { SelectOptionComponent } from "@/components";
 import React, { useEffect, useRef, useState } from "react";
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
+import { ModelType } from "@/enum.js";
 
 const Agent = () => {
   const theme = useMantineTheme();
@@ -41,9 +43,19 @@ const Agent = () => {
       content: "你好，我是 AI，有什么可以帮你？",
     },
   ]);
+  const [models, setModels] = useState([]);
   const [isWikiEnable, setIsWikiEnable] = useState(false);
+  const [isThink, setIsThink] = useState(false);
+  const [currentModel, setCurrentModel] = useState(null);
 
   const chatContentRef = useRef(null);
+
+  useEffect(() => {
+    initialize();
+    return () => {
+      destroy();
+    };
+  }, []);
 
   useEffect(() => {
     if (chatContentRef.current) {
@@ -54,8 +66,20 @@ const Agent = () => {
     }
   }, [messages]);
 
+  const initialize = async () => {
+    const response = await appHelper.apiPost("/model/find-models", {
+      modelType: ModelType.TextGeneration,
+    });
+    if (!response.ok) {
+      return;
+    }
+    setModels(response.data);
+  };
+
+  const destroy = async () => {};
+
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !currentModel) return;
 
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -67,8 +91,18 @@ const Agent = () => {
     // 先占位空 assistant 回复
     setMessages((prev) => [...prev, assistantMessage]);
 
-    const result = await appHelper.apiFetch("/conversation/send-message", {
+    // 当前模型提供商
+    let currentModelProvider;
+    for (const model of models) {
+      if (currentModel === model.name) {
+        currentModelProvider = model.provider.name;
+        break;
+      }
+    }
+    const result = await appHelper.apiFetch("/session/send-message", {
       prompt: input,
+      modelName: currentModel,
+      modelProvider: currentModelProvider,
     });
 
     const reader = result.response.body.getReader();
@@ -88,7 +122,6 @@ const Agent = () => {
           role: "assistant",
           content: last.content + chunk,
         };
-        console.log("updated", updated);
         return updated;
       });
     }
@@ -149,6 +182,17 @@ const Agent = () => {
     );
   };
 
+  const getModelOptions = () => {
+    if (appHelper.getLength(models) > 0) {
+      return models.map((model) => ({
+        icon: model.provider.logo ? (
+          <Image src={model.provider.logo} w={20} h={20} />
+        ) : null,
+        title: model.display_name,
+      }));
+    }
+  };
+
   return (
     <Flex p={"lg"} flex={1} gap={"sm"}>
       <Card maw={220} miw={200} shadow={"md"} withBorder={true} h={"100%"}>
@@ -206,35 +250,44 @@ const Agent = () => {
               />
               <Group justify={"space-between"}>
                 <Group>
-                  <ActionIcon variant={"subtle"} bg={theme.colors.gray[1]}>
-                    <FileUp size={18} color={theme.colors.gray[7]} />
-                  </ActionIcon>
-                  {/*<Select*/}
-                  {/*  maw={200}*/}
-                  {/*  withCheckIcon={true}*/}
-                  {/*  leftSectionPointerEvents="none"*/}
-                  {/*  leftSection={*/}
-                  {/*    <Box*/}
-                  {/*      size={16}*/}
-                  {/*      color={theme.colors.gray[7]}*/}
-                  {/*      style={{*/}
-                  {/*        marginTop: 2,*/}
-                  {/*      }}*/}
-                  {/*    />*/}
-                  {/*  }*/}
-                  {/*  data={["DeepSeek", "Qwen"]}*/}
-                  {/*  size={"xs"}*/}
-                  {/*></Select>*/}
-                  <SelectOptionComponent></SelectOptionComponent>
+                  {/*<ActionIcon variant={"subtle"} bg={theme.colors.gray[1]}>*/}
+                  {/*  <FileUp size={18} color={theme.colors.gray[7]} />*/}
+                  {/*</ActionIcon>*/}
+
+                  <SelectOptionComponent
+                    size={"xs"}
+                    options={getModelOptions()}
+                    defaultValue={"qwen-plus"}
+                    onChange={(value) => {
+                      setCurrentModel(value);
+                    }}
+                  ></SelectOptionComponent>
                   <Button
-                    variant="gradient"
+                    variant={isThink ? "gradient" : "subtle"}
+                    onClick={() => {
+                      setIsThink(!isThink);
+                    }}
                     leftSection={
-                      <Sparkles size={16} color={theme.colors.yellow[3]} />
+                      <Sparkles
+                        size={16}
+                        color={
+                          isThink
+                            ? theme.colors.yellow[3]
+                            : theme.colors.gray[8]
+                        }
+                      />
                     }
                     size={"xs"}
-                    gradient={{ from: "grape", to: "cyan", deg: 90 }}
+                    gradient={
+                      isThink ? { from: "grape", to: "cyan", deg: 90 } : null
+                    }
                   >
-                    深度思考
+                    <Text
+                      c={isThink ? theme.colors.white : theme.colors.gray[8]}
+                      size={"xs"}
+                    >
+                      深度思考
+                    </Text>
                   </Button>
                 </Group>
                 <ActionIcon
