@@ -159,6 +159,7 @@ const WikiCreate = () => {
   const getEmbeddingModels = async () => {
     const response = await appHelper.apiPost("model/find-models", {
       modelType: ModelType.TextEmbedding,
+      tenantId: userStore.current_tenant.id,
     });
     if (!response.ok) {
       notify({
@@ -173,6 +174,7 @@ const WikiCreate = () => {
   const getRerankModels = async () => {
     const response = await appHelper.apiPost("model/find-models", {
       modelType: ModelType.ReRank,
+      tenantId: userStore.current_tenant.id,
     });
     if (!response.ok) {
       notify({

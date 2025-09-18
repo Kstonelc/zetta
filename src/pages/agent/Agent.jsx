@@ -29,11 +29,13 @@ import React, { useEffect, useRef, useState } from "react";
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
 import { ModelType } from "@/enum.js";
+import { useUserStore } from "@/stores/useUserStore.js";
 
 const Agent = () => {
   const theme = useMantineTheme();
   const notify = useNotify();
 
+  const { userStore, setUserStore } = useUserStore();
   const [input, setInput] = useState("");
   const [isNewChat, setIsNewChat] = useState(false);
   const [messages, setMessages] = useState([
@@ -69,6 +71,7 @@ const Agent = () => {
   const initialize = async () => {
     const response = await appHelper.apiPost("/model/find-models", {
       modelType: ModelType.TextGeneration,
+      tenantId: userStore.current_tenant.id,
     });
     if (!response.ok) {
       return;
@@ -263,7 +266,7 @@ const Agent = () => {
                     }}
                   ></SelectOptionComponent>
                   <Button
-                    variant={isThink ? "gradient" : "subtle"}
+                    variant={isThink ? "gradient" : "light"}
                     onClick={() => {
                       setIsThink(!isThink);
                     }}

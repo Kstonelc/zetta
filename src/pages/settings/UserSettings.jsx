@@ -70,6 +70,9 @@ const UserSettings = ({ isUserSettingOpen, closeUserSetting }) => {
   const initialize = async () => {
     const response = await appHelper.apiPost(
       "model-provider/find-model-provider",
+      {
+        tenantId: userStore.current_tenant.id,
+      },
     );
     if (!response.ok) {
       nav({
