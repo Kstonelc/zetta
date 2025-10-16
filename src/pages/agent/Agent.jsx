@@ -23,12 +23,19 @@ import ReactMarkdown from "react-markdown";
 import { getHotkeyHandler } from "@mantine/hooks";
 import { ChatBox } from "@/components";
 
-import { MessagesSquare, FileUp, Box, Sparkles, ArrowUp } from "lucide-react";
-import { SelectOptionComponent } from "@/components";
+import {
+  MessagesSquare,
+  FileUp,
+  Box,
+  Sparkles,
+  ArrowUp,
+  Pause,
+} from "lucide-react";
+import { SelectWithIcon } from "@/components";
 import React, { useEffect, useRef, useState } from "react";
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
-import { ModelType } from "@/enum.js";
+import { ModelType } from "@/enum.ts";
 import { useUserStore } from "@/stores/useUserStore.js";
 
 const Agent = () => {
@@ -49,8 +56,10 @@ const Agent = () => {
   const [isWikiEnable, setIsWikiEnable] = useState(false);
   const [isThink, setIsThink] = useState(false);
   const [currentModel, setCurrentModel] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const chatContentRef = useRef(null);
+  const sessionContentRef = useRef(null);
+  const sessionStopControllerRef = useRef(null);
 
   useEffect(() => {
     initialize();
@@ -60,9 +69,9 @@ const Agent = () => {
   }, []);
 
   useEffect(() => {
-    if (chatContentRef.current) {
-      chatContentRef.current.scrollTo({
-        top: chatContentRef.current.scrollHeight,
+    if (sessionContentRef.current) {
+      sessionContentRef.current.scrollTo({
+        top: sessionContentRef.current.scrollHeight,
         behavior: "smooth",
       });
     }
@@ -84,6 +93,8 @@ const Agent = () => {
   const handleSend = async () => {
     if (!input.trim() || !currentModel) return;
 
+    setIsGenerating(true);
+
     const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
     // 清空输入框
@@ -102,18 +113,26 @@ const Agent = () => {
         break;
       }
     }
-    const result = await appHelper.apiFetch("/session/send-message", {
-      prompt: input,
-      modelName: currentModel,
-      modelProvider: currentModelProvider,
-    });
+    sessionStopControllerRef.current = new AbortController();
+    const result = await appHelper.apiFetch(
+      "/session/send-message",
+      {
+        prompt: input,
+        modelName: currentModel,
+        modelProvider: currentModelProvider,
+      },
+      sessionStopControllerRef.current?.signal,
+    );
 
     const reader = result.response.body.getReader();
     const decoder = new TextDecoder("utf-8");
 
     while (true) {
       const { value, done } = await reader.read();
-      if (done) break;
+      if (done) {
+        setIsGenerating(false);
+        break;
+      }
 
       const chunk = decoder.decode(value, { stream: true });
 
@@ -129,6 +148,11 @@ const Agent = () => {
       });
     }
   };
+
+  const stopSend = async () => {
+    sessionStopControllerRef.current.abort();
+  };
+
   const renderChatBox = () => {
     return (
       <ScrollArea
@@ -136,7 +160,7 @@ const Agent = () => {
         mah={"70vh"}
         px={"sm"}
         w={"80%"}
-        viewportRef={chatContentRef}
+        viewportRef={sessionContentRef}
         offsetScrollbars
         type="never"
       >
@@ -257,14 +281,14 @@ const Agent = () => {
                   {/*  <FileUp size={18} color={theme.colors.gray[7]} />*/}
                   {/*</ActionIcon>*/}
 
-                  <SelectOptionComponent
+                  <SelectWithIcon
                     size={"xs"}
                     options={getModelOptions()}
                     defaultValue={"qwen-plus"}
                     onChange={(value) => {
                       setCurrentModel(value);
                     }}
-                  ></SelectOptionComponent>
+                  />
                   <Button
                     variant={isThink ? "gradient" : "light"}
                     onClick={() => {
@@ -295,13 +319,18 @@ const Agent = () => {
                 </Group>
                 <ActionIcon
                   size="lg"
+                  disabled={appHelper.getLength(input) === 0 && !isGenerating}
                   variant={"light"}
                   bdrs={"lg"}
                   onClick={async () => {
-                    await handleSend();
+                    if (isGenerating) {
+                      await stopSend();
+                    } else {
+                      await handleSend();
+                    }
                   }}
                 >
-                  <ArrowUp size={24} />
+                  {isGenerating ? <Pause size={24} /> : <ArrowUp size={24} />}
                 </ActionIcon>
               </Group>
             </Card>

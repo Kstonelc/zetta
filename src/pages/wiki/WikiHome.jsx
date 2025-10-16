@@ -21,7 +21,7 @@ import { Modal, Loading } from "@/components";
 import { Grid2x2Plus, Blocks, LayoutPanelTop, FileText } from "lucide-react";
 import classes from "./WikiHome.module.scss";
 import { useDisclosure } from "@mantine/hooks";
-import { WikiType } from "@/enum";
+import { WikiType } from "@/enum.js";
 import appHelper from "@/AppHelper.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 import { useNavigate } from "react-router-dom";

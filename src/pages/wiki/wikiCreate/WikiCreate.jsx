@@ -38,7 +38,7 @@ import {
   ChartScatter,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ChunkMode, FileType, ModelType, WikiType } from "@/enum";
+import { ChunkMode, FileType, ModelType, WikiType } from "@/enum.js";
 import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
 import LocalFile from "/assets/wiki/local-file.png";

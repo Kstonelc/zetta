@@ -17,7 +17,7 @@ import { Drawer } from "@/components/index.js";
 import React, { useEffect, useRef, useState } from "react";
 import { useNotify } from "@/utils/notify.ts";
 import appHelper from "@/AppHelper.js";
-import { ModelProviderUpdateType } from "@/enum";
+import { ModelProviderUpdateType } from "@/enum.js";
 
 const ModelSetting = ({ modelProviderInfo, opened, onUpdated, onClose }) => {
   const theme = useMantineTheme();

@@ -25,7 +25,7 @@ import { Modal } from "@/components";
 import { useTranslation } from "react-i18next";
 import React, { useEffect, useState } from "react";
 import { useForm } from "@mantine/form";
-import { UserRole, UserStatus } from "@/enum.js";
+import { UserRole, UserStatus } from "@/enum.ts";
 import appHelper from "@/AppHelper.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 import { useNotify } from "@/utils/notify.js";

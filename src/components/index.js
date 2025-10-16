@@ -6,4 +6,4 @@ export * from "./chatbox";
 export * from "./tiptap";
 export * from "./sidebar/WikiSideBar";
 export * from "./common/Table";
-export * from "./common/SelectOption";
+export * from "./common/SelectWithIcon.js";

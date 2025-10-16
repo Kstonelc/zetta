@@ -39,7 +39,7 @@ function SelectOption({ icon, title, description }: Item) {
   );
 }
 
-const SelectOptionComponent = ({
+const SelectWithIcon = ({
   options = [],
   placeholder = "请选择",
   leftSection,
@@ -105,4 +105,4 @@ const SelectOptionComponent = ({
   );
 };
 
-export { SelectOptionComponent };
+export { SelectWithIcon };

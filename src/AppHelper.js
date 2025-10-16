@@ -1,5 +1,5 @@
 import axios from "axios";
-import { HttpStatus } from "@/enum";
+import { HttpStatus } from "@/enum.js";
 import React from "react";
 import config from "../app.json";
 
@@ -54,10 +54,10 @@ class AppHelper {
     }
   }
 
-  async apiFetch(url, data) {
+  async apiFetch(url, data, controller) {
     const TIMEOUT_MS = 10000; // 10s 超时
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    const timeoutController = new AbortController();
+    const timer = setTimeout(() => timeoutController.abort(), TIMEOUT_MS);
 
     try {
       if (!data) data = {};
@@ -74,7 +74,7 @@ class AppHelper {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify(data),
-        signal: controller.signal,
+        signal: AbortSignal.any([timeoutController.signal, controller]),
       });
 
       if (!response.ok) {

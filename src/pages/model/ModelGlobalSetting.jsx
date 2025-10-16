@@ -16,7 +16,7 @@ import { Drawer } from "@/components/index.js";
 import React, { useEffect, useRef, useState } from "react";
 import { useNotify } from "@/utils/notify";
 import { MessageSquareDot, ArrowDownUp, Scissors, Save } from "lucide-react";
-import { ModelType } from "@/enum";
+import { ModelType } from "@/enum.js";
 
 const ModelGlobalSetting = ({ modelProviders, opened, onUpdated, onClose }) => {
   const theme = useMantineTheme();
