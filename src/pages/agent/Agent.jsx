@@ -260,7 +260,6 @@ const Agent = () => {
                   <SelectOptionComponent
                     size={"xs"}
                     options={getModelOptions()}
-                    defaultValue={"qwen-plus"}
                     onChange={(value) => {
                       setCurrentModel(value);
                     }}

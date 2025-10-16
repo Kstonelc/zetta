@@ -17,3 +17,10 @@
   word-break: break-word;
   white-space: pre-wrap;
 }
+
+.step1Form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+}
