@@ -45,13 +45,7 @@ const Agent = () => {
   const { userStore, setUserStore } = useUserStore();
   const [input, setInput] = useState("");
   const [isNewChat, setIsNewChat] = useState(false);
-  const [messages, setMessages] = useState([
-    { role: "user", content: "你好!" },
-    {
-      role: "assistant",
-      content: "你好，我是 AI，有什么可以帮你？",
-    },
-  ]);
+  const [messages, setMessages] = useState([]);
   const [models, setModels] = useState([]);
   const [isWikiEnable, setIsWikiEnable] = useState(false);
   const [isThink, setIsThink] = useState(false);
@@ -74,6 +68,9 @@ const Agent = () => {
         top: sessionContentRef.current.scrollHeight,
         behavior: "smooth",
       });
+    }
+    if (appHelper.getLength(messages) === 0) {
+      setIsNewChat(true);
     }
   }, [messages]);
 
@@ -115,7 +112,7 @@ const Agent = () => {
     }
     sessionStopControllerRef.current = new AbortController();
     const result = await appHelper.apiFetch(
-      "/session/send-message",
+      "/session/chat",
       {
         prompt: input,
         modelName: currentModel,
@@ -127,25 +124,33 @@ const Agent = () => {
     const reader = result.response.body.getReader();
     const decoder = new TextDecoder("utf-8");
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) {
-        setIsGenerating(false);
-        break;
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          setIsGenerating(false);
+          break;
+        }
+
+        const chunk = decoder.decode(value, { stream: true });
+
+        // 实时更新 assistant 的内容
+        setMessages((prev) => {
+          const updated = [...prev];
+          const last = updated[updated.length - 1];
+          updated[updated.length - 1] = {
+            role: "assistant",
+            content: last.content + chunk,
+          };
+          return updated;
+        });
       }
-
-      const chunk = decoder.decode(value, { stream: true });
-
-      // 实时更新 assistant 的内容
-      setMessages((prev) => {
-        const updated = [...prev];
-        const last = updated[updated.length - 1];
-        updated[updated.length - 1] = {
-          role: "assistant",
-          content: last.content + chunk,
-        };
-        return updated;
-      });
+    } catch (e) {
+      if (e.name === "AbortError") {
+        setIsGenerating(false);
+      } else {
+        console.error("请求发生错误:", e);
+      }
     }
   };
 
@@ -179,15 +184,14 @@ const Agent = () => {
                 <Paper
                   flex={1}
                   bg={
-                    msg.role === "user"
-                      ? theme.colors.blue[5]
-                      : theme.colors.gray[1]
+                    msg.role === "user" ? theme.colors.blue[5] : "transparent"
                   }
                   px={"xs"}
                   radius="md"
-                  withBorder
-                  shadow="xs"
+                  withBorder={msg.role === "user"}
+                  shadow={msg.role === "user" ? "sm" : "none"}
                   maw="70%"
+                  miw="20%"
                 >
                   <Text
                     size="sm"
@@ -237,7 +241,9 @@ const Agent = () => {
       <Stack h={"100%"} flex={1} align={"center"} justify={"flex-end"}>
         {isNewChat ? (
           <Stack pos={"absolute"} top={"20%"} align={"center"}>
-            <Title order={1}>我是Zetta智能助手，开始聊天吧</Title>
+            <Title order={1} c={theme.colors.violet[6]}>
+              我是Zetta智能助手，开始聊天吧
+            </Title>
             <Text c={"dimmed"}>连接数据与知识，助你高效决策。</Text>
           </Stack>
         ) : (
@@ -290,29 +296,15 @@ const Agent = () => {
                     }}
                   />
                   <Button
-                    variant={isThink ? "gradient" : "light"}
+                    variant={isThink ? "light" : "subtle"}
+                    color={isThink ? theme.colors.blue[7] : theme.black}
                     onClick={() => {
                       setIsThink(!isThink);
                     }}
-                    leftSection={
-                      <Sparkles
-                        size={16}
-                        color={
-                          isThink
-                            ? theme.colors.yellow[3]
-                            : theme.colors.gray[8]
-                        }
-                      />
-                    }
+                    leftSection={<Sparkles size={16} />}
                     size={"xs"}
-                    gradient={
-                      isThink ? { from: "grape", to: "cyan", deg: 90 } : null
-                    }
                   >
-                    <Text
-                      c={isThink ? theme.colors.white : theme.colors.gray[8]}
-                      size={"xs"}
-                    >
+                    <Text size={"xs"} fw={"bold"}>
                       深度思考
                     </Text>
                   </Button>
