@@ -5,6 +5,7 @@ import {
   Divider,
   Group,
   Image,
+  Center,
   Modal,
   NumberInput,
   Radio,
@@ -78,7 +79,7 @@ const WikiCreate = () => {
   const [embeddingModels, setEmbeddingModels] = useState([]);
   const [rerankModels, setRerankModels] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
-  const [wikiType, setWikiType] = useState(null);
+  const [wikiType, setWikiType] = useState(WikiType.Unstructured);
   const [similarityThreshold, setSimilarityThreshold] = useState(0.1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
@@ -295,6 +296,7 @@ const WikiCreate = () => {
           variant={"subtle"}
           size={"md"}
           onClick={() => {
+            setIsPreviewingChunks(false);
             setIsExitModalVisible(true);
           }}
         >
@@ -349,8 +351,11 @@ const WikiCreate = () => {
         </Stepper>
       </Group>
       {currentStep === 1 && (
-        <form onSubmit={wikiCreateForm.onSubmit(onCreateBlankWiki)}>
-          <ScrollArea h={"75vh"}>
+        <form
+          onSubmit={wikiCreateForm.onSubmit(onCreateBlankWiki)}
+          className={classes.step1Form}
+        >
+          <ScrollArea h={"calc(100vh - 250px)"}>
             <Text size={"lg"} fw={"bold"} mb={"md"}>
               知识库配置
             </Text>
@@ -378,7 +383,7 @@ const WikiCreate = () => {
               <Group>
                 <Card
                   onClick={() => {
-                    setWikiType(WikiType.Structured);
+                    // setWikiType(WikiType.Structured);
                   }}
                   flex={1}
                   bg={
@@ -394,11 +399,21 @@ const WikiCreate = () => {
                 >
                   <Group justify={"space-between"} mb={"md"}>
                     <Group gap={"xs"}>
-                      <LayoutPanelTop size={30} color={theme.colors.blue[8]} />
-                      <Text size={"sm"}>结构化数据</Text>
+                      <Center
+                        bg={theme.colors.blue[5]}
+                        w={25}
+                        h={25}
+                        style={{
+                          borderRadius: theme.radius.sm,
+                        }}
+                      >
+                        <LayoutPanelTop size={16} color={theme.white} />
+                      </Center>
+                      <Text size={"sm"}>结构化数据(Coming soon )</Text>
                     </Group>
                     <Radio
                       size={"xs"}
+                      disabled={true}
                       checked={wikiType === WikiType.Structured}
                     />
                   </Group>
@@ -424,10 +439,16 @@ const WikiCreate = () => {
                 >
                   <Group mb={"md"} justify={"space-between"}>
                     <Group gap={"xs"}>
-                      <FileText
-                        size={30}
-                        color={theme.colors.violet[8]}
-                      ></FileText>
+                      <Center
+                        bg={theme.colors.violet[5]}
+                        w={25}
+                        h={25}
+                        style={{
+                          borderRadius: theme.radius.sm,
+                        }}
+                      >
+                        <FileText size={16} color={theme.white} />
+                      </Center>
                       <Text size={"sm"}>非结构化数据</Text>
                     </Group>
                     <Radio
@@ -505,33 +526,40 @@ const WikiCreate = () => {
               </Stack>
             </Stack>
           </ScrollArea>
-          <Divider my={"sm"} />
-          <Group>
-            <Button variant={"subtle"} type={"submit"} disabled={isSubmitting}>
-              创建空的知识库
-            </Button>
-            <Button
-              variant={"light"}
-              color={theme.colors.gray[7]}
-              onClick={() => {
-                setIsExitModalVisible(true);
-              }}
-            >
-              取消
-            </Button>
-            <Button
-              onClick={() => {
-                nextStep();
-              }}
-            >
-              下一步
-            </Button>
-          </Group>
+
+          <Stack>
+            <Divider />
+            <Group>
+              <Button
+                variant={"subtle"}
+                type={"submit"}
+                disabled={isSubmitting}
+              >
+                创建空的知识库
+              </Button>
+              <Button
+                variant={"light"}
+                color={theme.colors.gray[7]}
+                onClick={() => {
+                  setIsExitModalVisible(true);
+                }}
+              >
+                取消
+              </Button>
+              <Button
+                onClick={() => {
+                  nextStep();
+                }}
+              >
+                下一步
+              </Button>
+            </Group>
+          </Stack>
         </form>
       )}
       {currentStep === 2 && (
         <>
-          <ScrollArea h={"75vh"}>
+          <ScrollArea h={"calc(100vh - 250px)"}>
             <Text size={"sm"} mb={"md"} fw={"bold"}>
               选择数据源
             </Text>
@@ -626,7 +654,7 @@ const WikiCreate = () => {
         </>
       )}
       {currentStep === 3 && (
-        <Group h={"80vh"}>
+        <Group h={"calc(100vh - 180px)"}>
           <Card withBorder h={"100%"} flex={1}>
             <Stack justify={"space-between"} h={"100%"}>
               <ScrollArea mb={"md"}>
@@ -791,7 +819,7 @@ const WikiCreate = () => {
               </Group>
             </Stack>
           </Card>
-          <Card withBorder flex={1} h={"80vh"}>
+          <Card withBorder h={"100%"} flex={1}>
             <ScrollArea type={"auto"} style={{ height: "100%" }} pr={"sm"}>
               <Text size={"sm"} fw={"bold"} mb={"md"}>
                 预览分块

@@ -290,7 +290,6 @@ const Agent = () => {
                   <SelectWithIcon
                     size={"xs"}
                     options={getModelOptions()}
-                    defaultValue={"qwen-plus"}
                     onChange={(value) => {
                       setCurrentModel(value);
                     }}
