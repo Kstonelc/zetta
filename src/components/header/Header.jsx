@@ -11,7 +11,7 @@ import {
   Divider,
   Stack,
 } from "@mantine/core";
-import zettaLogo from "/zetta-logo.svg";
+import bichonLogo from "/bichon-logo.svg";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import {
   BookOpenText,
@@ -83,7 +83,7 @@ const Header = () => {
       align={"center"}
     >
       <Group>
-        <Image src={zettaLogo} className={classes.logo} />
+        <Image src={bichonLogo} className={classes.logo} />
         {currentTenant && (
           <Menu shadow="md" width={200} radius={"md"}>
             <Menu.Target>

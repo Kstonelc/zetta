@@ -18,7 +18,13 @@ import {
 } from "@mantine/core";
 import { WikiHomeCard } from "./WikiHomeCard.jsx";
 import { Modal, Loading } from "@/components";
-import { Grid2x2Plus, Blocks, LayoutPanelTop, FileText } from "lucide-react";
+import {
+  Grid2x2Plus,
+  Blocks,
+  LayoutPanelTop,
+  FileText,
+  SwatchBook,
+} from "lucide-react";
 import classes from "./WikiHome.module.scss";
 import { useDisclosure } from "@mantine/hooks";
 import { WikiType } from "@/enum.js";

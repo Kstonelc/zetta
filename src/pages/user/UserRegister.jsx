@@ -19,7 +19,7 @@ import { useForm } from "@mantine/form";
 import { Mail, ArrowLeft, CircleAlert, CircleUser } from "lucide-react";
 import GoogleIcon from "/google-icon.svg";
 import GithubIcon from "/github-icon.svg";
-import zettaLogo from "/zetta-logo.svg";
+import bichonLogo from "/bichon-logo.svg";
 import React from "react";
 import { useNotify } from "@/utils/notify.js";
 import { useNavigate } from "react-router-dom";
@@ -54,7 +54,7 @@ const UserRegister = () => {
 
   return (
     <Flex h={"100vh"} p={"xl"} direction={"column"}>
-      <Image src={zettaLogo} w={142} h={40} />
+      <Image src={bichonLogo} w={142} h={40} />
       <Center flex={1}>
         <Card p={"md"} miw={450} withBorder>
           <Flex direction={"column"} gap={"xs"}>

@@ -213,7 +213,6 @@ const TenantUsersSetting = ({ tenant }) => {
       });
       return;
     }
-    console.log(222, response.data);
     setTenantInfo(response.data);
     setIsEditTenantModalVisible(false);
   };

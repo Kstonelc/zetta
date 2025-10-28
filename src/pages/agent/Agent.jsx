@@ -71,6 +71,8 @@ const Agent = () => {
     }
     if (appHelper.getLength(messages) === 0) {
       setIsNewChat(true);
+    } else {
+      setIsNewChat(false);
     }
   }, [messages]);
 
@@ -241,9 +243,7 @@ const Agent = () => {
       <Stack h={"100%"} flex={1} align={"center"} justify={"flex-end"}>
         {isNewChat ? (
           <Stack pos={"absolute"} top={"20%"} align={"center"}>
-            <Title order={1} c={theme.colors.violet[6]}>
-              我是Zetta智能助手，开始聊天吧
-            </Title>
+            <Title order={1}>我是Bichon智能助手，开始聊天吧</Title>
             <Text c={"dimmed"}>连接数据与知识，助你高效决策。</Text>
           </Stack>
         ) : (
@@ -329,7 +329,7 @@ const Agent = () => {
           <Popover.Dropdown>
             <Menu>
               <Menu.Item>
-                <Text size={"xs"}>Zetta</Text>
+                <Text size={"xs"}>Bichon</Text>
               </Menu.Item>
             </Menu>
           </Popover.Dropdown>

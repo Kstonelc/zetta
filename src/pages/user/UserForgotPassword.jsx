@@ -15,7 +15,7 @@ import {
   Blockquote,
 } from "@mantine/core";
 import { Mail, ArrowLeft, CircleAlert, Send } from "lucide-react";
-import zettaLogo from "/zetta-logo.svg";
+import bichonLogo from "/bichon-logo.svg";
 import React, { useRef, useState } from "react";
 import { useNotify } from "@/utils/notify.js";
 import { useNavigate } from "react-router-dom";
@@ -215,7 +215,7 @@ const UserForgotPassword = () => {
 
   return (
     <Flex h={"100vh"} p={"xl"} direction={"column"}>
-      <Image src={zettaLogo} w={142} h={40} />
+      <Image src={bichonLogo} w={142} h={40} />
       <Center flex={1}>
         <Card p={"md"} miw={450} withBorder>
           <Flex direction={"column"} gap={"xs"}>

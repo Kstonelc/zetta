@@ -8,7 +8,7 @@ export const useUserStore = create(
       setUserStore: (userStore) => set({ userStore }),
     }),
     {
-      name: "zetta-user-info",
+      name: "bichon-user-info",
       // 可选：只持久化特定字段
       partialize: (state) => ({ userStore: state.userStore }),
     },

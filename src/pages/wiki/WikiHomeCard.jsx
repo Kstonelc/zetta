@@ -12,7 +12,14 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import WikiIcon from "/wiki.svg";
-import { Ellipsis, Tags, SquarePen, Trash, Star } from "lucide-react";
+import {
+  Ellipsis,
+  Tags,
+  SquarePen,
+  Trash,
+  Star,
+  SwatchBook,
+} from "lucide-react";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -47,7 +54,11 @@ const WikiHomeCard = ({ wikiId, name, desc }) => {
               border: `1px solid ${theme.colors.blue[1]}`,
             }}
           >
-            <Image src={WikiIcon} w={18} h={18} />
+            <SwatchBook
+              h={18}
+              w={18}
+              color={theme.colors.violet[6]}
+            ></SwatchBook>
           </Center>
           <Flex direction={"column"}>
             <Text fw={"bold"}>{name}</Text>

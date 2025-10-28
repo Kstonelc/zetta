@@ -14,7 +14,7 @@ import {
 } from "@mantine/core";
 import { Loading } from "@/components";
 import { CircleAlert, CircleUser, Mail, ShieldUser } from "lucide-react";
-import zettaLogo from "/zetta-logo.svg";
+import bichonLogo from "/bichon-logo.svg";
 import React, { useEffect, useState } from "react";
 import { useNotify } from "@/utils/notify";
 import { useUserStore } from "@/stores/useUserStore";
@@ -123,14 +123,14 @@ const UserLogin = () => {
   return (
     <Loading visible={!isReady} size={"md"}>
       <Flex h={"100vh"} p={"xl"} direction={"column"}>
-        <Image src={zettaLogo} w={142} h={40} />
+        <Image src={bichonLogo} w={180} h={60} />
         <Center flex={1}>
           {isAdminExist ? (
             <Card p={"md"} miw={450} withBorder>
               <Flex direction={"column"} gap={"xs"}>
                 <Title order={3}>🤖 欢迎回来!</Title>
                 <Text c="dimmed" size={"sm"} mb={"md"}>
-                  登录 Zetta 以继续
+                  登录 Bichon 以继续
                 </Text>
               </Flex>
               <form
@@ -172,7 +172,7 @@ const UserLogin = () => {
                   <Title order={3}>设置管理员</Title>
                 </Group>
                 <Text c="dimmed" size={"xs"} mb={"md"}>
-                  管理员拥有Zetta最大权限,可用于创建知识库, 配置大模型等
+                  管理员拥有Bichon最大权限,可用于创建知识库, 配置大模型等
                 </Text>
                 <form onSubmit={formAdmin.onSubmit((values) => {})}>
                   <Stack mb={"md"}>

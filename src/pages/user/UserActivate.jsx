@@ -11,7 +11,7 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
-import zettaLogo from "/zetta-logo.svg";
+import bichonLogo from "/bichon-logo.svg";
 import { Sparkles } from "lucide-react";
 import React, { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -88,13 +88,13 @@ const UserActivate = () => {
   //endregion
   return (
     <Flex h={"100vh"} p={"xl"} direction={"column"}>
-      <Image src={zettaLogo} w={142} h={40} />
+      <Image src={bichonLogo} w={142} h={40} />
       <Center flex={1}>
         <Card p={"md"} miw={450} withBorder>
           <Flex direction={"column"} gap={"xs"}>
-            <Title order={3}>🤖 激活Zetta</Title>
+            <Title order={3}>🤖 激活Bichon</Title>
             <Text c="dimmed" size={"sm"} mb={"md"}>
-              欢迎您加入 Zetta, 下面设置您的密码 ！
+              欢迎您加入 Bichon, 下面设置您的密码 ！
             </Text>
           </Flex>
           <form
