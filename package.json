@@ -47,6 +47,9 @@
     "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.2",
+    "rehype-highlight": "^7.0.2",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "tiptap-extension-resize-image": "^1.2.2",
     "zustand": "^5.0.6"
   },

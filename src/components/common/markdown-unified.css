@@ -1,0 +1,94 @@
+/* 统一所有 Markdown 元素字体大小和行高 */
+.markdown-unified {
+    font-size: 14px;
+    line-height: 1.6;
+    font-family: 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+    color: #24292f;
+}
+
+/* 所有标题与正文大小一致，仅加粗 */
+.markdown-unified h1,
+.markdown-unified h2,
+.markdown-unified h3,
+.markdown-unified h4,
+.markdown-unified h5,
+.markdown-unified h6 {
+    font-size: inherit;
+    font-weight: 600;
+    margin: 0.6em 0;
+}
+
+/* 段落、列表、引用、粗体、斜体等全统一 */
+.markdown-unified p,
+.markdown-unified ol,
+.markdown-unified ul,
+.markdown-unified li,
+.markdown-unified blockquote,
+.markdown-unified pre,
+.markdown-unified code,
+.markdown-unified strong,
+.markdown-unified em {
+    font-size: 14px;
+    line-height: inherit;
+    margin: 0.3em 0;
+}
+
+/* 代码块和行内代码保持等宽字体 */
+.markdown-unified code,
+.markdown-unified pre code {
+    font-family: Menlo, Consolas, monospace;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* 代码块背景 */
+.markdown-unified pre {
+    padding: 8px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+/* 粗体 */
+.markdown-unified strong {
+    font-weight: 600;
+}
+
+/* 链接 */
+.markdown-unified a {
+    color: #0969da;
+    text-decoration: none;
+}
+.markdown-unified a:hover {
+    text-decoration: underline;
+}
+
+/* 列表 */
+.markdown-unified ul,
+.markdown-unified ol {
+    padding-left: 1.2em;
+}
+.markdown-unified li {
+    margin: 0.3em 0;
+}
+
+/* blockquote */
+.markdown-unified blockquote {
+    border-left: 4px solid #d0d7de;
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: #6e7781;
+}
+
+/* 复制按钮所在的代码块上层 Paper 容器 */
+.markdown-codeblock {
+    font-size: 14px !important;
+}
+
+
+.hljs-tag {
+    background: none !important;
+}
+
+.hljs {
+    background: none !important;
+}

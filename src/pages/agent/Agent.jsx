@@ -19,7 +19,8 @@ import {
   ScrollArea,
   Avatar,
 } from "@mantine/core";
-import ReactMarkdown from "react-markdown";
+import { MarkdownViewer } from "@/components";
+import "highlight.js/styles/idea.css";
 import { getHotkeyHandler } from "@mantine/hooks";
 import { ChatBox } from "@/components";
 
@@ -37,6 +38,7 @@ import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
 import { ModelType } from "@/enum.ts";
 import { useUserStore } from "@/stores/useUserStore.js";
+import classes from "./Agent.module.scss";
 
 const Agent = () => {
   const theme = useMantineTheme();
@@ -136,6 +138,8 @@ const Agent = () => {
 
         const chunk = decoder.decode(value, { stream: true });
 
+        console.log(chunk);
+
         // 实时更新 assistant 的内容
         setMessages((prev) => {
           const updated = [...prev];
@@ -177,7 +181,7 @@ const Agent = () => {
               key={id}
               justify={msg.role === "user" ? "flex-end" : "flex-start"}
             >
-              <Group justify={msg.role === "user" ? "flex-end" : "flex-start"}>
+              <Group align={"flex-start"}>
                 {msg.role === "assistant" && (
                   <Avatar variant={"light"} color={theme.colors.violet[7]}>
                     ZE
@@ -188,18 +192,21 @@ const Agent = () => {
                   bg={
                     msg.role === "user" ? theme.colors.blue[5] : "transparent"
                   }
-                  px={"xs"}
+                  p={msg.role === "user" ? "xs" : 0}
                   radius="md"
                   withBorder={msg.role === "user"}
                   shadow={msg.role === "user" ? "sm" : "none"}
-                  maw="70%"
                   miw="20%"
                 >
                   <Text
                     size="sm"
                     c={msg.role === "user" ? theme.white : theme.colors.dark[8]}
                   >
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                    {msg.role === "user" ? (
+                      msg.content
+                    ) : (
+                      <MarkdownViewer content={msg.content}></MarkdownViewer>
+                    )}
                   </Text>
                 </Paper>
                 {msg.role === "user" && (
