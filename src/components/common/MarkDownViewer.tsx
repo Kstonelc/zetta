@@ -19,10 +19,7 @@ import {
 import { useClipboard } from "@mantine/hooks";
 import { Copy, Check } from "lucide-react";
 
-// 使用 GitHub 风格高亮
 import "highlight.js/styles/default.css";
-
-// ✅ 统一 Markdown 样式
 import "./markdown-unified.css";
 
 export type MarkdownViewerProps = {
@@ -31,7 +28,6 @@ export type MarkdownViewerProps = {
   allowHtml?: boolean;
 };
 
-/** 规范化语言名；将 text/plain 视为无语言（返回 null） */
 function normalizeLang(className?: string): string | null {
   if (!className) return null;
   const match =
@@ -44,7 +40,6 @@ function normalizeLang(className?: string): string | null {
   return lang;
 }
 
-/** 递归提取纯文本（用于复制用的原文） */
 function extractText(node: any): string {
   if (node == null) return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -55,7 +50,6 @@ function extractText(node: any): string {
   return "";
 }
 
-/** 代码块渲染组件 */
 const CodeBlock: React.FC<{
   inline?: boolean;
   className?: string;
@@ -69,17 +63,15 @@ const CodeBlock: React.FC<{
   );
   const lang = normalizeLang(className);
 
-  // 行内代码或 text → 不换行，加粗显示
   if (inline || !lang) {
     return (
       <Box
         component="span"
         style={{
-          fontFamily: theme.fontFamilyMonospace,
           fontWeight: 600,
           display: "inline-block",
           verticalAlign: "baseline",
-          background: "rgba(0,0,0,0.04)",
+          background: theme.colors.gray[2],
           borderRadius: 4,
           padding: "0 4px",
         }}
@@ -89,7 +81,6 @@ const CodeBlock: React.FC<{
     );
   }
 
-  // 有语言 → 显示语言和复制按钮 + 保留高亮
   return (
     <Paper
       withBorder
@@ -100,18 +91,11 @@ const CodeBlock: React.FC<{
       <Group
         justify="space-between"
         align="center"
-        px="sm"
+        px="xs"
         py={6}
         style={{
-          borderBottom: `1px solid ${
-            theme.colorScheme === "dark"
-              ? theme.colors.dark[4]
-              : theme.colors.gray[3]
-          }`,
-          background:
-            theme.colorScheme === "dark"
-              ? theme.colors.dark[6]
-              : theme.colors.gray[0],
+          borderBottom: `1px solid ${theme.colors.gray[3]}`,
+          background: theme.colors.gray[0],
         }}
       >
         <Text fw={600} fz={12} tt="uppercase" c="dimmed">
@@ -125,15 +109,14 @@ const CodeBlock: React.FC<{
         </Tooltip>
       </Group>
 
-      <Box component="pre" m={0} p="sm" style={{ overflowX: "auto" }}>
+      <Box component="pre" m={0} p="xs" style={{ overflowX: "auto" }}>
         <Box
           component="code"
           className={className}
           style={{
             display: "block",
-            fontFamily: theme.fontFamilyMonospace,
             fontSize: "inherit",
-            lineHeight: 1.6,
+            lineHeight: 1.4,
           }}
         >
           {children}
@@ -143,12 +126,16 @@ const CodeBlock: React.FC<{
   );
 };
 
-/** 主体组件 */
 const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   content,
   className,
   allowHtml = false,
 }) => {
+  const theme = useMantineTheme();
+  const border = theme.colors.gray[3];
+  const headBg = theme.colors.gray[1];
+
+  // @ts-ignore
   const components: Components = {
     code: ({ inline, className, children, ...props }) => (
       <CodeBlock inline={inline} className={className} {...props}>
@@ -159,6 +146,71 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
       <Anchor href={href} target="_blank" rel="noreferrer noopener">
         {children}
       </Anchor>
+    ),
+
+    /** ------- ✅ 表格渲染支持（带自适应滚动与样式） ------- */
+    table: ({ children }) => (
+      <Box
+        className="md-table-container"
+        style={{
+          overflowX: "hidden",
+          margin: "12px 0",
+          borderRadius: 8,
+          borderWidth: 1,
+          borderStyle: "solid",
+          borderColor: theme.colors.gray[3],
+        }}
+      >
+        <Box
+          component="table"
+          className="md-table"
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            border: `1px solid ${border}`,
+          }}
+        >
+          {children}
+        </Box>
+      </Box>
+    ),
+    thead: ({ children }) => (
+      <Box component="thead" style={{ background: headBg }}>
+        {children}
+      </Box>
+    ),
+    tbody: ({ children }) => <Box component="tbody">{children}</Box>,
+    tr: ({ children }) => <Box component="tr">{children}</Box>,
+    th: ({ children }) => (
+      <Box
+        component="th"
+        style={{
+          textAlign: "left",
+          padding: "8px 10px",
+          borderBottom: `1px solid ${border}`,
+          borderRight: `1px solid ${border}`,
+          fontWeight: 700,
+          position: "sticky",
+          top: 0, // 如果外层容器有固定高度 + overflow，可粘性表头
+          zIndex: 1,
+          background: headBg,
+        }}
+      >
+        {children}
+      </Box>
+    ),
+    td: ({ children }) => (
+      <Box
+        component="td"
+        style={{
+          padding: "8px 10px",
+          borderBottom: `1px solid ${border}`,
+          borderRight: `1px solid ${border}`,
+          verticalAlign: "top",
+        }}
+      >
+        {children}
+      </Box>
     ),
   };
 

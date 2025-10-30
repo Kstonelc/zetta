@@ -84,6 +84,18 @@
     font-size: 14px !important;
 }
 
+.md-table-container::-webkit-scrollbar {
+    height: 6px;
+}
+.md-table-container::-webkit-scrollbar-thumb {
+    background-color: rgba(0,0,0,0.2);
+    border-radius: 20px;
+}
+
+/* 斑马纹（只作用在 tbody） */
+.md-table tbody tr:nth-child(even) td {
+    background: rgba(0,0,0,0.03);
+}
 
 .hljs-tag {
     background: none !important;
