@@ -92,6 +92,34 @@
     border-radius: 20px;
 }
 
+:root {
+    --md-code-sticky-top: 0px;
+}
+
+/* 推荐：直接把变量挂到 Virtuoso 的滚动容器 */
+[data-virtuoso-scroller="true"] {
+    --md-code-sticky-top: 0px; /* 有 AppHeader 高度就设成对应值 */
+}
+
+
+/* 吸顶的 Header */
+.md-code-header {
+    position: sticky;
+    top: var(--md-code-sticky-top);
+    z-index: 3;
+    background: inherit; /* 保持与卡片背景一致，避免滚动透底 */
+}
+
+/* 让真正的代码区域裁切滚动 */
+.md-code-pre {
+    max-width: 100%;
+    overflow: auto;
+    margin: 0;
+    padding: var(--mantine-spacing-xs);
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
 /* 斑马纹（只作用在 tbody） */
 .md-table tbody tr:nth-child(even) td {
     background: rgba(0,0,0,0.03);

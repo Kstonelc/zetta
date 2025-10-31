@@ -4,8 +4,8 @@ import React, {
   useState,
   useMemo,
   useCallback,
-  forwardRef,
 } from "react";
+import { flushSync } from "react-dom";
 import {
   Stack,
   Text,
@@ -44,6 +44,10 @@ import { ModelType } from "@/enum.ts";
 import { useUserStore } from "@/stores/useUserStore.js";
 import { MarkdownViewer, SelectWithIcon } from "@/components";
 
+/** 简单稳定 id 生成器 */
+const genId = (prefix = "m") =>
+  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
 const Agent = () => {
   const theme = useMantineTheme();
   const notify = useNotify();
@@ -73,6 +77,10 @@ const Agent = () => {
   const atBottomRef = useRef(true);
   const userInteractingRef = useRef(false);
   const [showJump, setShowJump] = useState(false);
+
+  // 区分程序滚动与用户滚动
+  const byProgrammaticRef = useRef(false);
+  const lastProgrammaticAtRef = useRef(0);
 
   // 流控
   const sessionStopControllerRef = useRef(null);
@@ -122,70 +130,49 @@ const Agent = () => {
     [models],
   );
 
-  // 底部判定
-  const isAtBottomStrict = useCallback(() => {
-    const el = scrollerElRef.current;
-    if (!el) return true;
-    const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
-    return diff <= 2;
-  }, []);
-
-  const recomputeOverflowAndJump = useCallback(() => {
+  /** ------------------ 程序化滚动到底部（区分用户/程序） ------------------ */
+  const scrollToBottomProgrammatic = useCallback((behavior = "smooth") => {
     const el = scrollerElRef.current;
     if (!el) return;
-    const overflow = el.scrollHeight - el.clientHeight > 1;
-    const atBottom = isAtBottomStrict();
-    atBottomRef.current = atBottom;
-    setShowJump(overflow && !atBottom);
-  }, [isAtBottomStrict]);
+    byProgrammaticRef.current = true;
+    lastProgrammaticAtRef.current = Date.now();
 
-  useEffect(() => {
-    const id = requestAnimationFrame(recomputeOverflowAndJump);
-    return () => cancelAnimationFrame(id);
-  }, [messages, recomputeOverflowAndJump]);
-
-  useEffect(() => {
-    const onResize = () => recomputeOverflowAndJump();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [recomputeOverflowAndJump]);
-
-  const cancelAutoStick = useCallback(() => {
-    userInteractingRef.current = true;
-  }, []);
-  const allowAutoStick = useCallback(() => {
-    userInteractingRef.current = false;
-  }, []);
-
-  /** ------------------ 平滑贴底 ------------------ */
-  const pinToBottomSmooth = useCallback(() => {
-    const el = scrollerElRef.current;
-    if (!el) return;
     const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
     try {
-      el.scrollTo({ top: maxTop, behavior: "smooth" });
+      el.scrollTo({ top: maxTop, behavior });
     } catch {
       el.scrollTop = maxTop;
     }
+    // 放行窗口，避免把程序滚动误判为用户交互
+    window.setTimeout(() => {
+      byProgrammaticRef.current = false;
+    }, 120);
   }, []);
 
-  // 自定义 Scroller（避免 GPU 抖动样式）
+  /** ------------------ 自定义 Scroller：维护 atBottom / 用户交互 ------------------ */
   const Scroller = useMemo(
     () =>
-      forwardRef(function ScrollerImpl({ style, onScroll, ...props }, ref) {
-        const handleScroll = (e) => {
-          onScroll?.(e);
-          userInteractingRef.current = true;
+      React.forwardRef(({ style, onScroll, className, ...props }, ref) => {
+        const isAtBottomNow = () => {
           const el = scrollerElRef.current;
-          if (!el) return;
-          const overflow = el.scrollHeight - el.clientHeight > 1;
-          const atBottom = isAtBottomStrict();
-          atBottomRef.current = atBottom;
-          setShowJump(overflow && !atBottom);
+          if (!el) return true;
+          const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
+          return diff <= 2;
         };
+
+        // 标记“用户开始交互”
+        const markUserInteracting = () => {
+          // 程序滚动不算用户交互
+          if (byProgrammaticRef.current) return;
+          // 只有当不在底部时才认为打断自动跟随
+          const at = isAtBottomNow();
+          userInteractingRef.current = !at;
+        };
+
         return (
           <div
-            className="no-scrollbar"
+            data-virtuoso-scroller="true"
+            className={`no-scrollbar ${className ?? ""}`}
             {...props}
             ref={(node) => {
               scrollerElRef.current = node;
@@ -195,19 +182,35 @@ const Agent = () => {
             style={{
               ...style,
               overscrollBehavior: "contain",
+              backfaceVisibility: "hidden",
+              WebkitFontSmoothing: "antialiased",
             }}
-            onScroll={handleScroll}
-            onWheel={cancelAutoStick}
-            onTouchStart={cancelAutoStick}
-            onTouchMove={cancelAutoStick}
-            onTouchEnd={() => requestAnimationFrame(allowAutoStick)}
+            onWheel={markUserInteracting}
+            onTouchStart={markUserInteracting}
+            onPointerDown={markUserInteracting}
+            onScroll={(e) => {
+              onScroll?.(e);
+              const el = scrollerElRef.current;
+              if (!el) return;
+
+              const at = isAtBottomNow();
+              atBottomRef.current = at;
+
+              // 滚回底部 -> 恢复自动跟随
+              if (at) {
+                userInteractingRef.current = false;
+              }
+
+              const overflow = el.scrollHeight - el.clientHeight > 1;
+              setShowJump(overflow && !at);
+            }}
           />
         );
       }),
-    [allowAutoStick, cancelAutoStick, isAtBottomStrict],
+    [],
   );
 
-  /** ------------------ 流式拼接（批量刷新） ------------------ */
+  /** ------------------ 流式拼接（批量刷新 & 首帧去 Loader） ------------------ */
   const appendToAssistantById = useCallback(
     (assistantId, textChunk) => {
       setMessages((prev) => {
@@ -218,25 +221,25 @@ const Agent = () => {
         const next = [...prev];
         const current = next[idx];
 
-        // 如果当前 content 是 React 组件（如 <Loader />），先清空再写入
+        // 首帧如果是 <Loader/>，先清空
         let currentContent = current.content;
         if (React.isValidElement(currentContent)) {
-          currentContent = ""; // 去掉 Loader
+          currentContent = "";
         }
 
         next[idx] = {
           ...current,
           content: (currentContent || "") + textChunk,
         };
-
         return next;
       });
 
-      if (atBottomRef.current && !userInteractingRef.current) {
-        requestAnimationFrame(pinToBottomSmooth);
+      // 若未被用户打断，则兜底一次
+      if (!userInteractingRef.current) {
+        requestAnimationFrame(() => scrollToBottomProgrammatic("auto"));
       }
     },
-    [pinToBottomSmooth],
+    [scrollToBottomProgrammatic],
   );
 
   const scheduleFlush = useCallback(() => {
@@ -250,7 +253,7 @@ const Agent = () => {
       const toAppend = bufferRef.current;
       bufferRef.current = "";
       appendToAssistantById(currentAssistantIdRef.current, toAppend);
-    }, 200); // 较低频率，减少 UI 抖动
+    }, 120);
   }, [appendToAssistantById]);
 
   // 发送 / 停止
@@ -276,35 +279,36 @@ const Agent = () => {
 
     setIsGenerating(true);
 
+    const userMsgId = genId("u");
     const userMessage = {
+      id: userMsgId,
       role: "user",
       content: input,
     };
-    const assistantId = `a_${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 6)}`;
+    const assistantId = genId("a");
     const assistantMessage = {
       id: assistantId,
       role: "assistant",
-      content: <Loader size={"xs"} mt={"xs"} />,
+      content: <Loader size={"xs"} mt={"xs"} />, // 占位，首帧会被清空
     };
     currentAssistantIdRef.current = assistantId;
 
-    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    // 立即同步添加消息，随后瞬时滚到底部（不等待异步渲染）
     userInteractingRef.current = false;
-    setInput("");
+    const nextLen = messagesRef.current.length + 2;
 
-    requestAnimationFrame(() => {
-      if (!userInteractingRef.current) {
-        virtuosoRef.current?.scrollToIndex({
-          index: messagesRef.current.length + 1,
-          align: "end",
-          behavior: "smooth",
-        });
-        requestAnimationFrame(pinToBottomSmooth);
-      }
-      requestAnimationFrame(recomputeOverflowAndJump);
+    flushSync(() => {
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
     });
+
+    virtuosoRef.current?.scrollToIndex({
+      index: Math.max(0, nextLen - 1),
+      align: "end",
+      behavior: "auto", // 立刻到位
+    });
+    scrollToBottomProgrammatic("auto");
+
+    setInput("");
 
     // 发送请求
     let currentModelProvider;
@@ -330,6 +334,7 @@ const Agent = () => {
     } catch (err) {
       setIsGenerating(false);
       console.error("请求失败:", err);
+      notify.error?.("发送失败，请稍后重试");
       return;
     }
 
@@ -337,6 +342,7 @@ const Agent = () => {
     if (!reader) {
       setIsGenerating(false);
       console.error("流读取器不可用");
+      notify.error?.("服务异常：流不可用");
       return;
     }
 
@@ -357,7 +363,6 @@ const Agent = () => {
             flushTimerRef.current = null;
           }
           setIsGenerating(false);
-          requestAnimationFrame(recomputeOverflowAndJump);
           break;
         }
 
@@ -381,13 +386,13 @@ const Agent = () => {
     currentModel,
     models,
     isGenerating,
-    pinToBottomSmooth,
-    recomputeOverflowAndJump,
     scheduleFlush,
     stopSend,
+    notify,
+    scrollToBottomProgrammatic,
   ]);
 
-  /** ------------------ 跳到底部 ------------------ */
+  /** ------------------ 跳到底部（恢复自动跟随） ------------------ */
   const jumpToBottomNow = useCallback(() => {
     const lastIdx = messagesRef.current.length - 1;
     virtuosoRef.current?.scrollToIndex({
@@ -395,11 +400,13 @@ const Agent = () => {
       align: "end",
       behavior: "smooth",
     });
+    // 用户主动回到最新，等价于恢复自动跟随
+    userInteractingRef.current = false;
     requestAnimationFrame(() => {
-      pinToBottomSmooth();
+      scrollToBottomProgrammatic("smooth");
       setShowJump(false);
     });
-  }, [pinToBottomSmooth]);
+  }, [scrollToBottomProgrammatic]);
 
   /** ------------------ 渲染列表 ------------------ */
   const renderChatBox = () => {
@@ -417,21 +424,32 @@ const Agent = () => {
           style={{ height: "100%", width: "100%" }}
           data={messages}
           computeItemKey={(_, msg) => msg.id}
-          increaseViewportBy={{ top: 600, bottom: 900 }} // 适中缓冲，减少重排
+          increaseViewportBy={{ top: 800, bottom: 1000 }}
+          defaultItemHeight={160}
+          components={{
+            Scroller,
+            ScrollSeekPlaceholder,
+          }}
           followOutput={
             isGenerating && atBottomRef.current && !userInteractingRef.current
               ? "smooth"
               : false
           }
-          components={{ Scroller }}
+          /** 只有高速才切骨架，速度降下来立刻恢复真实渲染 */
+          scrollSeekConfiguration={{
+            enter: (v) => Math.abs(v) > 1400,
+            exit: (v) => Math.abs(v) < 900,
+          }}
+          atBottomStateChange={(at) => {
+            atBottomRef.current = at;
+            if (at) userInteractingRef.current = false;
+            const el = scrollerElRef.current;
+            const overflow = !!el && el.scrollHeight - el.clientHeight > 1;
+            setShowJump(overflow && !at);
+          }}
           itemContent={(_, msg) => (
             <MessageItem key={msg.id} msg={msg} theme={theme} />
           )}
-          // 保守的滚动寻路，避免大幅度跳动导致闪烁
-          scrollSeekConfiguration={{
-            enter: (v) => Math.abs(v) > 800,
-            exit: (v) => Math.abs(v) < 400,
-          }}
         />
 
         {/* 底部悬浮“跳至最新” */}
@@ -468,17 +486,35 @@ const Agent = () => {
   /** ------------------ 渲染 ------------------ */
   return (
     <Flex p="lg" flex={1} gap="sm" style={{ minHeight: 0 }}>
-      {/* 隐藏滚动条 */}
+      {/* 隐藏滚动条（全内核覆盖） + GPU 合成/隔离 + 骨架样式 */}
       <Global
         styles={{
-          ".no-scrollbar": {
-            scrollbarWidth: "none",
-            msOverflowStyle: "none",
+          ".no-scrollbar, [data-virtuoso-scroller='true']": {
+            scrollbarWidth: "none", // Firefox
+            msOverflowStyle: "none", // IE/Edge legacy
+            // 白屏优化：将滚动容器置于合成层，隔离绘制
+            willChange: "transform",
+            contain: "strict",
+            transform: "translateZ(0)",
           },
-          ".no-scrollbar::-webkit-scrollbar": {
-            display: "none",
-            width: 0,
-            height: 0,
+          ".no-scrollbar::-webkit-scrollbar, [data-virtuoso-scroller='true']::-webkit-scrollbar":
+            {
+              display: "none", // WebKit
+              width: 0,
+              height: 0,
+              background: "transparent",
+            },
+          // 骨架占位样式
+          ".v-skeleton": {
+            borderRadius: 6,
+            background:
+              "linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06))",
+            backgroundSize: "200px 100%",
+            animation: "v-shimmer 1.2s infinite linear",
+          },
+          "@keyframes v-shimmer": {
+            "0%": { backgroundPosition: "-200px 0" },
+            "100%": { backgroundPosition: "200px 0" },
           },
         }}
       />
@@ -527,7 +563,7 @@ const Agent = () => {
 };
 
 /** -------------------------------------------------------
- * 子组件：消息项 强 memo，避免滚动/输入导致重渲染
+ * 子组件：消息项（强 memo）
  * ----------------------------------------------------- */
 const MessageItem = React.memo(
   ({ msg, theme }) => {
@@ -559,9 +595,7 @@ const MessageItem = React.memo(
                 {msg.content}
               </Text>
             ) : appHelper.isString(msg.content) ? (
-              <>
-                <MarkdownViewer content={msg.content} />
-              </>
+              <MarkdownViewer content={msg.content} />
             ) : (
               msg.content
             )}
@@ -579,8 +613,31 @@ const MessageItem = React.memo(
     prev.msg.id === next.msg.id && prev.msg.content === next.msg.content,
 );
 
+/** 滚动寻路占位骨架，避免高速滚动时重渲染造成白屏 */
+const ScrollSeekPlaceholder = ({ height, ...rest }) => {
+  return (
+    <div
+      {...rest}
+      style={{
+        height: height ?? 140,
+        padding: 12,
+      }}
+    >
+      <div
+        className="v-skeleton"
+        style={{ height: 20, width: "50%", marginBottom: 12 }}
+      />
+      <div
+        className="v-skeleton"
+        style={{ height: 16, width: "85%", marginBottom: 8 }}
+      />
+      <div className="v-skeleton" style={{ height: 16, width: "66%" }} />
+    </div>
+  );
+};
+
 /** -------------------------------------------------------
- * 子组件：输入区域（memo，切断与列表的重渲染耦合）
+ * 子组件：输入区域（memo）
  * ----------------------------------------------------- */
 const ChatInput = React.memo(function ChatInput({
   input,
@@ -597,12 +654,7 @@ const ChatInput = React.memo(function ChatInput({
   const handleKeyDown = useMemo(
     () =>
       getHotkeyHandler([
-        [
-          "enter",
-          () => {
-            if (!isGenerating) onSend();
-          },
-        ],
+        ["enter", () => (!isGenerating ? onSend() : undefined)],
         ["mod+Enter", () => onSend()],
       ]),
     [isGenerating, onSend],
@@ -657,9 +709,7 @@ const ChatInput = React.memo(function ChatInput({
               size="xl"
               variant="light"
               radius="xl"
-              onClick={() => {
-                onSend();
-              }}
+              onClick={() => onSend()}
             >
               {isGenerating ? <Pause size={18} /> : <ArrowUp size={22} />}
             </ActionIcon>

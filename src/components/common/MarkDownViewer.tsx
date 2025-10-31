@@ -50,49 +50,63 @@ function extractText(node: any): string {
   return "";
 }
 
-const CodeBlock: React.FC<{
-  inline?: boolean;
+/** 仅负责“内联代码”的渲染 */
+const InlineCode: React.FC<{
   className?: string;
   children?: React.ReactNode;
-}> = ({ inline, className, children }) => {
+}> = ({ className, children }) => {
   const theme = useMantineTheme();
-  const clipboard = useClipboard({ timeout: 1500 });
   const rawText = useMemo(
     () => extractText(children).replace(/\n$/, ""),
     [children],
   );
-  const lang = normalizeLang(className);
+  return (
+    <Box
+      component="span"
+      style={{
+        fontWeight: 600,
+        display: "inline-block",
+        verticalAlign: "baseline",
+        background: theme.colors.gray[2],
+        borderRadius: 4,
+        padding: "0 4px",
+      }}
+      className={className}
+    >
+      {rawText}
+    </Box>
+  );
+};
 
-  if (inline || !lang) {
-    return (
-      <Box
-        component="span"
-        style={{
-          fontWeight: 600,
-          display: "inline-block",
-          verticalAlign: "baseline",
-          background: theme.colors.gray[2],
-          borderRadius: 4,
-          padding: "0 4px",
-        }}
-      >
-        {rawText}
-      </Box>
-    );
-  }
+/** 完整的“代码块”卡片（带 Header + 可复制 + sticky） */
+const CodeCard: React.FC<{
+  className?: string;
+  children?: React.ReactNode;
+}> = ({ className, children }) => {
+  const theme = useMantineTheme();
+  const clipboard = useClipboard({ timeout: 1500 });
+
+  const rawText = useMemo(
+    () => extractText(children).replace(/\n$/, ""),
+    [children],
+  );
+  const lang = normalizeLang(className) ?? "text";
 
   return (
     <Paper
-      withBorder
       radius="md"
+      bg={theme.colors.gray[0]}
       className="markdown-codeblock"
-      style={{ overflow: "hidden", margin: "12px 0" }}
+      // 不能 overflow: hidden；否则 sticky header 会被裁切
+      style={{ margin: "12px 0" }}
     >
       <Group
         justify="space-between"
         align="center"
         px="xs"
         py={6}
+        className="md-code-header"
+        // 视觉样式放在 CSS，也可放这里
         style={{
           borderBottom: `1px solid ${theme.colors.gray[3]}`,
           background: theme.colors.gray[0],
@@ -101,7 +115,6 @@ const CodeBlock: React.FC<{
         <Text fw={600} fz={12} tt="uppercase" c="dimmed">
           {lang}
         </Text>
-
         <Tooltip label={clipboard.copied ? "已复制" : "复制代码"} withArrow>
           <ActionIcon variant="subtle" onClick={() => clipboard.copy(rawText)}>
             {clipboard.copied ? <Check size={16} /> : <Copy size={16} />}
@@ -109,21 +122,33 @@ const CodeBlock: React.FC<{
         </Tooltip>
       </Group>
 
-      <Box component="pre" m={0} p="xs" style={{ overflowX: "auto" }}>
+      <Box
+        // 真正滚动裁切放到这里
+        component="pre"
+        className="md-code-pre"
+        m={0}
+        p="xs"
+        style={{ overflow: "auto" }}
+      >
         <Box
           component="code"
           className={className}
-          style={{
-            display: "block",
-            fontSize: "inherit",
-            lineHeight: 1.4,
-          }}
+          style={{ display: "block", fontSize: "inherit", lineHeight: 1.4 }}
         >
           {children}
         </Box>
       </Box>
     </Paper>
   );
+};
+
+/** 捕获 react-markdown 生成的 <pre><code/></pre>，重排为 CodeCard 结构 */
+const PreBlock: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  // react-markdown 的 <pre> 一般只包一个 <code>
+  const onlyChild = React.Children.only(children) as any;
+  const className: string | undefined = onlyChild?.props?.className;
+  const codeChildren = onlyChild?.props?.children;
+  return <CodeCard className={className}>{codeChildren}</CodeCard>;
 };
 
 const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
@@ -137,18 +162,25 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
 
   // @ts-ignore
   const components: Components = {
-    code: ({ inline, className, children, ...props }) => (
-      <CodeBlock inline={inline} className={className} {...props}>
-        {children}
-      </CodeBlock>
-    ),
+    /** 覆盖 pre：改成我们的 CodeCard，不要让默认 <pre> 出现在 DOM 里 */
+    pre: PreBlock,
+
+    /** 覆盖 code：仅用于“内联代码” */
+    code: ({ inline, className, children }) =>
+      inline ? (
+        <InlineCode className={className}>{children}</InlineCode>
+      ) : (
+        // 非内联代码的渲染交给 PreBlock 了，这里返回 null 即可避免重复
+        <></>
+      ),
+
     a: ({ href, children }) => (
       <Anchor href={href} target="_blank" rel="noreferrer noopener">
         {children}
       </Anchor>
     ),
 
-    /** ------- ✅ 表格渲染支持（带自适应滚动与样式） ------- */
+    /** ------- 表格渲染（保持你原来的样式） ------- */
     table: ({ children }) => (
       <Box
         className="md-table-container"
@@ -191,7 +223,7 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
           borderRight: `1px solid ${border}`,
           fontWeight: 700,
           position: "sticky",
-          top: 0, // 如果外层容器有固定高度 + overflow，可粘性表头
+          top: 2,
           zIndex: 1,
           background: headBg,
         }}
