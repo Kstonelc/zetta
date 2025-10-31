@@ -25,17 +25,21 @@ import {
   Image,
   ScrollArea,
   Avatar,
+  Tooltip,
 } from "@mantine/core";
-import { Global } from "@emotion/react";
 import { Virtuoso } from "react-virtuoso";
 import "highlight.js/styles/github.css";
-import { getHotkeyHandler } from "@mantine/hooks";
+import { getHotkeyHandler, useClipboard } from "@mantine/hooks";
 import {
   MessagesSquare,
   Sparkles,
   ArrowUp,
   Pause,
   ArrowDown,
+  ChevronUp,
+  ChevronDown,
+  Copy,
+  Globe,
 } from "lucide-react";
 
 import appHelper from "@/AppHelper.js";
@@ -44,9 +48,7 @@ import { ModelType } from "@/enum.ts";
 import { useUserStore } from "@/stores/useUserStore.js";
 import { MarkdownViewer, SelectWithIcon } from "@/components";
 
-/** 简单稳定 id 生成器 */
-const genId = (prefix = "m") =>
-  `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+import classes from "./Agent.module.scss";
 
 const Agent = () => {
   const theme = useMantineTheme();
@@ -56,17 +58,15 @@ const Agent = () => {
   // 输入框
   const [input, setInput] = useState("");
 
-  // 消息（Virtuoso 的 data 源）
   const [messages, setMessages] = useState([]);
+  const [isNewChat, setIsNewChat] = useState(true);
   const messagesRef = useRef(messages);
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
 
   // 模型相关
   const [models, setModels] = useState([]);
   const [currentModel, setCurrentModel] = useState(null);
   const [isThink, setIsThink] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
 
   // 生成状态
   const [isGenerating, setIsGenerating] = useState(false);
@@ -77,18 +77,47 @@ const Agent = () => {
   const atBottomRef = useRef(true);
   const userInteractingRef = useRef(false);
   const [showJump, setShowJump] = useState(false);
+  const [qPtr, setQPtr] = useState(-1);
 
   // 区分程序滚动与用户滚动
   const byProgrammaticRef = useRef(false);
-  const lastProgrammaticAtRef = useRef(0);
-
+  // 全局“禁用自动跟随”开关
+  // 只有点击“跳至最新”或发送新消息时复位为 false。
+  const autoFollowDisabledRef = useRef(false);
   // 流控
   const sessionStopControllerRef = useRef(null);
   const bufferRef = useRef("");
   const flushTimerRef = useRef(null);
   const currentAssistantIdRef = useRef(null);
 
-  const isNewChat = messages.length === 0;
+  const qPtrRef = useRef(qPtr);
+
+  // 问题（用户消息）导航
+  const questionIndices = useMemo(
+    () =>
+      messages
+        .map((m, i) => (m.role === "user" ? i : -1))
+        .filter((i) => i >= 0),
+    [messages],
+  );
+  useEffect(() => {
+    qPtrRef.current = qPtr;
+  }, [qPtr]);
+  useEffect(() => {
+    if (questionIndices.length === 0) setQPtr(-1);
+    else setQPtr(questionIndices.length - 1);
+  }, [questionIndices.length]);
+
+  useEffect(() => {
+    messagesRef.current = messages;
+    if (appHelper.getLength(messagesRef.current) === 0) {
+      setIsNewChat(true);
+    } else {
+      if (isNewChat) {
+        setIsNewChat(false);
+      }
+    }
+  }, [messages]);
 
   // 初始化模型
   useEffect(() => {
@@ -130,26 +159,23 @@ const Agent = () => {
     [models],
   );
 
-  /** ------------------ 程序化滚动到底部（区分用户/程序） ------------------ */
+  // 程序化滚动到底部（区分用户/程序）
   const scrollToBottomProgrammatic = useCallback((behavior = "smooth") => {
     const el = scrollerElRef.current;
     if (!el) return;
     byProgrammaticRef.current = true;
-    lastProgrammaticAtRef.current = Date.now();
-
     const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
     try {
       el.scrollTo({ top: maxTop, behavior });
     } catch {
       el.scrollTop = maxTop;
     }
-    // 放行窗口，避免把程序滚动误判为用户交互
     window.setTimeout(() => {
       byProgrammaticRef.current = false;
     }, 120);
   }, []);
 
-  /** ------------------ 自定义 Scroller：维护 atBottom / 用户交互 ------------------ */
+  // 自定义 Scroller
   const Scroller = useMemo(
     () =>
       React.forwardRef(({ style, onScroll, className, ...props }, ref) => {
@@ -160,11 +186,8 @@ const Agent = () => {
           return diff <= 2;
         };
 
-        // 标记“用户开始交互”
         const markUserInteracting = () => {
-          // 程序滚动不算用户交互
           if (byProgrammaticRef.current) return;
-          // 只有当不在底部时才认为打断自动跟随
           const at = isAtBottomNow();
           userInteractingRef.current = !at;
         };
@@ -172,19 +195,14 @@ const Agent = () => {
         return (
           <div
             data-virtuoso-scroller="true"
-            className={`no-scrollbar ${className ?? ""}`}
+            className={`${classes.noScrollbar} ${className ?? ""}`}
             {...props}
             ref={(node) => {
               scrollerElRef.current = node;
               if (typeof ref === "function") ref(node);
               else if (ref) ref.current = node;
             }}
-            style={{
-              ...style,
-              overscrollBehavior: "contain",
-              backfaceVisibility: "hidden",
-              WebkitFontSmoothing: "antialiased",
-            }}
+            style={style}
             onWheel={markUserInteracting}
             onTouchStart={markUserInteracting}
             onPointerDown={markUserInteracting}
@@ -192,15 +210,9 @@ const Agent = () => {
               onScroll?.(e);
               const el = scrollerElRef.current;
               if (!el) return;
-
               const at = isAtBottomNow();
               atBottomRef.current = at;
-
-              // 滚回底部 -> 恢复自动跟随
-              if (at) {
-                userInteractingRef.current = false;
-              }
-
+              if (at) userInteractingRef.current = false;
               const overflow = el.scrollHeight - el.clientHeight > 1;
               setShowJump(overflow && !at);
             }}
@@ -210,7 +222,11 @@ const Agent = () => {
     [],
   );
 
-  /** ------------------ 流式拼接（批量刷新 & 首帧去 Loader） ------------------ */
+  /** 简单稳定 id 生成器 */
+  const genId = (prefix = "m") =>
+    `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  // 流式拼接（批量刷新 & 首帧去 Loader）, 仅当未被用户打断 且 未禁用自动跟随 时，才“兜底贴底”
   const appendToAssistantById = useCallback(
     (assistantId, textChunk) => {
       setMessages((prev) => {
@@ -221,11 +237,8 @@ const Agent = () => {
         const next = [...prev];
         const current = next[idx];
 
-        // 首帧如果是 <Loader/>，先清空
         let currentContent = current.content;
-        if (React.isValidElement(currentContent)) {
-          currentContent = "";
-        }
+        if (React.isValidElement(currentContent)) currentContent = "";
 
         next[idx] = {
           ...current,
@@ -234,8 +247,7 @@ const Agent = () => {
         return next;
       });
 
-      // 若未被用户打断，则兜底一次
-      if (!userInteractingRef.current) {
+      if (!userInteractingRef.current && !autoFollowDisabledRef.current) {
         requestAnimationFrame(() => scrollToBottomProgrammatic("auto"));
       }
     },
@@ -279,21 +291,19 @@ const Agent = () => {
 
     setIsGenerating(true);
 
+    // 发送新消息 -> 重新允许自动跟随
+    autoFollowDisabledRef.current = false;
+
     const userMsgId = genId("u");
-    const userMessage = {
-      id: userMsgId,
-      role: "user",
-      content: input,
-    };
+    const userMessage = { id: userMsgId, role: "user", content: input };
     const assistantId = genId("a");
     const assistantMessage = {
       id: assistantId,
       role: "assistant",
-      content: <Loader size={"xs"} mt={"xs"} />, // 占位，首帧会被清空
+      content: <Loader size={"xs"} mt={"xs"} />,
     };
     currentAssistantIdRef.current = assistantId;
 
-    // 立即同步添加消息，随后瞬时滚到底部（不等待异步渲染）
     userInteractingRef.current = false;
     const nextLen = messagesRef.current.length + 2;
 
@@ -304,7 +314,7 @@ const Agent = () => {
     virtuosoRef.current?.scrollToIndex({
       index: Math.max(0, nextLen - 1),
       align: "end",
-      behavior: "auto", // 立刻到位
+      behavior: "auto",
     });
     scrollToBottomProgrammatic("auto");
 
@@ -349,7 +359,6 @@ const Agent = () => {
     const decoder = new TextDecoder("utf-8");
 
     try {
-      // 流式读取
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
@@ -392,7 +401,7 @@ const Agent = () => {
     scrollToBottomProgrammatic,
   ]);
 
-  /** ------------------ 跳到底部（恢复自动跟随） ------------------ */
+  /** 跳到底部（恢复自动跟随） */
   const jumpToBottomNow = useCallback(() => {
     const lastIdx = messagesRef.current.length - 1;
     virtuosoRef.current?.scrollToIndex({
@@ -400,7 +409,8 @@ const Agent = () => {
       align: "end",
       behavior: "smooth",
     });
-    // 用户主动回到最新，等价于恢复自动跟随
+    // 只有用户主动“回到最新”，才恢复自动跟随
+    autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
     requestAnimationFrame(() => {
       scrollToBottomProgrammatic("smooth");
@@ -408,17 +418,50 @@ const Agent = () => {
     });
   }, [scrollToBottomProgrammatic]);
 
-  /** ------------------ 渲染列表 ------------------ */
+  /** 按“问题指针”定位（会禁用自动跟随） */
+  const scrollToQuestionPtr = useCallback(
+    (qIdx, behavior = "smooth") => {
+      if (qIdx < 0 || qIdx >= questionIndices.length) return;
+      const itemIndex = questionIndices[qIdx];
+      if (itemIndex == null) return;
+
+      // 点击问题导航 -> 禁用自动跟随，并标记为用户交互
+      autoFollowDisabledRef.current = true;
+      userInteractingRef.current = true;
+
+      byProgrammaticRef.current = true;
+      virtuosoRef.current?.scrollToIndex({
+        index: itemIndex,
+        align: "start",
+        behavior,
+      });
+      window.setTimeout(() => {
+        byProgrammaticRef.current = false;
+      }, 120);
+
+      setShowJump(true);
+    },
+    [questionIndices],
+  );
+
+  const goPrevQuestion = useCallback(() => {
+    if (questionIndices.length === 0) return;
+    const nextPtr = qPtrRef.current <= 0 ? 0 : qPtrRef.current - 1;
+    setQPtr(nextPtr);
+    scrollToQuestionPtr(nextPtr);
+  }, [questionIndices.length, scrollToQuestionPtr]);
+
+  const goNextQuestion = useCallback(() => {
+    if (questionIndices.length === 0) return;
+    const last = questionIndices.length - 1;
+    const nextPtr = qPtrRef.current >= last ? last : qPtrRef.current + 1;
+    setQPtr(nextPtr);
+    scrollToQuestionPtr(nextPtr);
+  }, [questionIndices.length, scrollToQuestionPtr]);
+
   const renderChatBox = () => {
     return (
-      <div
-        style={{
-          position: "relative",
-          width: "90%",
-          height: "70vh",
-          minHeight: 0,
-        }}
-      >
+      <div className={classes.agentChatWrap}>
         <Virtuoso
           ref={virtuosoRef}
           style={{ height: "100%", width: "100%" }}
@@ -426,16 +469,16 @@ const Agent = () => {
           computeItemKey={(_, msg) => msg.id}
           increaseViewportBy={{ top: 800, bottom: 1000 }}
           defaultItemHeight={160}
-          components={{
-            Scroller,
-            ScrollSeekPlaceholder,
-          }}
+          components={{ Scroller, ScrollSeekPlaceholder }}
+          /** 仅当：生成中 && 在底部 && 未被用户打断 && 未被“禁用自动跟随” 才跟随 */
           followOutput={
-            isGenerating && atBottomRef.current && !userInteractingRef.current
+            isGenerating &&
+            atBottomRef.current &&
+            !userInteractingRef.current &&
+            !autoFollowDisabledRef.current
               ? "smooth"
               : false
           }
-          /** 只有高速才切骨架，速度降下来立刻恢复真实渲染 */
           scrollSeekConfiguration={{
             enter: (v) => Math.abs(v) > 1400,
             exit: (v) => Math.abs(v) < 900,
@@ -452,76 +495,60 @@ const Agent = () => {
           )}
         />
 
-        {/* 底部悬浮“跳至最新” */}
+        {/* 底部“跳至最新” */}
         {showJump && (
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              padding: 8,
-              display: "flex",
-              justifyContent: "center",
-              background: "transparent",
-              zIndex: 9,
-            }}
-          >
+          <div className={classes.agentJumpLatest}>
             <ActionIcon
               variant="default"
               onClick={jumpToBottomNow}
               size="xl"
               radius="xl"
               aria-label="跳至最新"
-              title="跳至最新"
             >
               <ArrowDown />
             </ActionIcon>
+          </div>
+        )}
+
+        {/* 右侧中部：问题导航 */}
+        {questionIndices.length > 0 && (
+          <div className={classes.agentQnav}>
+            <Tooltip label="上一个问题">
+              <ActionIcon
+                size="lg"
+                variant="default"
+                onClick={goPrevQuestion}
+                aria-label="上一个问题"
+              >
+                <ChevronUp />
+              </ActionIcon>
+            </Tooltip>
+            <Tooltip label="下一个问题">
+              <ActionIcon
+                size="lg"
+                variant="default"
+                onClick={goNextQuestion}
+                aria-label="下一个问题"
+              >
+                <ChevronDown />
+              </ActionIcon>
+            </Tooltip>
           </div>
         )}
       </div>
     );
   };
 
-  /** ------------------ 渲染 ------------------ */
   return (
     <Flex p="lg" flex={1} gap="sm" style={{ minHeight: 0 }}>
-      {/* 隐藏滚动条（全内核覆盖） + GPU 合成/隔离 + 骨架样式 */}
-      <Global
-        styles={{
-          ".no-scrollbar, [data-virtuoso-scroller='true']": {
-            scrollbarWidth: "none", // Firefox
-            msOverflowStyle: "none", // IE/Edge legacy
-            // 白屏优化：将滚动容器置于合成层，隔离绘制
-            willChange: "transform",
-            contain: "strict",
-            transform: "translateZ(0)",
-          },
-          ".no-scrollbar::-webkit-scrollbar, [data-virtuoso-scroller='true']::-webkit-scrollbar":
-            {
-              display: "none", // WebKit
-              width: 0,
-              height: 0,
-              background: "transparent",
-            },
-          // 骨架占位样式
-          ".v-skeleton": {
-            borderRadius: 6,
-            background:
-              "linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.12), rgba(0,0,0,0.06))",
-            backgroundSize: "200px 100%",
-            animation: "v-shimmer 1.2s infinite linear",
-          },
-          "@keyframes v-shimmer": {
-            "0%": { backgroundPosition: "-200px 0" },
-            "100%": { backgroundPosition: "200px 0" },
-          },
-        }}
-      />
-
-      {/* 左栏 */}
       <Card maw={220} miw={200} shadow="md" withBorder h="100%">
-        <Button mb="md" leftSection={<MessagesSquare size={16} />}>
+        <Button
+          mb="md"
+          leftSection={<MessagesSquare size={16} />}
+          onClick={() => {
+            setIsNewChat(true);
+          }}
+        >
           新建对话
         </Button>
         <ScrollArea h="calc(100% - 48px)">
@@ -534,7 +561,6 @@ const Agent = () => {
 
       <Divider orientation="vertical" />
 
-      {/* 右侧主区域 */}
       <Stack h="100%" flex={1} align="center" justify="flex-end" mih={0}>
         {isNewChat ? (
           <Stack pos="absolute" top="20%" align="center">
@@ -555,6 +581,8 @@ const Agent = () => {
           setCurrentModel={setCurrentModel}
           isThink={isThink}
           setIsThink={setIsThink}
+          isOnline={isOnline}
+          setIsOnline={setIsOnline}
           theme={theme}
         />
       </Stack>
@@ -562,12 +590,11 @@ const Agent = () => {
   );
 };
 
-/** -------------------------------------------------------
- * 子组件：消息项（强 memo）
- * ----------------------------------------------------- */
+/** 消息项（强 memo） */
 const MessageItem = React.memo(
   ({ msg, theme }) => {
     const isUser = msg.role === "user";
+    const clipboard = useClipboard({ timeout: 1500 });
     return (
       <Flex
         style={{ marginTop: 20, marginBottom: 20 }}
@@ -579,27 +606,39 @@ const MessageItem = React.memo(
               ZE
             </Avatar>
           )}
-          <Paper
-            flex={1}
-            bg={isUser ? theme.colors.blue[5] : "transparent"}
-            p={isUser ? "xs" : 0}
-            radius="md"
-            mb="xl"
-            withBorder={isUser}
-            shadow="none"
-            miw="20%"
-            maw="80%"
-          >
-            {isUser ? (
-              <Text size="sm" c={theme.white}>
-                {msg.content}
-              </Text>
-            ) : appHelper.isString(msg.content) ? (
-              <MarkdownViewer content={msg.content} />
-            ) : (
-              msg.content
-            )}
-          </Paper>
+          <Stack gap={"xs"} mb="xl" miw="20%" maw="80%">
+            <Paper
+              flex={1}
+              bg={isUser ? theme.colors.blue[5] : "transparent"}
+              p={isUser ? "xs" : 0}
+              radius="md"
+              withBorder={isUser}
+            >
+              {isUser ? (
+                <Text size="sm" c={theme.white}>
+                  {msg.content}
+                </Text>
+              ) : appHelper.isString(msg.content) ? (
+                <MarkdownViewer content={msg.content} />
+              ) : (
+                msg.content
+              )}
+            </Paper>
+            <Group justify="flex-start" className={classes.messageTools}>
+              <Tooltip label={clipboard.copied ? "已复制" : "复制"} withArrow>
+                <ActionIcon
+                  variant={"subtle"}
+                  size={"sm"}
+                  onClick={() => {
+                    clipboard.copy(msg.content);
+                  }}
+                  color={theme.colors.gray[6]}
+                >
+                  <Copy size={16} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Stack>
           {isUser && (
             <Avatar variant="light" color={theme.colors.blue[7]} mr="md">
               AD
@@ -613,7 +652,7 @@ const MessageItem = React.memo(
     prev.msg.id === next.msg.id && prev.msg.content === next.msg.content,
 );
 
-/** 滚动寻路占位骨架，避免高速滚动时重渲染造成白屏 */
+/** 寻路占位骨架 */
 const ScrollSeekPlaceholder = ({ height, ...rest }) => {
   return (
     <div
@@ -624,21 +663,19 @@ const ScrollSeekPlaceholder = ({ height, ...rest }) => {
       }}
     >
       <div
-        className="v-skeleton"
+        className={classes.vSkeleton}
         style={{ height: 20, width: "50%", marginBottom: 12 }}
       />
       <div
-        className="v-skeleton"
+        className={classes.vSkeleton}
         style={{ height: 16, width: "85%", marginBottom: 8 }}
       />
-      <div className="v-skeleton" style={{ height: 16, width: "66%" }} />
+      <div className={classes.vSkeleton} style={{ height: 16, width: "66%" }} />
     </div>
   );
 };
 
-/** -------------------------------------------------------
- * 子组件：输入区域（memo）
- * ----------------------------------------------------- */
+/** 输入区 */
 const ChatInput = React.memo(function ChatInput({
   input,
   setInput,
@@ -649,6 +686,8 @@ const ChatInput = React.memo(function ChatInput({
   setCurrentModel,
   isThink,
   setIsThink,
+  isOnline,
+  setIsOnline,
   theme,
 }) {
   const handleKeyDown = useMemo(
@@ -680,7 +719,7 @@ const ChatInput = React.memo(function ChatInput({
             placeholder="@知识库或直接提问"
             w="100%"
             size="md"
-            styles={{
+            classes={{
               input: { lineHeight: 1.4 },
               textarea: { resize: "none" },
             }}
@@ -694,10 +733,23 @@ const ChatInput = React.memo(function ChatInput({
                 value={currentModel}
               />
               <Button
+                variant={isOnline ? "light" : "subtle"}
+                color={isOnline ? theme.colors.blue[7] : theme.colors.gray[7]}
+                onClick={() => setIsOnline((v) => !v)}
+                leftSection={<Globe size={16} />}
+                radius={"xl"}
+                size="xs"
+              >
+                <Text size="xs" fw="bold">
+                  联网搜索
+                </Text>
+              </Button>
+              <Button
                 variant={isThink ? "light" : "subtle"}
-                color={isThink ? theme.colors.blue[7] : theme.black}
+                color={isThink ? theme.colors.blue[7] : theme.colors.gray[7]}
                 onClick={() => setIsThink((v) => !v)}
                 leftSection={<Sparkles size={16} />}
+                radius={"xl"}
                 size="xs"
               >
                 <Text size="xs" fw="bold">
@@ -710,6 +762,7 @@ const ChatInput = React.memo(function ChatInput({
               variant="light"
               radius="xl"
               onClick={() => onSend()}
+              aria-label={isGenerating ? "停止" : "发送"}
             >
               {isGenerating ? <Pause size={18} /> : <ArrowUp size={22} />}
             </ActionIcon>

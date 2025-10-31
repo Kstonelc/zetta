@@ -1,3 +1,86 @@
-.container {
-  padding: 32px
+/* 滚动容器：隐藏滚动条（跨内核） */
+.noScrollbar,
+:global([data-virtuoso-scroller="true"]) {
+  scrollbar-width: none;       /* Firefox */
+  -ms-overflow-style: none;    /* IE/Edge legacy */
+
+  /* 白屏优化：将滚动容器置于合成层，隔离绘制 */
+  will-change: transform;
+  contain: strict;
+  transform: translateZ(0);
+}
+
+/* WebKit 滚动条隐藏（需要 :global 选择器以命中 Virtuoso 内部容器） */
+.noScrollbar::-webkit-scrollbar,
+:global([data-virtuoso-scroller="true"]::-webkit-scrollbar) {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+/* 骨架占位（滚动寻路时可见） */
+.vSkeleton {
+  border-radius: 6px;
+  background: linear-gradient(
+                  90deg,
+                  rgba(0, 0, 0, 0.06),
+                  rgba(0, 0, 0, 0.12),
+                  rgba(0, 0, 0, 0.06)
+  );
+  background-size: 200px 100%;
+  animation: v-shimmer 1.2s infinite linear;
+}
+
+@keyframes v-shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+/* 主聊天区域容器：控制尺寸与定位层级 */
+.agentChatWrap {
+  position: relative;
+  width: 90%;
+  height: 70vh;
+  min-height: 0;
+}
+
+/* 底部“跳至最新”按钮悬浮层 */
+.agentJumpLatest {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  background: transparent;
+  z-index: 9;
+}
+
+/* 右侧中部：问题导航（上/下一个问题） */
+.agentQnav {
+  position: absolute;
+  right: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.agentQnavCounter {
+  user-select: none;
+}
+
+
+.messageTools {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+
+  &:hover {
+    opacity: 1;
+  }
 }

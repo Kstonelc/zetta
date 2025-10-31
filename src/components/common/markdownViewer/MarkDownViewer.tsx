@@ -1,4 +1,3 @@
-// MarkdownViewer.tsx
 import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -20,14 +19,19 @@ import { useClipboard } from "@mantine/hooks";
 import { Copy, Check } from "lucide-react";
 
 import "highlight.js/styles/default.css";
-import "./markdown-unified.css";
+// @ts-ignore
+import classes from "./MarkdownViewer.module.scss";
 
 export type MarkdownViewerProps = {
   content: string;
   className?: string;
+  /** 是否允许原始 HTML（默认 false，避免 XSS） */
   allowHtml?: boolean;
+  /** 代码块头部吸顶的偏移量（可不传，默认为 0，通过 Virtuoso 容器也可覆盖） */
+  stickyTopPx?: number;
 };
 
+/** 从 className 中归一化出语言标识 */
 function normalizeLang(className?: string): string | null {
   if (!className) return null;
   const match =
@@ -40,6 +44,7 @@ function normalizeLang(className?: string): string | null {
   return lang;
 }
 
+/** 提取 React 节点中的纯文本（用于复制） */
 function extractText(node: any): string {
   if (node == null) return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -50,12 +55,11 @@ function extractText(node: any): string {
   return "";
 }
 
-/** 仅负责“内联代码”的渲染 */
+/** 仅负责“内联代码”的渲染（非代码块） */
 const InlineCode: React.FC<{
   className?: string;
   children?: React.ReactNode;
 }> = ({ className, children }) => {
-  const theme = useMantineTheme();
   const rawText = useMemo(
     () => extractText(children).replace(/\n$/, ""),
     [children],
@@ -63,29 +67,19 @@ const InlineCode: React.FC<{
   return (
     <Box
       component="span"
-      style={{
-        fontWeight: 600,
-        display: "inline-block",
-        verticalAlign: "baseline",
-        background: theme.colors.gray[2],
-        borderRadius: 4,
-        padding: "0 4px",
-      }}
-      className={className}
+      className={`${classes.inlineCode} ${className || ""}`}
     >
       {rawText}
     </Box>
   );
 };
 
-/** 完整的“代码块”卡片（带 Header + 可复制 + sticky） */
+/** 完整的“代码块卡片”：Header（语言 + 复制） + 内容区域（<pre><code/>） */
 const CodeCard: React.FC<{
   className?: string;
   children?: React.ReactNode;
 }> = ({ className, children }) => {
-  const theme = useMantineTheme();
   const clipboard = useClipboard({ timeout: 1500 });
-
   const rawText = useMemo(
     () => extractText(children).replace(/\n$/, ""),
     [children],
@@ -93,48 +87,29 @@ const CodeCard: React.FC<{
   const lang = normalizeLang(className) ?? "text";
 
   return (
-    <Paper
-      radius="md"
-      bg={theme.colors.gray[0]}
-      className="markdown-codeblock"
-      // 不能 overflow: hidden；否则 sticky header 会被裁切
-      style={{ margin: "12px 0" }}
-    >
+    <Paper radius="md" className={classes.codeCard} data-md-code-card>
       <Group
         justify="space-between"
         align="center"
-        px="xs"
-        py={6}
-        className="md-code-header"
-        // 视觉样式放在 CSS，也可放这里
-        style={{
-          borderBottom: `1px solid ${theme.colors.gray[3]}`,
-          background: theme.colors.gray[0],
-        }}
+        className={classes.codeHeader}
       >
-        <Text fw={600} fz={12} tt="uppercase" c="dimmed">
+        <Text className={classes.codeLang} tt="uppercase">
           {lang}
         </Text>
         <Tooltip label={clipboard.copied ? "已复制" : "复制代码"} withArrow>
-          <ActionIcon variant="subtle" onClick={() => clipboard.copy(rawText)}>
+          <ActionIcon
+            variant="subtle"
+            className={classes.codeCopy}
+            onClick={() => clipboard.copy(rawText)}
+            aria-label="复制代码"
+          >
             {clipboard.copied ? <Check size={16} /> : <Copy size={16} />}
           </ActionIcon>
         </Tooltip>
       </Group>
 
-      <Box
-        // 真正滚动裁切放到这里
-        component="pre"
-        className="md-code-pre"
-        m={0}
-        p="xs"
-        style={{ overflow: "auto" }}
-      >
-        <Box
-          component="code"
-          className={className}
-          style={{ display: "block", fontSize: "inherit", lineHeight: 1.4 }}
-        >
+      <Box component="pre" className={classes.codePre}>
+        <Box component="code" className={`${classes.code} ${className || ""}`}>
           {children}
         </Box>
       </Box>
@@ -142,9 +117,8 @@ const CodeCard: React.FC<{
   );
 };
 
-/** 捕获 react-markdown 生成的 <pre><code/></pre>，重排为 CodeCard 结构 */
+/** 捕获 react-markdown 产出的 <pre><code/>，替换为 CodeCard 结构 */
 const PreBlock: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
-  // react-markdown 的 <pre> 一般只包一个 <code>
   const onlyChild = React.Children.only(children) as any;
   const className: string | undefined = onlyChild?.props?.className;
   const codeChildren = onlyChild?.props?.children;
@@ -155,99 +129,94 @@ const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
   content,
   className,
   allowHtml = false,
+  stickyTopPx = 0,
 }) => {
   const theme = useMantineTheme();
-  const border = theme.colors.gray[3];
-  const headBg = theme.colors.gray[1];
+
+  // 仅通过 CSS 变量注入主题与吸顶偏移；具体样式在 module.scss 中
+  const cssVars: React.CSSProperties = {
+    // @ts-ignore
+    ["--md-fg"]: theme.colors.dark[9],
+    // @ts-ignore
+    ["--md-muted"]: theme.colors.gray[7],
+    // @ts-ignore
+    ["--md-border"]: theme.colors.gray[3],
+    // @ts-ignore
+    ["--md-bg"]: theme.colors.gray[0],
+    // @ts-ignore
+    ["--md-bg-strong"]: theme.colors.gray[1],
+    // @ts-ignore
+    ["--md-link"]: theme.colors.blue[7],
+
+    ["--md-font-size"]: "13px",
+    ["--md-radius"]: "12px",
+    ["--md-spacing-xs"]: "8px",
+    ["--md-spacing-sm"]: "12px",
+
+    ["--md-code-sticky-top"]: `${stickyTopPx}px`,
+  };
 
   // @ts-ignore
+  const CodeRenderer: any = ({ inline, className, children }) => {
+    return inline ? (
+      <InlineCode className={className}>{children}</InlineCode>
+    ) : (
+      // 非内联（即代码块）不在这里渲染，由 <pre> -> PreBlock 捕获并交给 CodeCard
+      <></>
+    );
+  };
+
   const components: Components = {
-    /** 覆盖 pre：改成我们的 CodeCard，不要让默认 <pre> 出现在 DOM 里 */
+    /** 捕获 <pre> => 用CodeCard 渲染 */
     pre: PreBlock,
 
-    /** 覆盖 code：仅用于“内联代码” */
-    code: ({ inline, className, children }) =>
-      inline ? (
-        <InlineCode className={className}>{children}</InlineCode>
-      ) : (
-        // 非内联代码的渲染交给 PreBlock 了，这里返回 null 即可避免重复
-        <></>
-      ),
+    /** 内联代码：非代码块场景（inline === true） */
+    code: CodeRenderer,
 
+    /** 链接统一新开页 */
     a: ({ href, children }) => (
       <Anchor href={href} target="_blank" rel="noreferrer noopener">
         {children}
       </Anchor>
     ),
 
-    /** ------- 表格渲染（保持你原来的样式） ------- */
+    /** 表格：包容器+原生 table，配合 CSS 完成斑马纹等 */
     table: ({ children }) => (
-      <Box
-        className="md-table-container"
-        style={{
-          overflowX: "hidden",
-          margin: "12px 0",
-          borderRadius: 8,
-          borderWidth: 1,
-          borderStyle: "solid",
-          borderColor: theme.colors.gray[3],
-        }}
-      >
-        <Box
-          component="table"
-          className="md-table"
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            border: `1px solid ${border}`,
-          }}
-        >
+      <Box component="div" className={classes.tableContainer}>
+        <Box component="table" className={classes.table}>
           {children}
         </Box>
       </Box>
     ),
     thead: ({ children }) => (
-      <Box component="thead" style={{ background: headBg }}>
+      <Box component="thead" className={classes.thead}>
         {children}
       </Box>
     ),
-    tbody: ({ children }) => <Box component="tbody">{children}</Box>,
-    tr: ({ children }) => <Box component="tr">{children}</Box>,
+    tbody: ({ children }) => (
+      <Box component="tbody" className={classes.tbody}>
+        {children}
+      </Box>
+    ),
+    tr: ({ children }) => (
+      <Box component="tr" className={classes.tr}>
+        {children}
+      </Box>
+    ),
     th: ({ children }) => (
-      <Box
-        component="th"
-        style={{
-          textAlign: "left",
-          padding: "8px 10px",
-          borderBottom: `1px solid ${border}`,
-          borderRight: `1px solid ${border}`,
-          fontWeight: 700,
-          position: "sticky",
-          top: 2,
-          zIndex: 1,
-          background: headBg,
-        }}
-      >
+      <Box component="th" className={classes.th}>
         {children}
       </Box>
     ),
     td: ({ children }) => (
-      <Box
-        component="td"
-        style={{
-          padding: "8px 10px",
-          borderBottom: `1px solid ${border}`,
-          borderRight: `1px solid ${border}`,
-          verticalAlign: "top",
-        }}
-      >
+      <Box component="td" className={classes.td}>
         {children}
       </Box>
     ),
   };
 
   return (
-    <Box className={`markdown-unified ${className || ""}`}>
+    <Box className={`${classes.root} ${className || ""}`} style={cssVars}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={

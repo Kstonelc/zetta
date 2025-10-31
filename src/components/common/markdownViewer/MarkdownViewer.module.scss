@@ -1,0 +1,229 @@
+:root {
+    /* 文本与边框色（默认值，可被组件内联变量覆盖） */
+    --md-fg: #24292f;
+    --md-muted: #6e7781;
+    --md-border: #d0d7de;
+    --md-link: #0969da;
+
+    /* 背景色 */
+    --md-bg: #f6f8fa;
+    --md-bg-strong: #eef1f4;
+
+    /* 尺寸与圆角 */
+    --md-font-size: 13px;
+    --md-radius: 12px;
+    --md-spacing-xs: 8px;
+    --md-spacing-sm: 12px;
+
+    /* 代码块 Header 吸顶偏移量（可由容器/组件覆盖） */
+    --md-code-sticky-top: 0px;
+}
+
+/* 如果挂在 react-virtuoso 的滚动容器上，可统一覆盖吸顶偏移 */
+:global([data-virtuoso-scroller="true"]) {
+    --md-code-sticky-top: 0px;
+}
+
+/* ------------------------------
+   容器与排版基线
+   ------------------------------ */
+.root {
+    font-size: var(--md-font-size);
+    line-height: 1.6;
+    font-family: 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', Arial, sans-serif;
+    color: var(--md-fg);
+}
+
+.root h1,
+.root h2,
+.root h3,
+.root h4,
+.root h5,
+.root h6 {
+    font-size: inherit;
+    font-weight: 600;
+    margin: 0.6em 0;
+}
+
+.root p,
+.root ol,
+.root ul,
+.root li,
+.root blockquote,
+.root pre,
+.root code,
+.root strong,
+.root em {
+    font-size: var(--md-font-size);
+    line-height: inherit;
+    margin: 0.3em 0;
+}
+
+/* ------------------------------
+   链接
+   ------------------------------ */
+.root a {
+    color: var(--md-link);
+    text-decoration: none;
+}
+.root a:hover {
+    text-decoration: underline;
+}
+
+/* ------------------------------
+   列表
+   ------------------------------ */
+.root ul,
+.root ol {
+    padding-left: 1.2em;
+}
+.root li {
+    margin: 0.3em 0;
+}
+
+/* ------------------------------
+   引用（blockquote）
+   ------------------------------ */
+.root blockquote {
+    border-left: 4px solid var(--md-border);
+    padding: 6px 10px;
+    border-radius: 4px;
+    color: var(--md-muted);
+    background: transparent;
+}
+
+/* ------------------------------
+   强调
+   ------------------------------ */
+.root strong { font-weight: 600; }
+
+/* ------------------------------
+   代码（内联 & 块）
+   ------------------------------ */
+
+/* 内联代码视觉：浅底+圆角，强调可阅读性 */
+.inlineCode {
+    display: inline-block;
+    vertical-align: baseline;
+    font-family: Monaco, Consolas, monospace;
+    font-weight: 600;
+    padding: 0 4px;
+    border-radius: 4px;
+    /* 可选浅底： */
+    /* background: var(--md-bg-strong); */
+}
+
+/* 代码块外层卡片容器：承载 Header（吸顶）与滚动主体 */
+/* 注意：不要 overflow: hidden；否则 sticky header 会被裁切 */
+.codeCard {
+    margin: var(--md-spacing-sm) 0;
+    border-radius: var(--md-radius);
+    background: var(--md-bg);
+}
+
+/* 代码块 Header：语言标签 + 复制按钮 + 底边线，支持吸顶 */
+.codeHeader {
+    position: sticky;
+    top: var(--md-code-sticky-top);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px var(--md-spacing-xs);
+    background: var(--md-bg);
+    border-bottom: 1px solid var(--md-border);
+    border-top-left-radius: var(--md-radius);
+    border-top-right-radius: var(--md-radius);
+}
+
+/* 语言标签文本 */
+.codeLang {
+    font-size: var(--md-font-size);
+    font-weight: 600;
+    color: var(--md-muted);
+    text-transform: uppercase;
+}
+
+/* 复制按钮：占位，使用 Mantine 动效 */
+.codeCopy {}
+
+/* 代码块内容区域：滚动容器 */
+.codePre {
+    max-width: 100%;
+    font-family: Monaco, Consolas, monospace;
+    overflow: auto;
+    margin: 0;
+    padding: var(--md-spacing-xs);
+    border-bottom-left-radius: var(--md-radius);
+    border-bottom-right-radius: var(--md-radius);
+    background: var(--md-bg);
+}
+
+/* 代码元素基础：继承字号行高，等宽字体 */
+.code,
+:global(.markdown-unified code),
+:global(.markdown-unified pre code) {
+    display: block;
+    font-family: Monaco, Consolas, monospace;
+    font-size: inherit;
+    line-height: 1.4;
+}
+
+/* 兼容 highlight.js 默认背景，统一去除，以便与卡片背景一致 */
+:global(.hljs),
+:global(.hljs-tag) {
+    background: none !important;
+}
+
+/* ------------------------------
+   表格
+   ------------------------------ */
+.tableContainer {
+    overflow-x: hidden;
+    margin: var(--md-spacing-sm) 0;
+    border: 1px solid var(--md-border);
+    border-radius: 8px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--md-border);
+}
+
+.thead {
+    background: var(--md-bg-strong);
+}
+
+.tbody {}
+.tr {}
+
+.th {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--md-border);
+    border-right: 1px solid var(--md-border);
+    font-weight: 700;
+}
+
+.td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--md-border);
+    border-right: 1px solid var(--md-border);
+    vertical-align: top;
+}
+
+/* 斑马纹：仅作用于 tbody 的偶数行 */
+.table tbody tr:nth-child(even) td {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+/* 表格横向滚动条样式（WebKit） */
+.tableContainer::-webkit-scrollbar {
+    height: 6px;
+}
+.tableContainer::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+}
