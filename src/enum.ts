@@ -159,3 +159,25 @@ export class ChunkMode {
     [this.FeatherSon]: "父子模式",
   };
 }
+
+export class ConversationStatus {
+  static Active = 1 << 0;
+  static Archived = 1 << 1;
+  static Temporary = 1 << 2;
+
+  static text: Record<number, string> = {
+    [this.Active]: "可用",
+    [this.Archived]: "归档",
+    [this.Temporary]: "临时",
+  };
+}
+
+export class ConversationRole {
+  static User = 1 << 0;
+  static Assistant = 1 << 1;
+
+  static text: Record<number, string> = {
+    [this.User]: "用户",
+    [this.Assistant]: "AI",
+  };
+}
