@@ -1,4 +1,3 @@
-// Agent.jsx
 import React, {
   useCallback,
   useEffect,
@@ -41,6 +40,7 @@ import {
   MessagesSquare,
   Pause,
   Sparkles,
+  Ellipsis,
 } from "lucide-react";
 
 import appHelper from "@/AppHelper.js";
@@ -99,7 +99,7 @@ const Agent = () => {
   const latestUserTextRef = useRef("");
   const currentConversationIdRef = useRef("");
 
-  // ✅ 单一事实源：按消息 id 累加 assistant 文本
+  // 单一事实源：按消息 id 累加 assistant 文本
   const assistantTextMapRef = useRef(new Map());
   const getLatestAssistantText = useCallback(() => {
     const id = currentAssistantIdRef.current;
@@ -127,15 +127,6 @@ const Agent = () => {
     else setQPtr(questionIndices.length - 1);
   }, [questionIndices.length]);
 
-  // useEffect(() => {
-  //   messagesRef.current = messages;
-  //   if ((messagesRef.current?.length ?? 0) === 0) {
-  //     setIsNewChat(true);
-  //   } else if (isNewChat) {
-  //     setIsNewChat(false);
-  //   }
-  // }, [messages, isNewChat]);
-
   // region 初始化
 
   const initialize = async () => {
@@ -145,7 +136,8 @@ const Agent = () => {
       tenantId: userStore.current_tenant.id,
     });
     if (!response.ok) return;
-    setModels(response.data);
+    const models = response.data;
+    setModels(models);
 
     // 获取会话列表
     response = await appHelper.apiPost("/conversation/find-conversations", {
@@ -158,7 +150,6 @@ const Agent = () => {
     }
     if (appHelper.getLength(response.data) > 0) {
       setConversations(response.data);
-      currentConversationIdRef.current = response.data?.[0]?.id;
     }
     await createConversation();
   };
@@ -184,18 +175,27 @@ const Agent = () => {
 
   // endregion
 
+  const autoRefreshConversationList = async () => {
+    await appHelper.apiPost("/conversation/find-conversation", {
+      conversationId: currentConversationIdRef.current,
+    });
+  };
+
   // 模型选项
-  const modelOptions = useMemo(
-    () =>
-      (models ?? []).map((model) => ({
+  const modelOptions = useMemo(() => {
+    const modelsOption = models.map((model) => {
+      return {
         value: model.name,
         title: model.display_name,
         icon: model.provider?.logo ? (
           <Image src={model.provider.logo} w={20} h={20} />
         ) : null,
-      })),
-    [models],
-  );
+      };
+    });
+    // TODO 选择用户系统选择的模型
+    setCurrentModel(modelsOption[0]?.title);
+    return modelsOption;
+  }, [models]);
 
   // 程序化滚动到底部
   const scrollToBottomProgrammatic = useCallback((behavior = "smooth") => {
@@ -644,7 +644,6 @@ const Agent = () => {
       return;
     }
     currentConversationIdRef.current = response.data.conversation_id;
-    // setIsNewChat(true);
   };
 
   const createConversationMessages = async () => {
@@ -657,6 +656,7 @@ const Agent = () => {
   };
 
   const getConversationMessages = async (conversationId) => {
+    currentConversationIdRef.current = conversationId;
     setIsLoadingMessages(true);
     const response = await appHelper.apiPost("/conversation/find-messages", {
       conversationId: conversationId,
@@ -682,14 +682,29 @@ const Agent = () => {
           新建对话
         </Button>
         <ScrollArea h="calc(100% - 48px)">
-          <Menu withinPortal>
+          <Menu>
             <Menu.Label>聊天</Menu.Label>
             {conversations.map((item) => {
               return (
                 <Menu.Item
+                  mb={"xs"}
                   key={item.id}
+                  color={theme.colors.gray[7]}
+                  bg={
+                    item.id === currentConversationIdRef.current
+                      ? theme.colors.blue[0]
+                      : ""
+                  }
+                  rightSection={
+                    <ActionIcon
+                      size={"xs"}
+                      variant={"transparent"}
+                      className={classes.conversationItemTools}
+                    >
+                      <Ellipsis size={16} />
+                    </ActionIcon>
+                  }
                   onClick={async () => {
-                    console.log(222, item.id);
                     await getConversationMessages(item.id);
                   }}
                 >
@@ -915,7 +930,7 @@ const ChatInput = React.memo(function ChatInput({
                 size="xs"
                 options={modelOptions}
                 onChange={setCurrentModel}
-                value={currentModel}
+                defaultValue={currentModel}
               />
               <Button
                 variant={isOnline ? "light" : "subtle"}
