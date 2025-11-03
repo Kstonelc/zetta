@@ -110,7 +110,11 @@ export default function App() {
   return (
     <>
       <ColorSchemeScript defaultColorScheme={ColorScheme.light} />
-      <MantineProvider theme={theme} defaultColorScheme={ColorScheme.light}>
+      <MantineProvider
+        theme={theme}
+        defaultColorScheme={ColorScheme.light}
+        forceColorScheme={ColorScheme.light}
+      >
         <Notifications />
         <RouterProvider router={routerConfig} />
       </MantineProvider>
