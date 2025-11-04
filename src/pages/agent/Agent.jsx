@@ -1,3 +1,4 @@
+// Agent.jsx
 import React, {
   useCallback,
   useEffect,
@@ -136,7 +137,6 @@ const Agent = () => {
     const el = scrollerElRef.current;
     if (!el) return;
     const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
-    // 无动画立即到底
     try {
       el.scrollTo({ top: maxTop, behavior: "auto" });
     } catch {
@@ -156,9 +156,9 @@ const Agent = () => {
   }, []);
 
   /**
-   * 统一的一次性“滚到底”：
-   * - behavior === "auto": 瞬间到底（无动画、无监听）
-   * - behavior === "smooth": 丝滑到底（监听高度增加，持续追随）
+   * 一次性滚到底：
+   * - "auto": 瞬间到底（菜单点击强制用这个，防抖动）
+   * - "smooth": 丝滑到底（流式生成时追随）
    */
   const scrollToBottomOnce = useCallback(
     async (behavior = "auto") => {
@@ -174,15 +174,15 @@ const Agent = () => {
       autoFollowDisabledRef.current = false;
       setShowJump(false);
 
-      // 等 Virtuoso/DOM 初帧布局
+      // 让 Virtuoso/DOM 完整布局两帧
       await new Promise((r) =>
         requestAnimationFrame(() => requestAnimationFrame(r)),
       );
 
       const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
 
-      // 直接到底：不做任何“持续追随”，确保不抖、不反弹
       if (behavior === "auto") {
+        // 直接到底：不启用追随，避免抖动
         try {
           el.scrollTo({ top: maxTop, behavior: "auto" });
         } catch {
@@ -194,7 +194,7 @@ const Agent = () => {
         return;
       }
 
-      // 丝滑到底：在内容持续增长时平滑追随
+      // 丝滑到底（用于流式生成）
       const smoothToBottom = () => {
         const _maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
         try {
@@ -206,7 +206,6 @@ const Agent = () => {
 
       smoothBottomInProgressRef.current = true;
 
-      // 监听高度变化：只要在“丝滑到底”期间，scrollHeight 增加就继续 smooth 到底
       if (!heightRORef.current && typeof ResizeObserver !== "undefined") {
         heightRORef.current = new ResizeObserver(() => {
           if (!smoothBottomInProgressRef.current) return;
@@ -219,11 +218,9 @@ const Agent = () => {
       const START = performance.now();
       let lastH = -1;
 
-      // 先走一次
       smoothToBottom();
 
       while (performance.now() - START < MAX_WAIT_MS) {
-        // 等一帧，观察是否稳定
         await new Promise((r) => requestAnimationFrame(r));
 
         const curH = el.scrollHeight;
@@ -232,7 +229,6 @@ const Agent = () => {
 
         if (!heightChanged && isReallyAtBottom()) break;
 
-        // 仍未稳定：再发起一次 smooth（避免浏览器合并/丢弃之前动画）
         smoothToBottom();
       }
 
@@ -266,7 +262,7 @@ const Agent = () => {
     messagesRef.current = messages;
   }, [messages]);
 
-  // 首次数据渲染完成后，如有待滚标记则“按指定行为”到底
+  // 首帧数据渲染后，如有待滚标记则按指定行为到底
   useLayoutEffect(() => {
     if (!pendingScrollOnceRef.current) return;
     if (!scrollerElRef.current) return;
@@ -279,34 +275,32 @@ const Agent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
-  // 触发时机：getConversationMessages 设置 needHardBottomAfterLoadRef = true
-  // 实现：在 messages 变化后，进行多帧重试的硬到底（防止 Virtuoso/图片懒载导致的高度后置变化）
+  /**
+   * 菜单点击后的“硬到底保护”：
+   * 多帧强制到底（8~10 次），覆盖 Virtuoso 延迟绘制、图片懒加载、代码块高亮回流等造成的高度增长
+   */
   useLayoutEffect(() => {
     if (!needHardBottomAfterLoadRef.current) return;
     let cancelled = false;
 
-    const attempt = (left = 8) => {
+    const attempt = (left = 9) => {
       if (cancelled) return;
       const el = scrollerElRef.current;
       if (!el) {
         if (left > 0) requestAnimationFrame(() => attempt(left - 1));
         return;
       }
-      // 多次尝试，等高度稳定
       hardScrollToBottomNow();
       if (left > 0) {
-        // 等待一帧再试，覆盖图片/代码块渲染后的高度增长
         requestAnimationFrame(() => attempt(left - 1));
       } else {
-        // 最后一击后清理状态
         needHardBottomAfterLoadRef.current = false;
         atBottomRef.current = true;
         setShowJump(false);
       }
     };
 
-    // 双 RAF 让 Virtuoso 完整挂载后再开始尝试
-    requestAnimationFrame(() => requestAnimationFrame(() => attempt(8)));
+    requestAnimationFrame(() => requestAnimationFrame(() => attempt(9)));
 
     return () => {
       cancelled = true;
@@ -325,19 +319,14 @@ const Agent = () => {
     setModels(response.data);
 
     // 获取会话列表
-    response = await appHelper.apiPost("/conversation/find-conversations", {
-      tenantId: userStore.current_tenant.id,
-      userId: userStore.id,
-      conversationStatus: ConversationStatus.Active,
-    });
-    if (!response.ok) {
-      return;
+    const conversations = await getConversations();
+    if (appHelper.getLength(conversations) > 0) {
+      currentConversationIdRef.current = conversations[0].id;
+      await getConversationMessages(currentConversationIdRef.current);
+    } else {
+      await createConversation();
+      await getConversations();
     }
-    if (appHelper.getLength(response.data) > 0) {
-      setConversations(response.data);
-      currentConversationIdRef.current = response.data?.[0]?.id;
-    }
-    await createConversation();
   };
 
   const destroy = async () => {
@@ -350,7 +339,6 @@ const Agent = () => {
       conversationStopControllerRef.current.abort();
       conversationStopControllerRef.current = null;
     }
-    // 清理 RO
     try {
       const el = scrollerElRef.current;
       el && heightRORef.current?.unobserve(el);
@@ -380,6 +368,25 @@ const Agent = () => {
       })),
     [models],
   );
+
+  const getConversations = async () => {
+    const response = await appHelper.apiPost(
+      "/conversation/find-conversations",
+      {
+        tenantId: userStore.current_tenant.id,
+        userId: userStore.id,
+        conversationStatus: [
+          ConversationStatus.Active,
+          ConversationStatus.Temporary,
+        ],
+      },
+    );
+    if (!response.ok) {
+      return;
+    }
+    setConversations(response.data);
+    return response.data;
+  };
 
   // 自定义 Scroller（仅维护 atBottom/交互状态）
   const Scroller = useMemo(
@@ -418,7 +425,7 @@ const Agent = () => {
               if (!el) return;
               if (byProgrammaticRef.current) return;
 
-              const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
+              const diff = el.scrollHeight - el.clientHeight - el.scrollTop;
               const at = diff <= BOTTOM_EPS;
               atBottomRef.current = at;
               if (at) userInteractingRef.current = false;
@@ -548,7 +555,7 @@ const Agent = () => {
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
     });
 
-    // 发送时：仍旧允许“丝滑到底”
+    // 发送时：继续允许“丝滑到底”
     virtuosoRef.current?.scrollToIndex({
       index: Math.max(0, nextLen - 1),
       align: "end",
@@ -794,7 +801,7 @@ const Agent = () => {
     let response = await appHelper.apiPost("/conversation/find-conversations", {
       tenantId: userStore.current_tenant.id,
       userId: userStore.id,
-      conversationStatus: ConversationStatus.Temporary,
+      conversationStatus: [ConversationStatus.Temporary],
     });
     if (!response.ok) return;
 
@@ -821,6 +828,7 @@ const Agent = () => {
       assistantContent: latestAssistantTextRef.current,
     });
     if (!response.ok) return;
+    await getConversations();
   };
 
   const getConversationMessages = async (conversationId) => {
@@ -835,10 +843,19 @@ const Agent = () => {
     }
     setIsLoadingMessages(false);
 
-    // 点击菜单：直接到底（无 smooth），并开启硬到底保护（刷新后首击）
-    pendingScrollOnceRef.current = true; // 常规一次滚动
+    // —— 菜单点击：无条件到底 —— //
+    // 1) 关闭交互态，关闭“跳至最新”按钮
+    setShowJump(false);
+    atBottomRef.current = true;
+    userInteractingRef.current = false;
+    autoFollowDisabledRef.current = false;
+
+    // 2) 标记一次“瞬时到底”请求 + 开启多帧硬到底保护
+    pendingScrollOnceRef.current = true;
     scrollOnceBehaviorRef.current = "auto";
-    needHardBottomAfterLoadRef.current = true; // 强化多帧重试
+    needHardBottomAfterLoadRef.current = true;
+
+    // 3) 设置消息（触发布局 & useLayoutEffect 链路）
     setMessages(response.data);
   };
 
@@ -858,30 +875,17 @@ const Agent = () => {
           <Menu withinPortal>
             <Menu.Label>聊天</Menu.Label>
             {conversations.map((item) => {
+              const active = item.id === currentConversationIdRef.current;
               return (
                 <Menu.Item
                   mb={"xs"}
-                  variant={"light"}
-                  color={
-                    item.id === currentConversationIdRef.current
-                      ? theme.white
-                      : theme.colors.gray[8]
-                  }
-                  bg={
-                    item.id === currentConversationIdRef.current
-                      ? theme.colors.blue[5]
-                      : "transparent"
-                  }
                   key={item.id}
                   onClick={async () => {
-                    // 点击左侧列表：期望“瞬时到底”，关闭按钮与交互状态
-                    setShowJump(false);
-                    atBottomRef.current = true;
-                    userInteractingRef.current = false;
-                    autoFollowDisabledRef.current = false;
-
                     await getConversationMessages(item.id);
                   }}
+                  variant={"light"}
+                  color={active ? theme.white : theme.colors.gray[8]}
+                  bg={active ? theme.colors.blue[5] : "transparent"}
                 >
                   {item.name}
                 </Menu.Item>
@@ -1008,13 +1012,7 @@ const MessageItem = React.memo(
 /** 寻路占位骨架 */
 const ScrollSeekPlaceholder = ({ height, ...rest }) => {
   return (
-    <div
-      {...rest}
-      style={{
-        height: height ?? 140,
-        padding: 12,
-      }}
-    >
+    <div {...rest} style={{ height: height ?? 140, padding: 12 }}>
       <div
         className={classes.vSkeleton}
         style={{ height: 20, width: "50%", marginBottom: 12 }}
@@ -1027,7 +1025,6 @@ const ScrollSeekPlaceholder = ({ height, ...rest }) => {
     </div>
   );
 };
-
 /** 输入区 */
 const ChatInput = React.memo(function ChatInput({
   input,
