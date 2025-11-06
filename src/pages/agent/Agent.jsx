@@ -12,8 +12,8 @@ import {
   Avatar,
   Button,
   Card,
-  Divider,
   Flex,
+  Center,
   Group,
   Image,
   Loader,
@@ -117,16 +117,30 @@ const Agent = () => {
     return typeof msg.content === "string" ? msg.content : "";
   }, []);
 
-  // —— "保证到底"系统（统一状态机） —— //
-  const BOTTOM_EPS = 2; // 底部阈值（px）
+  const isMac =
+    typeof navigator !== "undefined" &&
+    (/Mac/.test(navigator.platform) || /Mac OS/.test(navigator.userAgent));
+
+  const BOTTOM_EPS = isMac ? 4 : 2; // 底部阈值（px）
   // none | auto | smooth
   const afterRenderScrollRef = useRef("none");
+
+  // UI 抑制窗口：在受控滚动期间屏蔽按钮闪烁
+  const SUPPRESS_MS = 600;
+  const suppressUiUntilRef = useRef(0);
+  const inSuppressWindow = () => performance.now() < suppressUiUntilRef.current;
+  const suppress = (ms = SUPPRESS_MS) => {
+    suppressUiUntilRef.current = performance.now() + ms;
+  };
 
   const isReallyAtBottom = useCallback(() => {
     const el = scrollerElRef.current;
     if (!el) return true;
-    const diff = el.scrollHeight - el.clientHeight - el.scrollTop;
-    return diff <= BOTTOM_EPS;
+    // 向上取整 + 右侧不等式，吞掉 0.5~1px 抖动
+    const top = Math.ceil(el.scrollTop);
+    const height = Math.ceil(el.clientHeight);
+    const scrollH = Math.ceil(el.scrollHeight);
+    return top + height >= scrollH - BOTTOM_EPS;
   }, []);
 
   const hardScrollToBottomNow = useCallback(() => {
@@ -134,7 +148,7 @@ const Agent = () => {
     if (!el) return;
     const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
     try {
-      el.scrollTo({ top: maxTop, behavior: "auto" });
+      el.scrollTo({ top: maxTop, behavior: "smooth" });
     } catch {
       el.scrollTop = maxTop;
     }
@@ -223,7 +237,6 @@ const Agent = () => {
     };
 
     run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
 
   // 问题（用户消息）导航
@@ -336,7 +349,7 @@ const Agent = () => {
         };
 
         const markUserInteracting = () => {
-          if (byProgrammaticRef.current) return;
+          if (byProgrammaticRef.current || inSuppressWindow()) return;
           const at = isAtBottomNow();
           userInteractingRef.current = !at;
         };
@@ -359,7 +372,9 @@ const Agent = () => {
               onScroll?.(e);
               const el = scrollerElRef.current;
               if (!el) return;
-              if (byProgrammaticRef.current) return; // 程序滚动期间不更新状态
+
+              // 程序滚动或抑制窗口：不更新任何与 UI 相关的状态
+              if (byProgrammaticRef.current || inSuppressWindow()) return;
 
               const diff = el.scrollHeight - el.clientHeight - el.scrollTop;
               const at = diff <= BOTTOM_EPS;
@@ -455,10 +470,9 @@ const Agent = () => {
     setIsGenerating(false);
 
     latestAssistantTextRef.current = getLatestAssistantText();
-    // await createConversationMessages();
   }, [appendToAssistantById, getLatestAssistantText]);
 
-  // ====== 发送：保持顺序追加，但把“新问题”顶到可视区顶部 ======
+  // 发送：保持顺序追加，但把“新问题”顶到可视区顶部
   const handleSend = useCallback(async () => {
     latestAssistantTextRef.current = "";
 
@@ -509,7 +523,6 @@ const Agent = () => {
       index: userIndex,
       align: "start",
       behavior: "auto",
-      // 如需顶部留白可开启：offset: 8,
     });
     requestAnimationFrame(() => {
       byProgrammaticRef.current = false;
@@ -619,6 +632,7 @@ const Agent = () => {
 
   // 跳到底部（恢复自动跟随 + 强制关闭按钮）
   const jumpToBottomNow = useCallback(async () => {
+    suppress(); // 抑制滚动期间的 UI 抖动
     const lastIdx = messagesRef.current.length - 1;
     virtuosoRef.current?.scrollToIndex({
       index: Math.max(0, lastIdx),
@@ -698,7 +712,7 @@ const Agent = () => {
             exit: (v) => Math.abs(v) < 900,
           }}
           atBottomStateChange={() => {
-            if (byProgrammaticRef.current) return;
+            if (byProgrammaticRef.current || inSuppressWindow()) return;
             const at = isReallyAtBottom();
             atBottomRef.current = at;
             if (at) userInteractingRef.current = false;
@@ -713,7 +727,7 @@ const Agent = () => {
 
         {/* 底部"跳至最新" */}
         <Transition
-          mounted={showJump}
+          mounted={showJump && !inSuppressWindow()}
           transition="pop"
           duration={200}
           timingFunction="ease-out"
@@ -808,7 +822,8 @@ const Agent = () => {
     setIsLoadingMessages(false);
     if (!response.ok) return;
 
-    // 切换会话：重置所有状态
+    // 切换会话：进入抑制窗口 + 标记程序滚动
+    suppress(800);
     byProgrammaticRef.current = true;
     userInteractingRef.current = false;
     autoFollowDisabledRef.current = false;
@@ -830,21 +845,21 @@ const Agent = () => {
         behavior: "auto",
       });
 
-      // 多次尝试硬滚动到底部，确保成功
-      const scrollAttempts = [100, 200, 300, 500];
+      // 少量重试，期间仍在抑制窗口
+      const scrollAttempts = [80, 160, 260, 420];
       scrollAttempts.forEach((delay) => {
         setTimeout(() => {
           hardScrollToBottomNow();
         }, delay);
       });
 
-      // 最后重置标志位
+      // 最后重置标志位（抑制窗口会自然结束）
       setTimeout(() => {
         byProgrammaticRef.current = false;
         atBottomRef.current = true;
         setShowJump(false);
-      }, 600);
-    }, 50);
+      }, 520);
+    }, 40);
   };
 
   return (
@@ -887,7 +902,7 @@ const Agent = () => {
                 >
                   <Text size={"xs"}>
                     {item.name && appHelper.getLength(item.name) > 8
-                      ? item.name.slice(0, 8) + "..."
+                      ? item.name.slice(0, 9) + "..."
                       : item.name}
                   </Text>
                 </Menu.Item>
@@ -1014,23 +1029,6 @@ const MessageItem = React.memo(
     prev.msg.id === next.msg.id && prev.msg.content === next.msg.content,
 );
 
-/** 寻路占位骨架 */
-const ScrollSeekPlaceholder = ({ height, ...rest }) => {
-  return (
-    <div {...rest} style={{ height: height ?? 140, padding: 12 }}>
-      <div
-        className={classes.vSkeleton}
-        style={{ height: 20, width: "50%", marginBottom: 12 }}
-      />
-      <div
-        className={classes.vSkeleton}
-        style={{ height: 16, width: "85%", marginBottom: 8 }}
-      />
-      <div className={classes.vSkeleton} style={{ height: 16, width: "66%" }} />
-    </div>
-  );
-};
-
 /** 输入区 */
 const ChatInput = React.memo(function ChatInput({
   input,
@@ -1061,7 +1059,7 @@ const ChatInput = React.memo(function ChatInput({
       }
 
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault;
+        e.preventDefault();
         if (!isGenerating) onSend();
         return;
       }
@@ -1082,70 +1080,75 @@ const ChatInput = React.memo(function ChatInput({
       offset={6}
     >
       <Popover.Target>
-        <Card shadow="sm" w="70%" mb="lg" withBorder radius={"xl"}>
-          <Textarea
-            autosize={false}
-            minRows={1}
-            maxRows={4}
-            value={input}
-            variant="unstyled"
-            onKeyDown={handleTextareaKeyDown}
-            onCompositionStart={() => {
-              isComposingRef.current = true;
-            }}
-            onCompositionEnd={() => {
-              isComposingRef.current = false;
-            }}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            placeholder="@知识库或直接提问"
-            w="100%"
-            size="md"
-            classNames={{ input: classes.input, textarea: classes.textarea }}
-          />
-          <Group justify="space-between">
-            <Group gap="xs">
-              <SelectWithIcon
-                size="xs"
-                options={modelOptions}
-                onChange={setCurrentModel}
-                value={currentModel}
-              />
-              <Button
-                variant={isOnline ? "light" : "subtle"}
-                color={isOnline ? theme.colors.blue[7] : theme.colors.gray[7]}
-                onClick={() => setIsOnline((v) => !v)}
-                leftSection={<Globe size={16} />}
-                radius={"xl"}
-                size="xs"
+        <Stack w="70%" gap={"xs"}>
+          <Card shadow="sm" withBorder radius={"xl"}>
+            <Textarea
+              autosize={false}
+              minRows={1}
+              maxRows={4}
+              value={input}
+              variant="unstyled"
+              onKeyDown={handleTextareaKeyDown}
+              onCompositionStart={() => {
+                isComposingRef.current = true;
+              }}
+              onCompositionEnd={() => {
+                isComposingRef.current = false;
+              }}
+              onChange={(e) => setInput(e.currentTarget.value)}
+              placeholder="@知识库或直接提问"
+              w="100%"
+              size="md"
+              classNames={{ input: classes.input, textarea: classes.textarea }}
+            />
+            <Group justify="space-between">
+              <Group gap="xs">
+                <SelectWithIcon
+                  size="xs"
+                  options={modelOptions}
+                  onChange={setCurrentModel}
+                  value={currentModel}
+                />
+                <Button
+                  variant={isOnline ? "light" : "subtle"}
+                  color={isOnline ? theme.colors.blue[7] : theme.colors.gray[7]}
+                  onClick={() => setIsOnline((v) => !v)}
+                  leftSection={<Globe size={16} />}
+                  radius={"xl"}
+                  size="xs"
+                >
+                  <Text size="xs" fw="bold">
+                    联网搜索
+                  </Text>
+                </Button>
+                <Button
+                  variant={isThink ? "light" : "subtle"}
+                  color={isThink ? theme.colors.blue[7] : theme.colors.gray[7]}
+                  onClick={() => setIsThink((v) => !v)}
+                  leftSection={<Sparkles size={16} />}
+                  radius={"xl"}
+                  size="xs"
+                >
+                  <Text size="xs" fw="bold">
+                    深度思考
+                  </Text>
+                </Button>
+              </Group>
+              <ActionIcon
+                size="xl"
+                variant="light"
+                radius="xl"
+                onClick={() => onSend()}
+                aria-label={isGenerating ? "停止" : "发送"}
               >
-                <Text size="xs" fw="bold">
-                  联网搜索
-                </Text>
-              </Button>
-              <Button
-                variant={isThink ? "light" : "subtle"}
-                color={isThink ? theme.colors.blue[7] : theme.colors.gray[7]}
-                onClick={() => setIsThink((v) => !v)}
-                leftSection={<Sparkles size={16} />}
-                radius={"xl"}
-                size="xs"
-              >
-                <Text size="xs" fw="bold">
-                  深度思考
-                </Text>
-              </Button>
+                {isGenerating ? <Pause size={18} /> : <ArrowUp size={22} />}
+              </ActionIcon>
             </Group>
-            <ActionIcon
-              size="xl"
-              variant="light"
-              radius="xl"
-              onClick={() => onSend()}
-              aria-label={isGenerating ? "停止" : "发送"}
-            >
-              {isGenerating ? <Pause size={18} /> : <ArrowUp size={22} />}
-            </ActionIcon>
-          </Group>
-        </Card>
+          </Card>
+          <Center>
+            <Text size={"xs"}>AI也会犯错, 请检查重要信息</Text>
+          </Center>
+        </Stack>
       </Popover.Target>
       <Popover.Dropdown>
         <Menu>
