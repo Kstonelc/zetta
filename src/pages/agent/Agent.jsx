@@ -28,6 +28,8 @@ import {
   Tooltip,
   Transition,
   useMantineTheme,
+  Badge,
+  Collapse,
 } from "@mantine/core";
 import { Virtuoso } from "react-virtuoso";
 import "highlight.js/styles/github.css";
@@ -43,13 +45,15 @@ import {
   Pause,
   Sparkles,
   Ellipsis,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
 import { ConversationRole, ConversationStatus, ModelType } from "@/enum.ts";
 import { useUserStore } from "@/stores/useUserStore.js";
-import { MarkdownViewer, SelectWithIcon } from "@/components";
+import { MarkdownViewer, SelectWithIcon, Loading } from "@/components";
 
 import classes from "./Agent.module.scss";
 
@@ -88,6 +92,7 @@ const Agent = () => {
 
   // 会话列表
   const [conversations, setConversations] = useState([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
 
   // 区分程序滚动与用户滚动
   const byProgrammaticRef = useRef(false);
@@ -96,16 +101,17 @@ const Agent = () => {
 
   // SSE/流控制
   const conversationStopControllerRef = useRef(null);
-  const bufferRef = useRef("");
-  const flushTimerRef = useRef(null);
   const currentAssistantIdRef = useRef(null);
+
+  // 分行解析缓冲
+  const lineBufRef = useRef("");
 
   // 消息快照
   const latestAssistantTextRef = useRef("");
   const latestUserTextRef = useRef("");
   const currentConversationIdRef = useRef("");
 
-  // 单一事实源：按消息 id 累加 assistant 文本
+  // 单一事实源：按消息 id 累加 assistant 的“答案区”文本
   const assistantTextMapRef = useRef(new Map());
   const getLatestAssistantText = useCallback(() => {
     const id = currentAssistantIdRef.current;
@@ -114,14 +120,14 @@ const Agent = () => {
     if (inMap != null) return inMap;
     const msg = messagesRef.current.find((m) => m.id === id);
     if (!msg) return "";
-    return typeof msg.content === "string" ? msg.content : "";
+    return appHelper.isString(msg.content) ? msg.content : "";
   }, []);
 
   const isMac =
     typeof navigator !== "undefined" &&
     (/Mac/.test(navigator.platform) || /Mac OS/.test(navigator.userAgent));
 
-  const BOTTOM_EPS = isMac ? 4 : 2; // 底部阈值（px）
+  const BOTTOM_EPS = isMac ? 4 : 6; // 底部阈值（px）
   // none | auto | smooth
   const afterRenderScrollRef = useRef("none");
 
@@ -136,7 +142,6 @@ const Agent = () => {
   const isReallyAtBottom = useCallback(() => {
     const el = scrollerElRef.current;
     if (!el) return true;
-    // 向上取整 + 右侧不等式，吞掉 0.5~1px 抖动
     const top = Math.ceil(el.scrollTop);
     const height = Math.ceil(el.clientHeight);
     const scrollH = Math.ceil(el.scrollHeight);
@@ -148,7 +153,7 @@ const Agent = () => {
     if (!el) return;
     const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
     try {
-      el.scrollTo({ top: maxTop, behavior: "smooth" });
+      el.scrollTo({ top: maxTop, behavior: "auto" });
     } catch {
       el.scrollTop = maxTop;
     }
@@ -165,7 +170,7 @@ const Agent = () => {
     }
   }, []);
 
-  // 合并后的"渲染后到底"处理（只执行一次）
+  // 渲染后到底（只执行一次）
   useLayoutEffect(() => {
     const mode = afterRenderScrollRef.current;
     if (mode === "none") return;
@@ -173,7 +178,7 @@ const Agent = () => {
     const el = scrollerElRef.current;
     if (!el) return;
 
-    // 先 reset，防止重复
+    // reset，防止重复
     afterRenderScrollRef.current = "none";
 
     const run = async () => {
@@ -225,7 +230,6 @@ const Agent = () => {
         const curH = el.scrollHeight;
         const changed = curH !== lastH;
         lastH = curH;
-
         if (!changed && isReallyAtBottom()) break;
         smoothToBottom();
       }
@@ -237,7 +241,7 @@ const Agent = () => {
     };
 
     run();
-  }, [messages]);
+  }, [messages, isReallyAtBottom]);
 
   // 问题（用户消息）导航
   const questionIndices = useMemo(
@@ -284,15 +288,11 @@ const Agent = () => {
   };
 
   const destroy = async () => {
-    if (flushTimerRef.current) {
-      clearInterval(flushTimerRef.current);
-      flushTimerRef.current = null;
-    }
-    bufferRef.current = "";
     if (conversationStopControllerRef.current) {
       conversationStopControllerRef.current.abort();
       conversationStopControllerRef.current = null;
     }
+    lineBufRef.current = "";
   };
 
   useEffect(() => {
@@ -319,6 +319,7 @@ const Agent = () => {
   );
 
   const getConversations = async () => {
+    setIsLoadingConversations(true);
     const response = await appHelper.apiPost(
       "/conversation/find-conversations",
       {
@@ -331,9 +332,11 @@ const Agent = () => {
       },
     );
     if (!response.ok) {
+      setIsLoadingConversations(false);
       return [];
     }
     setConversations(response.data);
+    setIsLoadingConversations(false);
     return response.data;
   };
 
@@ -394,10 +397,12 @@ const Agent = () => {
   const genId = (prefix = "m") =>
     `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-  // 流式拼接：更新 Map + latestRef + UI（并且输出期间自动丝滑跟随）
-  const appendToAssistantById = useCallback(
-    (assistantId, textChunk) => {
-      if (assistantId && textChunk) {
+  /** 分区增量：将文本片段追加到 assistant 消息的指定字段（content/thinking） */
+  const appendToAssistantField = useCallback(
+    (assistantId, field /* 'content' | 'thinking' */, textChunk) => {
+      if (!assistantId || !textChunk) return;
+
+      if (field === "content") {
         const map = assistantTextMapRef.current;
         const prev = map.get(assistantId) || "";
         const next = prev + textChunk;
@@ -406,19 +411,23 @@ const Agent = () => {
       }
 
       setMessages((prev) => {
-        if (!assistantId || !textChunk) return prev;
         const idx = prev.findIndex((m) => m.id === assistantId);
         if (idx === -1) return prev;
-
         const next = [...prev];
         const current = next[idx];
 
-        let currentContent = current.content;
-        if (React.isValidElement(currentContent)) currentContent = "";
+        const safeContent = appHelper.isString(current.content)
+          ? current.content
+          : "";
+        const safeThinking = appHelper.isString(current.thinking)
+          ? current.thinking
+          : "";
 
         next[idx] = {
           ...current,
-          content: (currentContent || "") + textChunk,
+          content: field === "content" ? safeContent + textChunk : safeContent,
+          thinking:
+            field === "thinking" ? safeThinking + textChunk : safeThinking,
         };
         return next;
       });
@@ -432,52 +441,26 @@ const Agent = () => {
         }
       }
     },
-    [smoothScrollToBottom, isReallyAtBottom],
+    [isReallyAtBottom, smoothScrollToBottom],
   );
 
-  const scheduleFlush = useCallback(() => {
-    if (flushTimerRef.current != null) return;
-    flushTimerRef.current = setInterval(() => {
-      if (!bufferRef.current) {
-        clearInterval(flushTimerRef.current);
-        flushTimerRef.current = null;
-        return;
-      }
-      const toAppend = bufferRef.current;
-      bufferRef.current = "";
-      appendToAssistantById(currentAssistantIdRef.current, toAppend);
-    }, 120);
-  }, [appendToAssistantById]);
-
-  // 停止：冲刷并保存
+  // 停止：终止流（前端只负责停止；末尾 flush 由行缓冲保证）
   const stopSend = useCallback(async () => {
     if (!conversationStopControllerRef.current) return;
 
     conversationStopControllerRef.current.abort();
     conversationStopControllerRef.current = null;
 
-    if (bufferRef.current) {
-      const toAppend = bufferRef.current;
-      bufferRef.current = "";
-      appendToAssistantById(currentAssistantIdRef.current, toAppend);
-    }
-
-    if (flushTimerRef.current) {
-      clearInterval(flushTimerRef.current);
-      flushTimerRef.current = null;
-    }
-
     setIsGenerating(false);
-
     latestAssistantTextRef.current = getLatestAssistantText();
-  }, [appendToAssistantById, getLatestAssistantText]);
+  }, [getLatestAssistantText]);
 
-  // 发送：保持顺序追加，但把“新问题”顶到可视区顶部
+  // 发送：顺序追加 + “新问题”顶到可视区顶部
   const handleSend = useCallback(async () => {
     latestAssistantTextRef.current = "";
 
     if (isGenerating) {
-      stopSend();
+      await stopSend();
       return;
     }
     if (!input.trim() || !currentModel) return;
@@ -486,7 +469,7 @@ const Agent = () => {
 
     setIsGenerating(true);
 
-    // 发送后不要自动跟随（让历史内容被顶上去）
+    // 发送后不要自动跟随（让历史被顶上去）
     autoFollowDisabledRef.current = true;
     userInteractingRef.current = true;
 
@@ -505,6 +488,7 @@ const Agent = () => {
       id: assistantId,
       role: ConversationRole.Assistant,
       content: <Loader size={"xs"} mt={"xs"} />,
+      thinking: "", // 思考区
     };
     currentAssistantIdRef.current = assistantId;
     assistantTextMapRef.current.set(assistantId, "");
@@ -528,9 +512,7 @@ const Agent = () => {
       byProgrammaticRef.current = false;
     });
 
-    // 此场景不需要渲染后“硬到底”
     afterRenderScrollRef.current = "none";
-    // 显示“跳至最新”按钮
     setShowJump(true);
 
     // 模型提供商
@@ -543,8 +525,11 @@ const Agent = () => {
     }
 
     conversationStopControllerRef.current = new AbortController();
-    // 创建空的 done之后更新
+
+    // 先创建空的消息，得到 assistant_message_id
     const assistant_message_id = await createConversationMessages();
+
+    // 发起流式请求（text/plain; 每行一个 JSON）
     let result;
     try {
       result = await appHelper.apiFetch(
@@ -571,51 +556,69 @@ const Agent = () => {
     }
 
     const decoder = new TextDecoder("utf-8");
+    lineBufRef.current = "";
 
     try {
       while (true) {
         const { value, done } = await reader.read();
-        if (done) {
-          const tail = decoder.decode();
-          if (tail) bufferRef.current += tail;
+        const text = done
+          ? decoder.decode()
+          : decoder.decode(value, { stream: true });
+        if (text) lineBufRef.current += text;
 
-          if (bufferRef.current) {
-            const toAppend = bufferRef.current;
-            bufferRef.current = "";
-            appendToAssistantById(currentAssistantIdRef.current, toAppend);
+        // 尽量按行消费（每行一个 JSON）
+        let lastNL = lineBufRef.current.lastIndexOf("\n");
+        if (lastNL >= 0) {
+          const full = lineBufRef.current.slice(0, lastNL);
+          const rest = lineBufRef.current.slice(lastNL + 1);
+          lineBufRef.current = rest;
+
+          const lines = full.split("\n");
+          for (const raw of lines) {
+            const s = raw.trim();
+            if (!s) continue;
+            let obj = null;
+            try {
+              obj = JSON.parse(s);
+            } catch (e) {
+              // 后端异常行/半行保护（极少见，已按行输出基本不会触发）
+              console.warn("JSON parse fail on line:", e);
+              continue;
+            }
+
+            const t = obj?.type;
+            if (t === "thinking") {
+              const delta = obj?.delta ?? "";
+              if (delta) {
+                appendToAssistantField(
+                  currentAssistantIdRef.current,
+                  "thinking",
+                  delta,
+                );
+              }
+            } else if (t === "answer") {
+              const delta = obj?.delta ?? "";
+              if (delta) {
+                appendToAssistantField(
+                  currentAssistantIdRef.current,
+                  "content",
+                  delta,
+                );
+              }
+            } else if (t === "done") {
+              // 结束
+              setIsGenerating(false);
+              latestAssistantTextRef.current = getLatestAssistantText();
+            } else {
+            }
           }
-
-          if (flushTimerRef.current) {
-            clearInterval(flushTimerRef.current);
-            flushTimerRef.current = null;
-          }
-          setIsGenerating(false);
-
-          latestAssistantTextRef.current = getLatestAssistantText();
-          // await createConversationMessages();
-          break;
         }
 
-        const chunk = decoder.decode(value, { stream: true });
-        bufferRef.current += chunk;
-        scheduleFlush();
+        if (done) break;
       }
     } catch (e) {
       if (e?.name !== "AbortError") {
         console.error("请求发生错误:", e);
-      }
-
-      const tail = decoder.decode();
-      if (tail) bufferRef.current += tail;
-
-      if (bufferRef.current) {
-        const toAppend = bufferRef.current;
-        bufferRef.current = "";
-        appendToAssistantById(currentAssistantIdRef.current, toAppend);
-      }
-      if (flushTimerRef.current) {
-        clearInterval(flushTimerRef.current);
-        flushTimerRef.current = null;
       }
       setIsGenerating(false);
     }
@@ -624,13 +627,12 @@ const Agent = () => {
     currentModel,
     models,
     isGenerating,
-    scheduleFlush,
     stopSend,
-    appendToAssistantById,
+    appendToAssistantField,
     getLatestAssistantText,
   ]);
 
-  // 跳到底部（恢复自动跟随 + 强制关闭按钮）
+  // 跳到底部（恢复自动跟随 + 关闭按钮）
   const jumpToBottomNow = useCallback(async () => {
     suppress(); // 抑制滚动期间的 UI 抖动
     const lastIdx = messagesRef.current.length - 1;
@@ -797,6 +799,7 @@ const Agent = () => {
       notify({ type: "error", message: response.message });
       return;
     }
+    setMessages([]);
     currentConversationIdRef.current = response.data.conversation_id;
   };
 
@@ -830,22 +833,25 @@ const Agent = () => {
     atBottomRef.current = true;
     setShowJump(false);
 
-    // 设置消息
-    setMessages(response.data);
+    // 兼容旧数据：补齐 thinking 字段
+    const withThinking = (response.data || []).map((m) =>
+      m.role === ConversationRole.Assistant
+        ? { thinking: "", content: "", ...m }
+        : m,
+    );
 
-    // 关键：不使用 afterRenderScrollRef，直接手动滚动
-    // 等待足够的时间让 Virtuoso 完成渲染
+    setMessages(withThinking);
+
+    // 不使用 afterRenderScrollRef，直接手动滚动
     setTimeout(() => {
-      const lastIdx = Math.max(0, response.data.length - 1);
+      const lastIdx = Math.max(0, withThinking.length - 1);
 
-      // 先让 Virtuoso 跳转到最后一项
       virtuosoRef.current?.scrollToIndex({
         index: lastIdx,
         align: "end",
         behavior: "auto",
       });
 
-      // 少量重试，期间仍在抑制窗口
       const scrollAttempts = [80, 160, 260, 420];
       scrollAttempts.forEach((delay) => {
         setTimeout(() => {
@@ -853,7 +859,6 @@ const Agent = () => {
         }, delay);
       });
 
-      // 最后重置标志位（抑制窗口会自然结束）
       setTimeout(() => {
         byProgrammaticRef.current = false;
         atBottomRef.current = true;
@@ -870,45 +875,48 @@ const Agent = () => {
           leftSection={<MessagesSquare size={16} />}
           onClick={async () => {
             await createConversation();
+            await getConversations();
           }}
         >
           新建对话
         </Button>
         <ScrollArea h="calc(100% - 48px)">
-          <Menu w={"100%"}>
-            <Menu.Label>聊天</Menu.Label>
-            {conversations.map((item) => {
-              const active = item.id === currentConversationIdRef.current;
-              return (
-                <Menu.Item
-                  mb={"xs"}
-                  key={item.id}
-                  rightSection={
-                    <ActionIcon
-                      variant={"subtle"}
-                      color={
-                        active ? theme.colors.gray[0] : theme.colors.gray[8]
-                      }
-                    >
-                      <Ellipsis size={16} />
-                    </ActionIcon>
-                  }
-                  onClick={async () => {
-                    await getConversationMessages(item.id);
-                  }}
-                  variant={"light"}
-                  color={active ? theme.white : theme.colors.gray[8]}
-                  bg={active ? theme.colors.blue[5] : "transparent"}
-                >
-                  <Text size={"xs"}>
-                    {item.name && appHelper.getLength(item.name) > 8
-                      ? item.name.slice(0, 9) + "..."
-                      : item.name}
-                  </Text>
-                </Menu.Item>
-              );
-            })}
-          </Menu>
+          <Loading visible={isLoadingConversations} size={"sm"}>
+            <Menu w={"100%"}>
+              <Menu.Label>聊天</Menu.Label>
+              {conversations.map((item) => {
+                const active = item.id === currentConversationIdRef.current;
+                return (
+                  <Menu.Item
+                    mb={"xs"}
+                    key={item.id}
+                    rightSection={
+                      <ActionIcon
+                        variant={"subtle"}
+                        color={
+                          active ? theme.colors.gray[0] : theme.colors.gray[8]
+                        }
+                      >
+                        <Ellipsis size={16} />
+                      </ActionIcon>
+                    }
+                    onClick={async () => {
+                      await getConversationMessages(item.id);
+                    }}
+                    variant={"light"}
+                    color={active ? theme.white : theme.colors.gray[8]}
+                    bg={active ? theme.colors.blue[5] : "transparent"}
+                  >
+                    <Text size={"xs"}>
+                      {item.name && appHelper.getLength(item.name) > 8
+                        ? item.name.slice(0, 9) + "..."
+                        : item.name}
+                    </Text>
+                  </Menu.Item>
+                );
+              })}
+            </Menu>
+          </Loading>
         </ScrollArea>
       </Card>
 
@@ -925,12 +933,7 @@ const Agent = () => {
             )}
           </Stack>
         ) : (
-          <>
-            {isLoadingMessages && (
-              <div className={classes.topThinLoader} aria-hidden />
-            )}
-            {renderChatBox()}
-          </>
+          renderChatBox()
         )}
 
         <ChatInput
@@ -957,8 +960,10 @@ const MessageItem = React.memo(
   ({ msg, theme }) => {
     const isUser = msg.role === ConversationRole.User;
     const clipboard = useClipboard({ timeout: 1500 });
+    const contentString = appHelper.isString(msg.content) ? msg.content : null;
+    const thinkingString = appHelper.isString(msg.thinking) ? msg.thinking : "";
 
-    const contentString = typeof msg.content === "string" ? msg.content : null;
+    const [showThinking, setShowThinking] = useState(false);
 
     return (
       <Flex
@@ -968,10 +973,48 @@ const MessageItem = React.memo(
         <Group align="flex-start" wrap="nowrap">
           {!isUser && (
             <Avatar variant="light" color={theme.colors.violet[7]}>
-              ZE
+              BI
             </Avatar>
           )}
           <Stack gap={"xs"} miw="20%" maw="80%">
+            {!isUser && thinkingString && (
+              <Paper
+                p="xs"
+                radius="md"
+                withBorder
+                maw={"60%"}
+                bg={theme.colors.gray[0]}
+                style={{ borderStyle: "dashed" }}
+              >
+                <Group gap="xs" align="center">
+                  <Group gap={6} align="center">
+                    <Badge variant="light" color="grape" size="xs">
+                      思考过程
+                    </Badge>
+                    <Text size="xs" c="dimmed">
+                      中间推理
+                    </Text>
+                  </Group>
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    onClick={() => setShowThinking((v) => !v)}
+                    aria-label={showThinking ? "收起思考" : "展开思考"}
+                    color={theme.colors.gray[7]}
+                    title={showThinking ? "收起" : "展开"}
+                  >
+                    {showThinking ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </ActionIcon>
+                </Group>
+                <Collapse in={showThinking}>
+                  <div style={{ marginTop: 6 }}>
+                    <MarkdownViewer content={thinkingString} />
+                  </div>
+                </Collapse>
+              </Paper>
+            )}
+
+            {/* 主内容（答案区或用户消息） */}
             <Paper
               flex={1}
               bg={isUser ? theme.colors.blue[5] : "transparent"}
@@ -989,8 +1032,13 @@ const MessageItem = React.memo(
                 msg.content
               )}
             </Paper>
+
+            {/* 工具条 */}
             <Group justify="flex-start" className={classes.messageTools}>
-              <Tooltip label={clipboard.copied ? "已复制" : "复制"} withArrow>
+              <Tooltip
+                label={clipboard.copied ? "已复制" : "复制答案"}
+                withArrow
+              >
                 <ActionIcon
                   variant={"subtle"}
                   size={"sm"}
@@ -998,7 +1046,7 @@ const MessageItem = React.memo(
                     clipboard.copy(
                       contentString != null
                         ? contentString
-                        : typeof msg.content === "string"
+                        : appHelper.isString(msg.content)
                           ? msg.content
                           : (() => {
                               try {
@@ -1026,7 +1074,9 @@ const MessageItem = React.memo(
     );
   },
   (prev, next) =>
-    prev.msg.id === next.msg.id && prev.msg.content === next.msg.content,
+    prev.msg.id === next.msg.id &&
+    prev.msg.content === next.msg.content &&
+    (prev.msg.thinking || "") === (next.msg.thinking || ""),
 );
 
 /** 输入区 */
