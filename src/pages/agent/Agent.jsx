@@ -99,6 +99,91 @@ const Agent = () => {
   // 自动跟随禁用开关
   const autoFollowDisabledRef = useRef(false);
 
+  // ==== 平滑跟随会话（核心优化）====
+  const followRef = useRef({
+    active: false,
+    raf: 0,
+    startTs: 0,
+    lastHeight: 0,
+  });
+
+  const isFollowActive = () => followRef.current.active;
+
+  const stopFollowSession = useCallback(() => {
+    const f = followRef.current;
+    if (f.raf) cancelAnimationFrame(f.raf);
+    f.raf = 0;
+    f.active = false;
+  }, []);
+
+  const startFollowSession = useCallback(() => {
+    const el = scrollerElRef.current;
+    if (!el) return;
+
+    // 进入抑制窗口，避免按钮闪烁；标记程序滚动
+    suppress(800);
+    byProgrammaticRef.current = true;
+    autoFollowDisabledRef.current = false;
+    userInteractingRef.current = false;
+
+    // 初始化会话
+    const f = followRef.current;
+    stopFollowSession();
+    f.active = true;
+    f.startTs = performance.now();
+    f.lastHeight = el.scrollHeight;
+
+    // 立即把视图放到靠近底部，减少虚拟化影响
+    const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+    try {
+      el.scrollTo({ top: maxTop, behavior: "auto" });
+    } catch {
+      el.scrollTop = maxTop;
+    }
+
+    // rAF 平滑跟随：仅在高度增长时推进；采用速度上限，避免“过冲回弹”
+    const step = () => {
+      if (!f.active) return;
+      const el2 = scrollerElRef.current;
+      if (!el2) {
+        stopFollowSession();
+        return;
+      }
+
+      const target = Math.max(0, el2.scrollHeight - el2.clientHeight);
+      const cur = el2.scrollTop;
+      const dist = target - cur;
+
+      // 只有当高度变化或未到底时才推进
+      const curHeight = el2.scrollHeight;
+      const heightChanged = curHeight !== f.lastHeight;
+      f.lastHeight = curHeight;
+
+      if (Math.abs(dist) > 0.5 || heightChanged) {
+        // 平滑步进：根据距离自适应步长，有上限，避免抖动
+        const maxStep = 48; // px/frame 上限
+        const minStep = 8; // 最小推进，避免卡顿
+        const stepPx = Math.min(
+          maxStep,
+          Math.max(minStep, Math.abs(dist) * 0.18),
+        );
+        el2.scrollTop = cur + Math.sign(dist) * stepPx;
+      } else {
+        // 已接近底部，钉住
+        el2.scrollTop = target;
+      }
+
+      f.raf = requestAnimationFrame(step);
+    };
+
+    f.raf = requestAnimationFrame(step);
+
+    // 稍后解除“程序滚动”标记
+    requestAnimationFrame(() => {
+      byProgrammaticRef.current = false;
+    });
+  }, [stopFollowSession]);
+
   // SSE/流控制
   const conversationStopControllerRef = useRef(null);
   const currentAssistantIdRef = useRef(null);
@@ -164,7 +249,7 @@ const Agent = () => {
     if (!el) return;
     const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
     try {
-      el.scrollTo({ top: maxTop, behavior: "smooth" });
+      el.scrollTo({ top: maxTop, behavior: "instant" });
     } catch {
       el.scrollTop = maxTop;
     }
@@ -243,6 +328,13 @@ const Agent = () => {
     run();
   }, [messages, isReallyAtBottom]);
 
+  // 当生成结束或用户手动滚动时，停止跟随会话
+  useEffect(() => {
+    if (!isGenerating) {
+      stopFollowSession();
+    }
+  }, [isGenerating, stopFollowSession]);
+
   // 问题（用户消息）导航
   const questionIndices = useMemo(
     () =>
@@ -293,6 +385,7 @@ const Agent = () => {
       conversationStopControllerRef.current = null;
     }
     lineBufRef.current = "";
+    stopFollowSession();
   };
 
   useEffect(() => {
@@ -300,8 +393,7 @@ const Agent = () => {
     return () => {
       destroy();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, []); // eslint-disable-line
 
   // endregion
 
@@ -353,6 +445,8 @@ const Agent = () => {
 
         const markUserInteracting = () => {
           if (byProgrammaticRef.current || inSuppressWindow()) return;
+          // 用户一旦主动交互，停止跟随
+          if (isFollowActive()) stopFollowSession();
           const at = isAtBottomNow();
           userInteractingRef.current = !at;
         };
@@ -390,7 +484,7 @@ const Agent = () => {
           />
         );
       }),
-    [],
+    [stopFollowSession],
   );
 
   // 简单稳定 id 生成器
@@ -432,16 +526,9 @@ const Agent = () => {
         return next;
       });
 
-      // 生成期间且在底部：直接跟随，不触发 showJump 变化
-      if (!userInteractingRef.current && !autoFollowDisabledRef.current) {
-        if (!isReallyAtBottom()) {
-          requestAnimationFrame(() => {
-            smoothScrollToBottom();
-          });
-        }
-      }
+      // ❗ 重要：生成期间不再在这里主动滚动，由“跟随会话”统一处理，避免与 Virtuoso 自身逻辑打架
     },
-    [isReallyAtBottom, smoothScrollToBottom],
+    [],
   );
 
   // 停止：终止流（前端只负责停止；末尾 flush 由行缓冲保证）
@@ -634,18 +721,25 @@ const Agent = () => {
 
   // 跳到底部（恢复自动跟随 + 关闭按钮）
   const jumpToBottomNow = useCallback(async () => {
-    suppress(); // 抑制滚动期间的 UI 抖动
+    // 抑制滚动期间的 UI 抖动
+    suppress(800);
+
+    // 为了减少虚拟列表复位抖动，先把视窗对齐到最后一项，再启动跟随
     const lastIdx = messagesRef.current.length - 1;
     virtuosoRef.current?.scrollToIndex({
       index: Math.max(0, lastIdx),
       align: "end",
       behavior: "auto",
     });
+
     autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
-    hardScrollToBottomNow();
+
+    // 启动平滑跟随会话（核心）
+    startFollowSession();
+
     setShowJump(false);
-  }, [hardScrollToBottomNow]);
+  }, [startFollowSession]);
 
   // 问题导航定位（禁用自动跟随）
   const scrollToQuestionPtr = useCallback(
@@ -653,6 +747,9 @@ const Agent = () => {
       if (qIdx < 0 || qIdx >= questionIndices.length) return;
       const itemIndex = questionIndices[qIdx];
       if (itemIndex == null) return;
+
+      // 一旦跳到历史问题，必须停止跟随
+      stopFollowSession();
 
       autoFollowDisabledRef.current = true;
       userInteractingRef.current = true;
@@ -669,7 +766,7 @@ const Agent = () => {
 
       setShowJump(true);
     },
-    [questionIndices],
+    [questionIndices, stopFollowSession],
   );
 
   const goPrevQuestion = useCallback(() => {
@@ -701,13 +798,16 @@ const Agent = () => {
             Scroller,
             Footer: () => <div style={{ height: 24 }} />,
           }}
+          // 当处于“跟随会话”时，禁用 Virtuoso 的 followOutput，避免双重平滑引起抖动
           followOutput={
-            isGenerating &&
-            atBottomRef.current &&
-            !userInteractingRef.current &&
-            !autoFollowDisabledRef.current
-              ? "smooth"
-              : false
+            isFollowActive()
+              ? false
+              : isGenerating &&
+                  atBottomRef.current &&
+                  !userInteractingRef.current &&
+                  !autoFollowDisabledRef.current
+                ? "smooth"
+                : false
           }
           scrollSeekConfiguration={{
             enter: (v) => Math.abs(v) > 1400,
@@ -817,6 +917,9 @@ const Agent = () => {
   const getConversationMessages = async (conversationId) => {
     if (conversationId === currentConversationIdRef.current) return;
 
+    // 切换会话前，停止任何跟随会话
+    stopFollowSession();
+
     currentConversationIdRef.current = conversationId;
     setIsLoadingMessages(true);
     const response = await appHelper.apiPost("/conversation/find-messages", {
@@ -892,9 +995,13 @@ const Agent = () => {
                     key={item.id}
                     rightSection={
                       <ActionIcon
+                        className={classes.conversationItemTools}
                         variant={"subtle"}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
                         color={
-                          active ? theme.colors.gray[0] : theme.colors.gray[8]
+                          active ? theme.colors.blue[1] : theme.colors.gray[8]
                         }
                       >
                         <Ellipsis size={16} />
@@ -982,19 +1089,39 @@ const MessageItem = React.memo(
                 p="xs"
                 radius="md"
                 withBorder
+                miw={300}
                 maw={"60%"}
                 bg={theme.colors.gray[0]}
                 style={{ borderStyle: "dashed" }}
               >
-                <Group gap="xs" align="center">
-                  <Group gap={6} align="center">
+                {/* 头部行：左右两端对齐 + 不换行 + 固定最小高度 */}
+                <Group
+                  gap="xs"
+                  align="center"
+                  justify="space-between"
+                  wrap="nowrap"
+                  style={{ minHeight: 24 }}
+                >
+                  {/* 左侧徽章+文字：不换行，避免首帧折行 */}
+                  <Group
+                    gap={6}
+                    align="center"
+                    wrap="nowrap"
+                    style={{ minWidth: 0 }}
+                  >
                     <Badge variant="light" color="grape" size="xs">
                       思考过程
                     </Badge>
-                    <Text size="xs" c="dimmed">
+                    <Text
+                      size="xs"
+                      c="dimmed"
+                      style={{ whiteSpace: "nowrap", lineHeight: 1 }}
+                    >
                       中间推理
                     </Text>
                   </Group>
+
+                  {/* 右侧操作：固定尺寸，避免图标加载引起宽度抖动 */}
                   <ActionIcon
                     size="sm"
                     variant="subtle"
@@ -1002,11 +1129,15 @@ const MessageItem = React.memo(
                     aria-label={showThinking ? "收起思考" : "展开思考"}
                     color={theme.colors.gray[7]}
                     title={showThinking ? "收起" : "展开"}
+                    // 固定占位宽高，防止换行/跳动
+                    style={{ width: 22, height: 22, flex: "0 0 auto" }}
                   >
                     {showThinking ? <EyeOff size={16} /> : <Eye size={16} />}
                   </ActionIcon>
                 </Group>
-                <Collapse in={showThinking}>
+
+                {/* 内容折叠：keepMounted 避免 mount/unmount 导致首帧高度抖动 */}
+                <Collapse in={showThinking} keepMounted>
                   <div style={{ marginTop: 6 }}>
                     <MarkdownViewer content={thinkingString} />
                   </div>
@@ -1017,7 +1148,7 @@ const MessageItem = React.memo(
             {/* 主内容（答案区或用户消息） */}
             <Paper
               flex={1}
-              bg={isUser ? theme.colors.blue[5] : "transparent"}
+              bg={isUser ? theme.colors.blue[5] : "透明"}
               p={isUser ? "xs" : 0}
               radius="md"
               withBorder={isUser}
