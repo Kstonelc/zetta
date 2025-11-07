@@ -40,18 +40,17 @@
 
 /* 主聊天区域容器：控制尺寸与定位层级 */
 .agentChatWrap {
-  position: relative;
   width: 90%;
-  height: 65vh;
+  height: 66vh;
   min-height: 0;
 }
 
 /* 底部“跳至最新”按钮悬浮层 */
 .agentJumpLatest {
-  position: absolute;
+  position: relative;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: 12px;
   padding: 8px;
   display: flex;
   justify-content: center;
@@ -62,7 +61,7 @@
 /* 右侧中部：问题导航（上/下一个问题） */
 .agentQnav {
   position: absolute;
-  right: -30px;
+  right: 40px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 9;

@@ -57,40 +57,131 @@ import { MarkdownViewer, SelectWithIcon, Loading } from "@/components";
 
 import classes from "./Agent.module.scss";
 
+/**
+ * ===== 可扩展的分区阶段面板（显示搜索、本地检索、RAG 等阶段） =====
+ */
+const SectionPanel = ({ sections, theme, isSectionVisible }) => {
+  const names = Object.keys(sections || {});
+  console.log(999, sections);
+
+  if (names.length === 0) return null;
+
+  return (
+    <Transition
+      mounted={isSectionVisible}
+      transition="pop"
+      duration={200}
+      timingFunction="ease-out"
+    >
+      {() => (
+        <Stack
+          w="100%"
+          align="center"
+          style={{
+            position: "absolute",
+            top: 0,
+            zIndex: 999,
+          }}
+        >
+          {names.map((name) => {
+            const s = sections[name];
+            const statusColor =
+              s.status === "done"
+                ? theme.colors.green[5]
+                : s.status === "error"
+                  ? theme.colors.red[5]
+                  : theme.colors.blue[5];
+            return (
+              <Card key={name} withBorder padding="xs" radius="md">
+                <Group justify="space-between" align="center">
+                  <Group gap="xs" align="center">
+                    <Badge
+                      size="sm"
+                      variant={s.status === "error" ? "filled" : "light"}
+                      color={statusColor}
+                    >
+                      {s.logs && s.logs.length > 0 && s.logs.join(" ")}
+                    </Badge>
+                    {Array.isArray(s.icons) &&
+                      s.icons
+                        .slice(0, 5)
+                        .map((src, i) => (
+                          <Image
+                            key={i}
+                            w={"20"}
+                            h={"20"}
+                            src={src}
+                            radius="xl"
+                          />
+                        ))}
+                  </Group>
+                </Group>
+              </Card>
+            );
+          })}
+        </Stack>
+      )}
+    </Transition>
+  );
+};
+
 const Agent = () => {
   const theme = useMantineTheme();
   const { notify } = useNotify();
   const { userStore } = useUserStore();
 
-  // 输入框
+  // ===== 输入框 =====
   const [input, setInput] = useState("");
 
-  // 消息与引用
+  // ===== 消息与引用 =====
   const [messages, setMessages] = useState([]);
   const messagesRef = useRef(messages);
 
-  // 模型相关
+  // ===== 模型相关 =====
   const [models, setModels] = useState([]);
   const [currentModel, setCurrentModel] = useState(null);
-  const [isThink, setIsThink] = useState(false);
+  const [isDeepThink, setIsDeepThink] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
 
-  // 生成状态
+  // ===== 生成状态 =====
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
-  // 滚动/列表
+  // ===== 分区阶段状态（仅本轮渲染） =====
+  const [sections, setSections] = useState({});
+  const resetSections = useCallback(() => setSections({}), []);
+  const upSection = useCallback((name, patch) => {
+    setSections((prev) => {
+      const cur = prev?.[name] ?? {
+        status: "idle",
+        logs: [],
+        icons: [],
+      };
+      const next = {
+        ...cur,
+        ...patch,
+        logs: patch?.logs ?? cur.logs,
+        icons: patch?.icons
+          ? [...(cur.icons ?? []), ...patch.icons]
+          : (cur.icons ?? []),
+      };
+      return { ...prev, [name]: next };
+    });
+  }, []);
+  const [isSectionVisible, setIsSectionVisible] = useState(false);
+
+  // ===== 滚动/列表 =====
   const virtuosoRef = useRef(null);
   const scrollerElRef = useRef(null);
   const atBottomRef = useRef(true);
   const userInteractingRef = useRef(false);
   const [showJump, setShowJump] = useState(false);
 
-  // 问题导航
+  // ===== 问题导航 =====
   const [qPtr, setQPtr] = useState(-1);
   const qPtrRef = useRef(qPtr);
 
-  // 会话列表
+  // ===== 会话列表 =====
   const [conversations, setConversations] = useState([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
 
@@ -115,6 +206,13 @@ const Agent = () => {
     f.raf = 0;
     f.active = false;
   }, []);
+
+  const suppressUiUntilRef = useRef(0);
+  const SUPPRESS_MS = 600;
+  const inSuppressWindow = () => performance.now() < suppressUiUntilRef.current;
+  const suppress = (ms = SUPPRESS_MS) => {
+    suppressUiUntilRef.current = performance.now() + ms;
+  };
 
   const startFollowSession = useCallback(() => {
     const el = scrollerElRef.current;
@@ -141,7 +239,7 @@ const Agent = () => {
       el.scrollTop = maxTop;
     }
 
-    // rAF 平滑跟随：仅在高度增长时推进；采用速度上限，避免“过冲回弹”
+    // rAF 平滑跟随
     const step = () => {
       if (!f.active) return;
       const el2 = scrollerElRef.current;
@@ -154,22 +252,19 @@ const Agent = () => {
       const cur = el2.scrollTop;
       const dist = target - cur;
 
-      // 只有当高度变化或未到底时才推进
       const curHeight = el2.scrollHeight;
       const heightChanged = curHeight !== f.lastHeight;
       f.lastHeight = curHeight;
 
       if (Math.abs(dist) > 0.5 || heightChanged) {
-        // 平滑步进：根据距离自适应步长，有上限，避免抖动
         const maxStep = 48; // px/frame 上限
-        const minStep = 8; // 最小推进，避免卡顿
+        const minStep = 8;
         const stepPx = Math.min(
           maxStep,
           Math.max(minStep, Math.abs(dist) * 0.18),
         );
         el2.scrollTop = cur + Math.sign(dist) * stepPx;
       } else {
-        // 已接近底部，钉住
         el2.scrollTop = target;
       }
 
@@ -178,7 +273,6 @@ const Agent = () => {
 
     f.raf = requestAnimationFrame(step);
 
-    // 稍后解除“程序滚动”标记
     requestAnimationFrame(() => {
       byProgrammaticRef.current = false;
     });
@@ -216,14 +310,6 @@ const Agent = () => {
   // none | auto | smooth
   const afterRenderScrollRef = useRef("none");
 
-  // UI 抑制窗口：在受控滚动期间屏蔽按钮闪烁
-  const SUPPRESS_MS = 600;
-  const suppressUiUntilRef = useRef(0);
-  const inSuppressWindow = () => performance.now() < suppressUiUntilRef.current;
-  const suppress = (ms = SUPPRESS_MS) => {
-    suppressUiUntilRef.current = performance.now() + ms;
-  };
-
   const isReallyAtBottom = useCallback(() => {
     const el = scrollerElRef.current;
     if (!el) return true;
@@ -239,17 +325,6 @@ const Agent = () => {
     const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
     try {
       el.scrollTo({ top: maxTop, behavior: "auto" });
-    } catch {
-      el.scrollTop = maxTop;
-    }
-  }, []);
-
-  const smoothScrollToBottom = useCallback(() => {
-    const el = scrollerElRef.current;
-    if (!el) return;
-    const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
-    try {
-      el.scrollTo({ top: maxTop, behavior: "instant" });
     } catch {
       el.scrollTop = maxTop;
     }
@@ -410,28 +485,6 @@ const Agent = () => {
     [models],
   );
 
-  const getConversations = async () => {
-    setIsLoadingConversations(true);
-    const response = await appHelper.apiPost(
-      "/conversation/find-conversations",
-      {
-        tenantId: userStore.current_tenant.id,
-        userId: userStore.id,
-        conversationStatus: [
-          ConversationStatus.Active,
-          ConversationStatus.Temporary,
-        ],
-      },
-    );
-    if (!response.ok) {
-      setIsLoadingConversations(false);
-      return [];
-    }
-    setConversations(response.data);
-    setIsLoadingConversations(false);
-    return response.data;
-  };
-
   // 自定义 Scroller（仅维护 atBottom/交互状态）
   const Scroller = useMemo(
     () =>
@@ -445,7 +498,6 @@ const Agent = () => {
 
         const markUserInteracting = () => {
           if (byProgrammaticRef.current || inSuppressWindow()) return;
-          // 用户一旦主动交互，停止跟随
           if (isFollowActive()) stopFollowSession();
           const at = isAtBottomNow();
           userInteractingRef.current = !at;
@@ -525,13 +577,73 @@ const Agent = () => {
         };
         return next;
       });
-
-      // ❗ 重要：生成期间不再在这里主动滚动，由“跟随会话”统一处理，避免与 Virtuoso 自身逻辑打架
     },
     [],
   );
 
-  // 停止：终止流（前端只负责停止；末尾 flush 由行缓冲保证）
+  // ===== 事件处理器注册表（可扩展） =====
+  const handlers = useMemo(() => {
+    return {
+      thinking: (evt) => {
+        const delta = evt.delta ?? "";
+        appendToAssistantField(
+          currentAssistantIdRef.current,
+          "thinking",
+          delta,
+        );
+      },
+      answer: (evt) => {
+        const delta = evt.delta ?? "";
+        appendToAssistantField(currentAssistantIdRef.current, "content", delta);
+      },
+      done: (evt) => {
+        setIsGenerating(false);
+        latestAssistantTextRef.current = getLatestAssistantText();
+        // 把所有 running 的 section 标记 done
+        setSections((prev) =>
+          Object.fromEntries(
+            Object.entries(prev).map(([k, v]) => [
+              k,
+              v.status === "running" ? { ...v, status: "done" } : v,
+            ]),
+          ),
+        );
+      },
+      // Web 搜索阶段
+      search_begin: (evt) => {
+        // example: {type: 'search_begin', delta: '正在搜索....', section: 'search:web'}
+        const name = evt.section || "search:web";
+        setIsSectionVisible(true);
+        upSection(name, { status: "running", logs: [String(evt.delta ?? "")] });
+      },
+      search_done: (evt) => {
+        const name = evt.section || "search:web";
+        const icons = Array.isArray(evt.delta) ? evt.delta : [];
+        upSection(name, { status: "done", icons, logs: ["搜索完成"] });
+        setTimeout(() => {
+          setIsSectionVisible(false);
+        }, 5000);
+      },
+      search_error: (evt) => {
+        const name = evt.section || "search:web";
+        upSection(name, {
+          status: "error",
+          logs: [String(evt.delta ?? "联网搜索失败")],
+        });
+      },
+    };
+  }, [appendToAssistantField, getLatestAssistantText, upSection]);
+
+  const handleUnknown = useCallback(
+    (evt) => {
+      const name = evt.section || "misc";
+      const summary = `[${evt.type}] ${typeof evt.delta === "string" ? evt.delta : JSON.stringify(evt.delta ?? "")}`;
+      upSection(name, { status: "running", logs: [summary] });
+    },
+    [upSection],
+  );
+
+  // 停止：终止流
   const stopSend = useCallback(async () => {
     if (!conversationStopControllerRef.current) return;
 
@@ -551,6 +663,9 @@ const Agent = () => {
       return;
     }
     if (!input.trim() || !currentModel) return;
+
+    // 开新一轮：清空分区面板
+    resetSections();
 
     latestUserTextRef.current = input;
 
@@ -574,8 +689,8 @@ const Agent = () => {
     const assistantMessage = {
       id: assistantId,
       role: ConversationRole.Assistant,
-      content: <Loader size={"xs"} mt={"xs"} />,
-      thinking: "", // 思考区
+      content: <Loader size={"xs"} />,
+      thinking: "",
     };
     currentAssistantIdRef.current = assistantId;
     assistantTextMapRef.current.set(assistantId, "");
@@ -626,6 +741,9 @@ const Agent = () => {
           modelName: currentModel,
           modelProvider: currentModelProvider,
           assistantMessageId: assistant_message_id,
+          // 根据 UI 开关，服务端可选启用联网/深度思考
+          isOnline: isOnline,
+          isDeepThink: isDeepThink,
         },
         conversationStopControllerRef.current?.signal,
       );
@@ -653,7 +771,7 @@ const Agent = () => {
           : decoder.decode(value, { stream: true });
         if (text) lineBufRef.current += text;
 
-        // 尽量按行消费（每行一个 JSON）
+        // 按行消费（每行一个 JSON）
         let lastNL = lineBufRef.current.lastIndexOf("\n");
         if (lastNL >= 0) {
           const full = lineBufRef.current.slice(0, lastNL);
@@ -668,36 +786,20 @@ const Agent = () => {
             try {
               obj = JSON.parse(s);
             } catch (e) {
-              // 后端异常行/半行保护（极少见，已按行输出基本不会触发）
               console.warn("JSON parse fail on line:", e);
               continue;
             }
 
-            const t = obj?.type;
-            if (t === "thinking") {
-              const delta = obj?.delta ?? "";
-              if (delta) {
-                appendToAssistantField(
-                  currentAssistantIdRef.current,
-                  "thinking",
-                  delta,
-                );
-              }
-            } else if (t === "answer") {
-              const delta = obj?.delta ?? "";
-              if (delta) {
-                appendToAssistantField(
-                  currentAssistantIdRef.current,
-                  "content",
-                  delta,
-                );
-              }
-            } else if (t === "done") {
-              // 结束
-              setIsGenerating(false);
-              latestAssistantTextRef.current = getLatestAssistantText();
-            } else {
-            }
+            const evt = {
+              type: obj?.type,
+              delta: obj?.delta,
+              section: obj?.section,
+            };
+
+            console.log("当前事件类型", evt.type);
+            const fn = handlers[evt.type];
+            if (fn) fn(evt);
+            else handleUnknown(evt);
           }
         }
 
@@ -717,14 +819,17 @@ const Agent = () => {
     stopSend,
     appendToAssistantField,
     getLatestAssistantText,
+    handlers,
+    handleUnknown,
+    resetSections,
+    isOnline,
+    isDeepThink,
   ]);
 
   // 跳到底部（恢复自动跟随 + 关闭按钮）
   const jumpToBottomNow = useCallback(async () => {
-    // 抑制滚动期间的 UI 抖动
     suppress(800);
 
-    // 为了减少虚拟列表复位抖动，先把视窗对齐到最后一项，再启动跟随
     const lastIdx = messagesRef.current.length - 1;
     virtuosoRef.current?.scrollToIndex({
       index: Math.max(0, lastIdx),
@@ -735,20 +840,18 @@ const Agent = () => {
     autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
 
-    // 启动平滑跟随会话（核心）
     startFollowSession();
 
     setShowJump(false);
   }, [startFollowSession]);
 
-  // 问题导航定位（禁用自动跟随）
+  // region 问题导航定位（禁用自动跟随）
   const scrollToQuestionPtr = useCallback(
     (qIdx, behavior = "smooth") => {
       if (qIdx < 0 || qIdx >= questionIndices.length) return;
       const itemIndex = questionIndices[qIdx];
       if (itemIndex == null) return;
 
-      // 一旦跳到历史问题，必须停止跟随
       stopFollowSession();
 
       autoFollowDisabledRef.current = true;
@@ -784,9 +887,18 @@ const Agent = () => {
     scrollToQuestionPtr(nextPtr);
   }, [questionIndices.length, scrollToQuestionPtr]);
 
+  //endregion
+
+  //region 数据获取
+
   const renderChatBox = () => {
     return (
       <div className={classes.agentChatWrap}>
+        <SectionPanel
+          sections={sections}
+          theme={theme}
+          isSectionVisible={isSectionVisible}
+        />
         <Virtuoso
           ref={virtuosoRef}
           style={{ height: "100%", width: "100%" }}
@@ -876,6 +988,28 @@ const Agent = () => {
         )}
       </div>
     );
+  };
+
+  const getConversations = async () => {
+    setIsLoadingConversations(true);
+    const response = await appHelper.apiPost(
+      "/conversation/find-conversations",
+      {
+        tenantId: userStore.current_tenant.id,
+        userId: userStore.id,
+        conversationStatus: [
+          ConversationStatus.Active,
+          ConversationStatus.Temporary,
+        ],
+      },
+    );
+    if (!response.ok) {
+      setIsLoadingConversations(false);
+      return [];
+    }
+    setConversations(response.data);
+    setIsLoadingConversations(false);
+    return response.data;
   };
 
   const createConversation = async () => {
@@ -970,6 +1104,8 @@ const Agent = () => {
     }, 40);
   };
 
+  //endregion
+
   return (
     <Flex p="lg" flex={1} gap="sm" style={{ minHeight: 0 }}>
       <Card maw={220} miw={200} shadow="md" withBorder h="100%">
@@ -1027,7 +1163,8 @@ const Agent = () => {
         </ScrollArea>
       </Card>
 
-      <Stack h="100%" flex={1} align="center" justify="flex-end" mih={0}>
+      <Stack h="100%" flex={1} align="center" justify="flex-start" mih={0}>
+        {/* 阶段分区面板：展示搜索/本地检索/RAG 等 */}
         {appHelper.getLength(messages) === 0 ? (
           <Stack pos="absolute" top="20%" align="center">
             {isLoadingMessages ? (
@@ -1051,8 +1188,8 @@ const Agent = () => {
           modelOptions={modelOptions}
           currentModel={currentModel}
           setCurrentModel={setCurrentModel}
-          isThink={isThink}
-          setIsThink={setIsThink}
+          isDeepThink={isDeepThink}
+          setIsDeepThink={setIsDeepThink}
           isOnline={isOnline}
           setIsOnline={setIsOnline}
           theme={theme}
@@ -1074,27 +1211,59 @@ const MessageItem = React.memo(
 
     return (
       <Flex
-        style={{ marginTop: 20, marginBottom: 20 }}
+        mt={20}
+        mb={20}
         justify={isUser ? "flex-end" : "flex-start"}
+        w="100%"
       >
-        <Group align="flex-start" wrap="nowrap">
-          {!isUser && (
-            <Avatar variant="light" color={theme.colors.violet[7]}>
-              BI
-            </Avatar>
-          )}
-          <Stack gap={"xs"} miw="20%" maw="80%">
+        <Group
+          align="flex-start"
+          wrap="nowrap"
+          // 根据 isUser 切换行方向
+          style={{
+            flexDirection: isUser ? "row-reverse" : "row",
+            gap: 12,
+            width: "100%",
+          }}
+        >
+          {/* 头像：左右通过 row-reverse 自动换位，无需两段条件渲染 */}
+          <Avatar
+            variant="light"
+            color={isUser ? theme.colors.blue[7] : theme.colors.violet[7]}
+            // 细节：给相反一侧留外边距，防止挤压
+            style={{
+              marginInlineStart: isUser ? 12 : 0,
+              marginInlineEnd: isUser ? 0 : 12,
+            }}
+          >
+            {isUser ? "AD" : "BI"}
+          </Avatar>
+
+          {/* 消息容器（纵向） */}
+          <Stack
+            gap="xs"
+            miw="20%"
+            maw="80%"
+            // 关键：整块靠左/靠右
+            style={{
+              alignSelf: isUser ? "flex-end" : "flex-start",
+              maxWidth: "80%",
+            }}
+          >
+            {/* 助手思考块：仅助手且靠左 */}
             {!isUser && thinkingString && (
               <Paper
                 p="xs"
                 radius="md"
                 withBorder
                 miw={300}
-                maw={"60%"}
+                maw="60%"
                 bg={theme.colors.gray[0]}
-                style={{ borderStyle: "dashed" }}
+                style={{
+                  borderStyle: "dashed",
+                  alignSelf: "flex-start",
+                }}
               >
-                {/* 头部行：左右两端对齐 + 不换行 + 固定最小高度 */}
                 <Group
                   gap="xs"
                   align="center"
@@ -1102,7 +1271,6 @@ const MessageItem = React.memo(
                   wrap="nowrap"
                   style={{ minHeight: 24 }}
                 >
-                  {/* 左侧徽章+文字：不换行，避免首帧折行 */}
                   <Group
                     gap={6}
                     align="center"
@@ -1120,8 +1288,6 @@ const MessageItem = React.memo(
                       中间推理
                     </Text>
                   </Group>
-
-                  {/* 右侧操作：固定尺寸，避免图标加载引起宽度抖动 */}
                   <ActionIcon
                     size="sm"
                     variant="subtle"
@@ -1129,14 +1295,11 @@ const MessageItem = React.memo(
                     aria-label={showThinking ? "收起思考" : "展开思考"}
                     color={theme.colors.gray[7]}
                     title={showThinking ? "收起" : "展开"}
-                    // 固定占位宽高，防止换行/跳动
                     style={{ width: 22, height: 22, flex: "0 0 auto" }}
                   >
                     {showThinking ? <EyeOff size={16} /> : <Eye size={16} />}
                   </ActionIcon>
                 </Group>
-
-                {/* 内容折叠：keepMounted 避免 mount/unmount 导致首帧高度抖动 */}
                 <Collapse in={showThinking} keepMounted>
                   <div style={{ marginTop: 6 }}>
                     <MarkdownViewer content={thinkingString} />
@@ -1145,13 +1308,17 @@ const MessageItem = React.memo(
               </Paper>
             )}
 
-            {/* 主内容（答案区或用户消息） */}
+            {/* 主消息气泡：用户靠右、助手靠左 */}
             <Paper
-              flex={1}
-              bg={isUser ? theme.colors.blue[5] : "透明"}
-              p={isUser ? "xs" : 0}
+              p={isUser ? "xs" : 4}
               radius="md"
               withBorder={isUser}
+              bg={isUser ? theme.colors.blue[5] : "transparent"}
+              style={{
+                alignSelf: isUser ? "flex-end" : "flex-start",
+                maxWidth: "100%",
+                wordBreak: "break-word",
+              }}
             >
               {isUser ? (
                 <Text size="sm" c={theme.white}>
@@ -1164,15 +1331,19 @@ const MessageItem = React.memo(
               )}
             </Paper>
 
-            {/* 工具条 */}
-            <Group justify="flex-start" className={classes.messageTools}>
+            {/* 工具条：跟随消息侧 */}
+            <Group
+              justify={isUser ? "flex-end" : "flex-start"}
+              className={classes.messageTools}
+              style={{ width: "100%" }}
+            >
               <Tooltip
                 label={clipboard.copied ? "已复制" : "复制答案"}
                 withArrow
               >
                 <ActionIcon
-                  variant={"subtle"}
-                  size={"sm"}
+                  variant="subtle"
+                  size="sm"
                   onClick={() => {
                     clipboard.copy(
                       contentString != null
@@ -1195,11 +1366,6 @@ const MessageItem = React.memo(
               </Tooltip>
             </Group>
           </Stack>
-          {isUser && (
-            <Avatar variant="light" color={theme.colors.blue[7]} mr="md">
-              AD
-            </Avatar>
-          )}
         </Group>
       </Flex>
     );
@@ -1219,8 +1385,8 @@ const ChatInput = React.memo(function ChatInput({
   modelOptions,
   currentModel,
   setCurrentModel,
-  isThink,
-  setIsThink,
+  isDeepThink,
+  setIsDeepThink,
   isOnline,
   setIsOnline,
   theme,
@@ -1258,10 +1424,10 @@ const ChatInput = React.memo(function ChatInput({
       width={220}
       opened={input.startsWith("@")}
       position="left-end"
-      offset={6}
+      offset={12}
     >
       <Popover.Target>
-        <Stack w="70%" gap={"xs"}>
+        <Stack w="70%" gap={"xs"} style={{ position: "absolute", bottom: 10 }}>
           <Card shadow="sm" withBorder radius={"xl"}>
             <Textarea
               autosize={false}
@@ -1280,7 +1446,6 @@ const ChatInput = React.memo(function ChatInput({
               placeholder="@知识库或直接提问"
               w="100%"
               size="md"
-              classNames={{ input: classes.input, textarea: classes.textarea }}
             />
             <Group justify="space-between">
               <Group gap="xs">
@@ -1303,9 +1468,13 @@ const ChatInput = React.memo(function ChatInput({
                   </Text>
                 </Button>
                 <Button
-                  variant={isThink ? "light" : "subtle"}
-                  color={isThink ? theme.colors.blue[7] : theme.colors.gray[7]}
-                  onClick={() => setIsThink((v) => !v)}
+                  variant={isDeepThink ? "light" : "subtle"}
+                  color={
+                    isDeepThink ? theme.colors.blue[7] : theme.colors.gray[7]
+                  }
+                  onClick={() => {
+                    setIsDeepThink((v) => !v);
+                  }}
                   leftSection={<Sparkles size={16} />}
                   radius={"xl"}
                   size="xs"
