@@ -62,9 +62,8 @@ import classes from "./Agent.module.scss";
  */
 const SectionPanel = ({ sections, theme, isSectionVisible }) => {
   const names = Object.keys(sections || {});
-  console.log(999, sections);
 
-  if (names.length === 0) return null;
+  if (appHelper.getLength(names) === 0) return null;
 
   return (
     <Transition
@@ -73,7 +72,7 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
       duration={200}
       timingFunction="ease-out"
     >
-      {() => (
+      {(styles) => (
         <Stack
           w="100%"
           align="center"
@@ -81,6 +80,7 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
             position: "absolute",
             top: 0,
             zIndex: 999,
+            ...styles,
           }}
         >
           {names.map((name) => {
@@ -100,7 +100,9 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
                       variant={s.status === "error" ? "filled" : "light"}
                       color={statusColor}
                     >
-                      {s.logs && s.logs.length > 0 && s.logs.join(" ")}
+                      {s.logs &&
+                        appHelper.getLength(s.logs) > 0 &&
+                        s.logs.join(" ")}
                     </Badge>
                     {Array.isArray(s.icons) &&
                       s.icons
@@ -219,7 +221,7 @@ const Agent = () => {
     if (!el) return;
 
     // 进入抑制窗口，避免按钮闪烁；标记程序滚动
-    suppress(800);
+    suppress(250);
     byProgrammaticRef.current = true;
     autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
@@ -422,9 +424,9 @@ const Agent = () => {
     qPtrRef.current = qPtr;
   }, [qPtr]);
   useEffect(() => {
-    if (questionIndices.length === 0) setQPtr(-1);
-    else setQPtr(questionIndices.length - 1);
-  }, [questionIndices.length]);
+    if (appHelper.getLength(questionIndices) === 0) setQPtr(-1);
+    else setQPtr(appHelper.getLength(questionIndices) - 1);
+  }, [appHelper.getLength(questionIndices)]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -596,7 +598,7 @@ const Agent = () => {
         const delta = evt.delta ?? "";
         appendToAssistantField(currentAssistantIdRef.current, "content", delta);
       },
-      done: (evt) => {
+      done: () => {
         setIsGenerating(false);
         latestAssistantTextRef.current = getLatestAssistantText();
         // 把所有 running 的 section 标记 done
@@ -676,7 +678,7 @@ const Agent = () => {
     userInteractingRef.current = true;
 
     // 基于当前长度计算“用户消息”的索引位置
-    const baseLen = messagesRef.current?.length ?? 0;
+    const baseLen = appHelper.getLength(messagesRef.current) ?? 0;
 
     // 组装消息
     const userMsgId = genId("user");
@@ -689,7 +691,7 @@ const Agent = () => {
     const assistantMessage = {
       id: assistantId,
       role: ConversationRole.Assistant,
-      content: <Loader size={"xs"} />,
+      content: <Loader size={"xs"} mt={6} />,
       thinking: "",
     };
     currentAssistantIdRef.current = assistantId;
@@ -830,7 +832,7 @@ const Agent = () => {
   const jumpToBottomNow = useCallback(async () => {
     suppress(800);
 
-    const lastIdx = messagesRef.current.length - 1;
+    const lastIdx = appHelper.getLength(messagesRef.current) - 1;
     virtuosoRef.current?.scrollToIndex({
       index: Math.max(0, lastIdx),
       align: "end",
@@ -848,7 +850,7 @@ const Agent = () => {
   // region 问题导航定位（禁用自动跟随）
   const scrollToQuestionPtr = useCallback(
     (qIdx, behavior = "smooth") => {
-      if (qIdx < 0 || qIdx >= questionIndices.length) return;
+      if (qIdx < 0 || qIdx >= appHelper.getLength(questionIndices)) return;
       const itemIndex = questionIndices[qIdx];
       if (itemIndex == null) return;
 
@@ -873,19 +875,19 @@ const Agent = () => {
   );
 
   const goPrevQuestion = useCallback(() => {
-    if (questionIndices.length === 0) return;
+    if (appHelper.getLength(questionIndices) === 0) return;
     const nextPtr = qPtrRef.current <= 0 ? 0 : qPtrRef.current - 1;
     setQPtr(nextPtr);
     scrollToQuestionPtr(nextPtr);
-  }, [questionIndices.length, scrollToQuestionPtr]);
+  }, [appHelper.getLength(questionIndices), scrollToQuestionPtr]);
 
   const goNextQuestion = useCallback(() => {
-    if (questionIndices.length === 0) return;
-    const last = questionIndices.length - 1;
+    if (appHelper.getLength(questionIndices) === 0) return;
+    const last = appHelper.getLength(questionIndices) - 1;
     const nextPtr = qPtrRef.current >= last ? last : qPtrRef.current + 1;
     setQPtr(nextPtr);
     scrollToQuestionPtr(nextPtr);
-  }, [questionIndices.length, scrollToQuestionPtr]);
+  }, [appHelper.getLength(questionIndices), scrollToQuestionPtr]);
 
   //endregion
 
@@ -904,7 +906,7 @@ const Agent = () => {
           style={{ height: "100%", width: "100%" }}
           data={messages}
           computeItemKey={(_, msg) => msg.id}
-          increaseViewportBy={{ top: 800, bottom: 1000 }}
+          increaseViewportBy={{ top: 400, bottom: 600 }}
           defaultItemHeight={160}
           components={{
             Scroller,
@@ -962,8 +964,8 @@ const Agent = () => {
         </Transition>
 
         {/* 右侧中部：问题导航 */}
-        {questionIndices.length > 0 && (
-          <div className={classes.agentQnav}>
+        {appHelper.getLength(questionIndices) > 0 && (
+          <Stack gap="4" className={classes.agentQnav}>
             <Tooltip label="上一个问题">
               <ActionIcon
                 size="lg"
@@ -984,7 +986,7 @@ const Agent = () => {
                 <ChevronDown />
               </ActionIcon>
             </Tooltip>
-          </div>
+          </Stack>
         )}
       </div>
     );
@@ -1081,7 +1083,7 @@ const Agent = () => {
 
     // 不使用 afterRenderScrollRef，直接手动滚动
     setTimeout(() => {
-      const lastIdx = Math.max(0, withThinking.length - 1);
+      const lastIdx = Math.max(0, appHelper.getLength(withThinking) - 1);
 
       virtuosoRef.current?.scrollToIndex({
         index: lastIdx,
@@ -1129,6 +1131,9 @@ const Agent = () => {
                   <Menu.Item
                     mb={"xs"}
                     key={item.id}
+                    style={{
+                      borderRadius: 8,
+                    }}
                     rightSection={
                       <ActionIcon
                         className={classes.conversationItemTools}
@@ -1148,7 +1153,7 @@ const Agent = () => {
                     }}
                     variant={"light"}
                     color={active ? theme.white : theme.colors.gray[8]}
-                    bg={active ? theme.colors.blue[5] : "transparent"}
+                    bg={active ? theme.colors.blue[6] : ""}
                   >
                     <Text size={"xs"}>
                       {item.name && appHelper.getLength(item.name) > 8
@@ -1219,22 +1224,17 @@ const MessageItem = React.memo(
         <Group
           align="flex-start"
           wrap="nowrap"
+          w={"100%"}
+          gap={"xs"}
           // 根据 isUser 切换行方向
           style={{
             flexDirection: isUser ? "row-reverse" : "row",
-            gap: 12,
-            width: "100%",
           }}
         >
           {/* 头像：左右通过 row-reverse 自动换位，无需两段条件渲染 */}
           <Avatar
             variant="light"
             color={isUser ? theme.colors.blue[7] : theme.colors.violet[7]}
-            // 细节：给相反一侧留外边距，防止挤压
-            style={{
-              marginInlineStart: isUser ? 12 : 0,
-              marginInlineEnd: isUser ? 0 : 12,
-            }}
           >
             {isUser ? "AD" : "BI"}
           </Avatar>
@@ -1244,11 +1244,7 @@ const MessageItem = React.memo(
             gap="xs"
             miw="20%"
             maw="80%"
-            // 关键：整块靠左/靠右
-            style={{
-              alignSelf: isUser ? "flex-end" : "flex-start",
-              maxWidth: "80%",
-            }}
+            align={isUser ? "flex-end" : "flex-start"}
           >
             {/* 助手思考块：仅助手且靠左 */}
             {!isUser && thinkingString && (
@@ -1259,9 +1255,9 @@ const MessageItem = React.memo(
                 miw={300}
                 maw="60%"
                 bg={theme.colors.gray[0]}
+                align={"flex-start"}
                 style={{
                   borderStyle: "dashed",
-                  alignSelf: "flex-start",
                 }}
               >
                 <Group
@@ -1269,14 +1265,9 @@ const MessageItem = React.memo(
                   align="center"
                   justify="space-between"
                   wrap="nowrap"
-                  style={{ minHeight: 24 }}
+                  mih={24}
                 >
-                  <Group
-                    gap={6}
-                    align="center"
-                    wrap="nowrap"
-                    style={{ minWidth: 0 }}
-                  >
+                  <Group gap={6} align="center" wrap="nowrap" miw={0}>
                     <Badge variant="light" color="grape" size="xs">
                       思考过程
                     </Badge>
@@ -1295,15 +1286,12 @@ const MessageItem = React.memo(
                     aria-label={showThinking ? "收起思考" : "展开思考"}
                     color={theme.colors.gray[7]}
                     title={showThinking ? "收起" : "展开"}
-                    style={{ width: 22, height: 22, flex: "0 0 auto" }}
                   >
                     {showThinking ? <EyeOff size={16} /> : <Eye size={16} />}
                   </ActionIcon>
                 </Group>
                 <Collapse in={showThinking} keepMounted>
-                  <div style={{ marginTop: 6 }}>
-                    <MarkdownViewer content={thinkingString} />
-                  </div>
+                  <MarkdownViewer content={thinkingString} />
                 </Collapse>
               </Paper>
             )}
@@ -1313,10 +1301,10 @@ const MessageItem = React.memo(
               p={isUser ? "xs" : 4}
               radius="md"
               withBorder={isUser}
+              maw={"100%"}
               bg={isUser ? theme.colors.blue[5] : "transparent"}
               style={{
                 alignSelf: isUser ? "flex-end" : "flex-start",
-                maxWidth: "100%",
                 wordBreak: "break-word",
               }}
             >
@@ -1335,7 +1323,7 @@ const MessageItem = React.memo(
             <Group
               justify={isUser ? "flex-end" : "flex-start"}
               className={classes.messageTools}
-              style={{ width: "100%" }}
+              w={"100%"}
             >
               <Tooltip
                 label={clipboard.copied ? "已复制" : "复制答案"}
@@ -1455,18 +1443,18 @@ const ChatInput = React.memo(function ChatInput({
                   onChange={setCurrentModel}
                   value={currentModel}
                 />
-                <Button
-                  variant={isOnline ? "light" : "subtle"}
-                  color={isOnline ? theme.colors.blue[7] : theme.colors.gray[7]}
-                  onClick={() => setIsOnline((v) => !v)}
-                  leftSection={<Globe size={16} />}
-                  radius={"xl"}
-                  size="xs"
-                >
-                  <Text size="xs" fw="bold">
-                    联网搜索
-                  </Text>
-                </Button>
+                {/*<Button*/}
+                {/*  variant={isOnline ? "light" : "subtle"}*/}
+                {/*  color={isOnline ? theme.colors.blue[7] : theme.colors.gray[7]}*/}
+                {/*  onClick={() => setIsOnline((v) => !v)}*/}
+                {/*  leftSection={<Globe size={16} />}*/}
+                {/*  radius={"xl"}*/}
+                {/*  size="xs"*/}
+                {/*>*/}
+                {/*  <Text size="xs" fw="bold">*/}
+                {/*    联网搜索*/}
+                {/*  </Text>*/}
+                {/*</Button>*/}
                 <Button
                   variant={isDeepThink ? "light" : "subtle"}
                   color={
