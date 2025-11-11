@@ -45,7 +45,7 @@ const WikiHome = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [wikiName, setWikiName] = useState("");
-  const [wikiType, setWikiType] = useState("");
+  const [wikiType, setWikiType] = useState(null);
   const [wikiData, setWikiData] = useState([]);
   // 100个数据
   const cards = [1];

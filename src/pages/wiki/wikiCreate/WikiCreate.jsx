@@ -39,7 +39,7 @@ import {
   ChartScatter,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { ChunkMode, FileType, ModelType, WikiType } from "@/enum.js";
+import { WikiChunkType, FileType, ModelType, WikiType } from "@/enum.js";
 import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
 import LocalFile from "/assets/wiki/local-file.png";
@@ -49,6 +49,7 @@ import Chrome from "/chrome.png";
 import InBox from "/inbox.svg";
 import { useNotify } from "@/utils/notify.js";
 import { useUserStore } from "@/stores/useUserStore.js";
+import WikiChunkPreview from "./WikiChunkPreview";
 
 const WikiCreate = () => {
   const theme = useMantineTheme();
@@ -87,10 +88,13 @@ const WikiCreate = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [chunks, setChunks] = useState([]);
   const [isPreviewingChunks, setIsPreviewingChunks] = useState(false);
+  const [wikiChunkType, setWikiChunkType] = useState(WikiChunkType.Classical);
 
-  const currentChunkModeRef = useRef(ChunkMode.Classic);
-  const chunkSizeRef = useRef(1024);
-  const chunkOverlapRef = useRef(50);
+  const currentWikiChunkTypeRef = useRef(WikiChunkType.Classical);
+  const parentChunkSizeRef = useRef(1000);
+  const parentChunkOverlapRef = useRef(100);
+  const childChunkSizeRef = useRef(200);
+  const childChunkOverlapRef = useRef(50);
   const defaultEmbeddingModelRef = useRef("");
 
   const nextStep = () =>
@@ -225,8 +229,11 @@ const WikiCreate = () => {
     setIsPreviewingChunks(true);
     const response = await appHelper.apiPost("/wiki/preview-file-chunks", {
       filePath: uploadedFiles[0].filePath,
-      chunkSize: chunkSizeRef.current,
-      chunkOverlap: chunkOverlapRef.current,
+      chunkType: WikiChunkType.ParentChild,
+      parentChunkSize: parentChunkSizeRef.current,
+      parentChunkOverlap: parentChunkOverlapRef.current,
+      childChunkSize: childChunkSizeRef.current,
+      childChunkOverlap: childChunkOverlapRef.current,
     });
     if (response.ok) {
       setChunks(response.data);
@@ -570,12 +577,6 @@ const WikiCreate = () => {
                   <Text size={"sm"}>上传本地文件</Text>
                 </Group>
               </Card>
-              {/*<Card withBorder py={"xs"}>*/}
-              {/*  <Group gap={"xs"}>*/}
-              {/*    <Image src={Notion} w={25} h={25} />*/}
-              {/*    <Text size={"sm"}>同步Notion</Text>*/}
-              {/*  </Group>*/}
-              {/*</Card>*/}
               <Card withBorder py={"xs"}>
                 <Group gap={"xs"}>
                   <Image src={Chrome} w={25} h={25} />
@@ -674,22 +675,28 @@ const WikiCreate = () => {
                     </Group>
                   </Group>
                   <Accordion
-                    defaultValue={ChunkMode.text[ChunkMode.Classic]}
+                    defaultValue={WikiChunkType.text[WikiChunkType.Classical]}
                     variant="separated"
                     onChange={(value) => {
                       switch (value) {
-                        case ChunkMode.text[ChunkMode.Classic]:
-                          currentChunkModeRef.current = ChunkMode.Classic;
+                        case WikiChunkType.text[WikiChunkType.Classical]:
+                          currentWikiChunkTypeRef.current =
+                            WikiChunkType.Classical;
+                          setWikiChunkType(WikiChunkType.Classical);
                           break;
-                        case ChunkMode.text[ChunkMode.FeatherSon]:
-                          currentChunkModeRef.current = ChunkMode.FeatherSon;
+                        case WikiChunkType.text[WikiChunkType.ParentChild]:
+                          currentWikiChunkTypeRef.current =
+                            WikiChunkType.ParentChild;
+                          setWikiChunkType(WikiChunkType.ParentChild);
                           break;
                       }
                     }}
                   >
-                    <Accordion.Item value={ChunkMode.text[ChunkMode.Classic]}>
+                    <Accordion.Item
+                      value={WikiChunkType.text[WikiChunkType.Classical]}
+                    >
                       <Accordion.Control
-                        value={ChunkMode.text[ChunkMode.Classic]}
+                        value={WikiChunkType.text[WikiChunkType.Classical]}
                       >
                         <Group>
                           <Cog w={20} h={20} color={theme.colors.violet[6]} />
@@ -711,7 +718,7 @@ const WikiCreate = () => {
                           <NumberInput
                             defaultValue={1024}
                             onChange={(value) => {
-                              chunkSizeRef.current = value;
+                              parentChunkSizeRef.current = value;
                             }}
                             description={"分段预估长度(字符)"}
                           />
@@ -719,17 +726,17 @@ const WikiCreate = () => {
                             defaultValue={50}
                             description={"分段重叠长度(字符)"}
                             onChange={(value) => {
-                              chunkOverlapRef.current = value;
+                              parentChunkOverlapRef.current = value;
                             }}
                           />
                         </Group>
                       </Accordion.Panel>
                     </Accordion.Item>
                     <Accordion.Item
-                      value={ChunkMode.text[ChunkMode.FeatherSon]}
+                      value={WikiChunkType.text[WikiChunkType.ParentChild]}
                     >
                       <Accordion.Control
-                        value={ChunkMode.text[ChunkMode.FeatherSon]}
+                        value={WikiChunkType.text[WikiChunkType.ParentChild]}
                       >
                         <Group>
                           <TextQuote
@@ -746,19 +753,42 @@ const WikiCreate = () => {
                         </Group>
                       </Accordion.Control>
                       <Accordion.Panel>
+                        <Text size={"sm"} fw={"bold"} mb={"xs"}>
+                          父分段
+                        </Text>
                         <Group grow mb={"md"}>
-                          <Select
-                            description="切分方式"
-                            defaultValue={"按长度切分"}
-                            data={["按长度切分", "按语义切分"]}
+                          <NumberInput
+                            defaultValue={1000}
+                            onChange={(value) => {
+                              parentChunkSizeRef.current = value;
+                            }}
+                            description={"父分段预估长度(字符)"}
                           />
                           <NumberInput
-                            defaultValue={1024}
-                            description={"分段预估长度(字符)"}
+                            defaultValue={100}
+                            onChange={(value) => {
+                              parentChunkOverlapRef.current = value;
+                            }}
+                            description={"父段长度(字符)重叠"}
+                          />
+                        </Group>
+                        <Text size={"sm"} fw={"bold"} mb={"xs"}>
+                          子分段
+                        </Text>
+                        <Group grow mb={"md"}>
+                          <NumberInput
+                            defaultValue={400}
+                            onChange={(value) => {
+                              childChunkSizeRef.current = value;
+                            }}
+                            description={"子分段预估长度(字符)"}
                           />
                           <NumberInput
                             defaultValue={50}
-                            description={"分段重叠长度(字符)"}
+                            onChange={(value) => {
+                              childChunkOverlapRef.current = value;
+                            }}
+                            description={"子分段重叠长度(字符)"}
                           />
                         </Group>
                       </Accordion.Panel>
@@ -841,30 +871,11 @@ const WikiCreate = () => {
               </Group>
               <Loading visible={isPreviewingChunks} size={"sm"}>
                 {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}
-                <Stack>
-                  {appHelper.getLength(chunks) > 0 &&
-                    chunks.slice(0, 10).map((chunk, index) => {
-                      return (
-                        <Card key={index} shadow={"xs"}>
-                          <Group gap={"sm"} mb={"xs"}>
-                            <FileBox
-                              style={{
-                                width: 15,
-                                height: 15,
-                                color: theme.colors.gray[5],
-                              }}
-                            />
-                            <Text size={"xs"} c={"dimmed"} fw={"bold"}>
-                              Chunk-{index + 1}
-                            </Text>
-                          </Group>
-                          <Text className={classes.chunkContent} size={"xs"}>
-                            {chunk?.page_content}
-                          </Text>
-                        </Card>
-                      );
-                    })}
-                </Stack>
+                <WikiChunkPreview
+                  chunks={chunks}
+                  chunkType={wikiChunkType}
+                  theme={theme}
+                />
               </Loading>
             </ScrollArea>
           </Card>

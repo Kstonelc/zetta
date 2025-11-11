@@ -58,6 +58,16 @@ export class WikiType {
   };
 }
 
+export class WikiChunkType {
+  static Classical = 1 << 0;
+  static ParentChild = 1 << 1;
+
+  static text: Record<number, string> = {
+    [this.Classical]: "经典",
+    [this.ParentChild]: "父子",
+  };
+}
+
 export class UserStatus {
   static Active = "active";
   static Pending = "pending";
@@ -148,16 +158,6 @@ export class FileType {
       .map(Number)
       .find((key) => this.suffix[key].includes(ext));
   }
-}
-
-export class ChunkMode {
-  static Classic = 1 << 0;
-  static FeatherSon = 1 << 1;
-
-  static text: Record<number, string> = {
-    [this.Classic]: "经典模式",
-    [this.FeatherSon]: "父子模式",
-  };
 }
 
 export class ConversationStatus {
