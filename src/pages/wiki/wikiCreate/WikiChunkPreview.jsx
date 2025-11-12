@@ -39,7 +39,7 @@ const WikiChunkPreview = ({ chunks, chunkType, theme }) => {
         return (
           <Stack>
             {appHelper.getLength(chunks) > 0 &&
-              chunks.slice(0, 20).map((chunk, index) => {
+              chunks.slice(0, 30).map((chunk, index) => {
                 return (
                   <Card key={index} shadow={"xs"}>
                     <Group gap={"sm"} mb={"xs"}>

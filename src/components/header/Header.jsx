@@ -146,8 +146,8 @@ const Header = () => {
         </Link>
         <Link to="/agent">
           <Button
-            variant={isActive("/agent") ? "light" : "subtle"}
-            color={!isActive("/agent") && theme.colors.gray[6]}
+            variant={isActive("/chat") ? "light" : "subtle"}
+            color={!isActive("/chat") && theme.colors.gray[6]}
           >
             <Bot className={classes.icon} size={20} />
             AI

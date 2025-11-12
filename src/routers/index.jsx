@@ -4,7 +4,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { MainLayout, WikiLayout } from "../layouts";
 import {
   WikiHome,
-  Agent,
+  Chat,
   UserLogin,
   UserRegister,
   UserForgotPassword,
@@ -65,7 +65,7 @@ const Router = createBrowserRouter([
       },
       {
         path: "agent",
-        element: <Agent />,
+        element: <Chat />,
       },
     ],
   },

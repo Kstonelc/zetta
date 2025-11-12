@@ -88,7 +88,6 @@ const WikiCreate = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [chunks, setChunks] = useState([]);
   const [isPreviewingChunks, setIsPreviewingChunks] = useState(false);
-  const [wikiChunkType, setWikiChunkType] = useState(WikiChunkType.Classical);
 
   const currentWikiChunkTypeRef = useRef(WikiChunkType.Classical);
   const parentChunkSizeRef = useRef(1000);
@@ -229,7 +228,7 @@ const WikiCreate = () => {
     setIsPreviewingChunks(true);
     const response = await appHelper.apiPost("/wiki/preview-file-chunks", {
       filePath: uploadedFiles[0].filePath,
-      chunkType: WikiChunkType.ParentChild,
+      chunkType: currentWikiChunkTypeRef.current,
       parentChunkSize: parentChunkSizeRef.current,
       parentChunkOverlap: parentChunkOverlapRef.current,
       childChunkSize: childChunkSizeRef.current,
@@ -682,12 +681,10 @@ const WikiCreate = () => {
                         case WikiChunkType.text[WikiChunkType.Classical]:
                           currentWikiChunkTypeRef.current =
                             WikiChunkType.Classical;
-                          setWikiChunkType(WikiChunkType.Classical);
                           break;
                         case WikiChunkType.text[WikiChunkType.ParentChild]:
                           currentWikiChunkTypeRef.current =
                             WikiChunkType.ParentChild;
-                          setWikiChunkType(WikiChunkType.ParentChild);
                           break;
                       }
                     }}
@@ -845,7 +842,7 @@ const WikiCreate = () => {
                 <Button variant={"subtle"} onClick={prevStep}>
                   上一步
                 </Button>
-                <Button>保存</Button>
+                <Button>保存并处理</Button>
               </Group>
             </Stack>
           </Card>
@@ -873,7 +870,7 @@ const WikiCreate = () => {
                 {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}
                 <WikiChunkPreview
                   chunks={chunks}
-                  chunkType={wikiChunkType}
+                  chunkType={currentWikiChunkTypeRef.current}
                   theme={theme}
                 />
               </Loading>

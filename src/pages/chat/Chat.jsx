@@ -55,7 +55,7 @@ import { ConversationRole, ConversationStatus, ModelType } from "@/enum.ts";
 import { useUserStore } from "@/stores/useUserStore.js";
 import { MarkdownViewer, SelectWithIcon, Loading } from "@/components";
 
-import classes from "./Agent.module.scss";
+import classes from "./Chat.module.scss";
 
 /**
  * ===== 可扩展的分区阶段面板（显示搜索、本地检索、RAG 等阶段） =====
@@ -127,7 +127,7 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
   );
 };
 
-const Agent = () => {
+const Chat = () => {
   const theme = useMantineTheme();
   const { notify } = useNotify();
   const { userStore } = useUserStore();
@@ -1499,4 +1499,4 @@ const ChatInput = React.memo(function ChatInput({
   );
 });
 
-export { Agent };
+export { Chat };
