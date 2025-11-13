@@ -221,7 +221,7 @@ const TenantUsersSetting = ({ tenant }) => {
     const response = await appHelper.apiPost("/user/invite-user", {
       userEmail: values.userEmails,
       fromUserId: userStore.id,
-      userRole: values.userRole,
+      userRole: parseInt(values.userRole),
       tenantId: tenantInfo.id,
     });
     if (!response.ok) {
@@ -242,7 +242,7 @@ const TenantUsersSetting = ({ tenant }) => {
     return (
       appHelper.getLength(tenantInfo) &&
       tenantInfo.users.some(
-        (user) => user.id === userStore.id && user.role === UserRole.Owner,
+        (user) => user.id === userStore.id && user.role === UserRole.Admin,
       )
     );
   };

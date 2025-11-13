@@ -27,19 +27,19 @@ export class HttpStatus {
 }
 
 export class ModelProviderUpdateType {
-  static Update = "update";
-  static Clear = "clear";
+  static Update = 1 << 0;
+  static Clear = 1 << 1;
 
   static text: Record<string, string> = {
-    [this.Update]: "更新",
-    [this.Clear]: "清空",
+    [this.Update]: "update",
+    [this.Clear]: "clear",
   };
 }
 
 export class ModelType {
-  static TextEmbedding = "textEmbedding";
-  static TextGeneration = "textGeneration";
-  static ReRank = "reRank";
+  static TextEmbedding = 1 << 0;
+  static TextGeneration = 1 << 1;
+  static ReRank = 1 << 2;
 
   static text: Record<string, string> = {
     [this.TextEmbedding]: "文本向量",
@@ -69,34 +69,34 @@ export class WikiChunkType {
 }
 
 export class UserStatus {
-  static Active = "active";
-  static Pending = "pending";
-  static Banned = "banned";
+  static Pending = 1 << 0;
+  static Active = 1 << 1;
+  static Banned = 1 << 2;
 
   static text: Record<string, string> = {
-    [this.Active]: "正常",
     [this.Pending]: "待接受",
+    [this.Active]: "正常",
     [this.Banned]: "禁用",
   };
 }
 
 export class UserRole {
-  static Owner = "owner";
-  static Admin = "admin";
-  static Editor = "editor";
-  static Visitor = "visitor";
+  static Admin = 1 << 0;
+  static Editor = 1 << 1;
+  static Owner = 1 << 2;
+  static Visitor = 1 << 3;
 
   static text: Record<string, string> = {
-    [this.Owner]: "所有者",
     [this.Admin]: "管理员",
     [this.Editor]: "编辑",
+    [this.Owner]: "所有者",
     [this.Visitor]: "查看",
   };
 
   static desc: Record<string, string> = {
-    [this.Owner]: "所有功能",
     [this.Admin]: "管理所有功能",
     [this.Editor]: "编辑功能",
+    [this.Owner]: "所有功能",
     [this.Visitor]: "查看使用",
   };
 
@@ -107,17 +107,17 @@ export class UserRole {
   }> {
     return [
       {
-        value: this.Admin,
+        value: this.Admin.toString(),
         label: this.text[this.Admin],
         desc: this.desc[this.Admin],
       },
       {
-        value: this.Editor,
+        value: this.Editor.toString(),
         label: this.text[this.Editor],
         desc: this.desc[this.Editor],
       },
       {
-        value: this.Visitor,
+        value: this.Visitor.toString(),
         label: this.text[this.Visitor],
         desc: this.desc[this.Visitor],
       },
