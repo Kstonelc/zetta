@@ -135,6 +135,15 @@ const Header = () => {
           transform: "translateX(-50%)",
         }}
       >
+        <Link to="/app">
+          <Button
+            variant={isActive("/app") ? "light" : "subtle"}
+            color={!isActive("/app") && theme.colors.gray[6]}
+          >
+            <BookOpenText className={classes.icon} size={20} />
+            工作室
+          </Button>
+        </Link>
         <Link to="/wiki">
           <Button
             variant={isActive("/wiki") ? "light" : "subtle"}
