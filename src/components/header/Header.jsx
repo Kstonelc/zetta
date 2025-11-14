@@ -140,7 +140,7 @@ const Header = () => {
             variant={isActive("/app") ? "light" : "subtle"}
             color={!isActive("/app") && theme.colors.gray[6]}
           >
-            <BookOpenText className={classes.icon} size={20} />
+            <Bot className={classes.icon} size={20} />
             工作室
           </Button>
         </Link>

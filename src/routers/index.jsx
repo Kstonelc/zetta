@@ -13,6 +13,7 @@ import {
   WikiDetailEdit,
   NotFound,
   UserActivate,
+  ApplicationHome,
 } from "../pages";
 
 const AuthGuard = ({ children }) => {
@@ -36,6 +37,10 @@ const Router = createBrowserRouter([
       {
         index: true,
         element: <Navigate to="/wiki" replace />,
+      },
+      {
+        path: "app",
+        element: <ApplicationHome />,
       },
       {
         path: "wiki",

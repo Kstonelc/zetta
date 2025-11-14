@@ -9,3 +9,4 @@ export * from "./user/UserRegister";
 export * from "./user/UserActivate";
 export * from "./user/UserForgotPassword";
 export * from "./NotFound";
+export * from "./application/ApplicationHome";
