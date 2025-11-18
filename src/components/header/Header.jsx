@@ -20,6 +20,7 @@ import {
   Users,
   LogOut,
   ChevronsUpDown,
+  MessagesSquare,
 } from "lucide-react";
 import { UserSettings } from "@/pages";
 import classes from "./Header.module.scss";
@@ -155,10 +156,10 @@ const Header = () => {
         </Link>
         <Link to="/agent">
           <Button
-            variant={isActive("/chat") ? "light" : "subtle"}
-            color={!isActive("/chat") && theme.colors.gray[6]}
+            variant={isActive("/agent") ? "light" : "subtle"}
+            color={!isActive("/agent") && theme.colors.gray[6]}
           >
-            <Bot className={classes.icon} size={20} />
+            <MessagesSquare className={classes.icon} size={20} />
             AI
           </Button>
         </Link>

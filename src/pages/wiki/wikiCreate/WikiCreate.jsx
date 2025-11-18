@@ -22,7 +22,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
-import { Loading } from "@/components";
+import { Loading, SelectWithIcon } from "@/components";
 import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "@mantine/form";
 import {
@@ -81,7 +81,6 @@ const WikiCreate = () => {
   const [rerankModels, setRerankModels] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [wikiType, setWikiType] = useState(WikiType.Unstructured);
-  const [similarityThreshold, setSimilarityThreshold] = useState(0.1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -125,20 +124,12 @@ const WikiCreate = () => {
     const userId = userStore.id;
     const tenantId = userStore.current_tenant.id;
     values.wikiType = wikiType;
-    values.wikiSimThresh = similarityThreshold;
     values.userId = userId;
     values.tenantId = tenantId;
     if (!wikiType) {
       notify({
         type: "error",
         message: "请选择知识库类型",
-      });
-      return;
-    }
-    if (!values.wikiSimThresh) {
-      notify({
-        type: "error",
-        message: "请选择相似度阈值",
       });
       return;
     }
@@ -241,6 +232,12 @@ const WikiCreate = () => {
     setIsPreviewingChunks(false);
   };
 
+  const onIndexDocuments = async () => {
+    await appHelper.apiPost("/wiki/index-documents", {
+      filesPath: [],
+      wikiId: "",
+    });
+  };
   //endregion
 
   //region 组件渲染
@@ -345,6 +342,7 @@ const WikiCreate = () => {
           </Group>
         </Modal>
         <Stepper
+          iconSize={24}
           active={currentStep}
           allowNextStepsSelect={false}
           size={"xs"}
@@ -495,41 +493,6 @@ const WikiCreate = () => {
                 withAsterisk
                 {...wikiCreateForm.getInputProps("wikiRerankId")}
               />
-              <Stack>
-                <Text fw={"bold"} size={"sm"}>
-                  相似度阈值
-                </Text>
-                <Group>
-                  <Slider
-                    flex={1}
-                    mx={"xs"}
-                    mb={"md"}
-                    min={0.1}
-                    max={1.0}
-                    value={similarityThreshold}
-                    onChange={(value) => {
-                      setSimilarityThreshold(value);
-                    }}
-                    step={0.05}
-                    defaultValue={0.1}
-                    size="sm"
-                    marks={[
-                      { value: 0.1, label: "最小" },
-                      { value: 1.0, label: "最大" },
-                    ]}
-                  />
-                  <NumberInput
-                    min={0.1}
-                    max={1.0}
-                    step={0.1}
-                    w={"100"}
-                    value={similarityThreshold}
-                    onChange={(value) => {
-                      setSimilarityThreshold(value);
-                    }}
-                  />
-                </Group>
-              </Stack>
             </Stack>
           </ScrollArea>
 
@@ -554,6 +517,10 @@ const WikiCreate = () => {
               </Button>
               <Button
                 onClick={() => {
+                  const validateRes = wikiCreateForm.validate();
+                  if (validateRes.hasErrors) {
+                    return;
+                  }
                   nextStep();
                 }}
               >
@@ -570,16 +537,17 @@ const WikiCreate = () => {
               选择数据源
             </Text>
             <Group mb={"xl"}>
-              <Card withBorder py={"xs"}>
+              <Card
+                withBorder
+                py={"xs"}
+                style={{
+                  borderWidth: 2,
+                  borderColor: theme.colors.blue[5],
+                }}
+              >
                 <Group gap={"xs"}>
                   <Image src={LocalFile} w={25} h={25} />
                   <Text size={"sm"}>上传本地文件</Text>
-                </Group>
-              </Card>
-              <Card withBorder py={"xs"}>
-                <Group gap={"xs"}>
-                  <Image src={Chrome} w={25} h={25} />
-                  <Text size={"sm"}>同步Web站点</Text>
                 </Group>
               </Card>
             </Group>
@@ -823,7 +791,7 @@ const WikiCreate = () => {
                         h={16}
                       ></ScanEye>
                       <Text size={"sm"} fw={"bold"}>
-                        向量检索
+                        向量重排检索
                       </Text>
                     </Group>
                     <Select description={"Rerank模型"} mb={"sm"} />
@@ -852,10 +820,14 @@ const WikiCreate = () => {
                 预览分块
               </Text>
               <Group mb={"sm"}>
-                <Select
+                <SelectWithIcon
                   size={"xs"}
+                  textSize={"xs"}
                   defaultValue={uploadedFiles.map((file) => file.fileName)[0]}
-                  data={uploadedFiles.map((file) => file.fileName)}
+                  options={uploadedFiles.map((file) => ({
+                    icon: renderFileIcon(file.fileExt),
+                    title: file.fileName,
+                  }))}
                 />
                 <Chip
                   color={theme.colors.blue[6]}

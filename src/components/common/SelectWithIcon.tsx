@@ -12,23 +12,26 @@ interface Item {
   icon: ReactNode;
   title: string;
   description: string;
+  textSize?: "xs" | "sm" | "md" | "lg" | "xl";
 }
 
 interface Props {
   options?: Item[];
   placeholder?: string;
   leftSection?: ReactNode;
+  variant: "filled" | "outline";
   size?: "xs" | "sm" | "md" | "lg" | "xl";
+  textSize?: "xs" | "sm" | "md" | "lg" | "xl";
   defaultValue?: string;
   onChange?: (value: string) => void;
 }
 
-function SelectOption({ icon, title, description }: Item) {
+function SelectOption({ icon, title, description, textSize }: Item) {
   return (
     <Group>
       <Text fz={20}>{icon}</Text>
       <div>
-        <Text size={"sm"} fw={"bold"}>
+        <Text size={textSize} fw={"bold"}>
           {title}
         </Text>
         <Text size={"xs"} c={"dimmed"}>
@@ -44,6 +47,8 @@ const SelectWithIcon = ({
   placeholder = "请选择",
   leftSection,
   size = "sm",
+  textSize = "sm",
+  variant = "filled",
   defaultValue,
   onChange,
 }: Props) => {
@@ -62,7 +67,7 @@ const SelectWithIcon = ({
 
   const selectOptions = options.map((item) => (
     <Combobox.Option value={item.title} key={item.title}>
-      <SelectOption {...item} />
+      <SelectOption {...item} textSize={textSize} />
     </Combobox.Option>
   ));
 
@@ -81,6 +86,8 @@ const SelectWithIcon = ({
         <InputBase
           component="button"
           type="button"
+          radius={"md"}
+          variant={variant}
           size={size}
           leftSection={leftSection}
           pointer
@@ -91,7 +98,7 @@ const SelectWithIcon = ({
           multiline
         >
           {selectedOption ? (
-            <SelectOption {...selectedOption} />
+            <SelectOption {...selectedOption} textSize={textSize} />
           ) : (
             <Input.Placeholder>{placeholder}</Input.Placeholder>
           )}
