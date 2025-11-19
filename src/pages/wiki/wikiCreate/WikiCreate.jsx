@@ -163,6 +163,7 @@ const WikiCreate = () => {
       });
       return;
     }
+    console.log(111, response.data);
     setEmbeddingModels(response.data);
   };
 
@@ -245,6 +246,19 @@ const WikiCreate = () => {
   const renderFileIcon = (fileExt) => {
     return (
       <Image src={FileType.icon[FileType.getFileType(fileExt)]} w={20} h={20} />
+    );
+  };
+
+  const renderModelIcon = (modelIcon) => {
+    return <Image src={modelIcon} w={20} h={20} />;
+  };
+
+  const renderEmbeddingModelOptions = ({ option }) => {
+    return (
+      <Group flex={1} gap={"xs"}>
+        {renderModelIcon(option.logo)}
+        {option.label}
+      </Group>
     );
   };
 
@@ -474,8 +488,11 @@ const WikiCreate = () => {
                   return {
                     value: model.id,
                     label: model.name,
+                    logo: model?.provider.logo,
                   };
                 })}
+                // leftSection={<Image src={model.logo} width={16} height={16} />}
+                renderOption={renderEmbeddingModelOptions}
                 withAsterisk
                 {...wikiCreateForm.getInputProps("wikiEmbeddingId")}
               />
