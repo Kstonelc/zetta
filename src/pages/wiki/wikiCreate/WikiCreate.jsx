@@ -10,7 +10,6 @@ import {
   NumberInput,
   Radio,
   ScrollArea,
-  Select,
   Slider,
   Stack,
   Stepper,
@@ -22,7 +21,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
-import { Loading, SelectWithIcon } from "@/components";
+import { Loading, SelectWithIcon, Select } from "@/components";
 import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "@mantine/form";
 import {
@@ -256,7 +255,7 @@ const WikiCreate = () => {
   const renderEmbeddingModelOptions = ({ option }) => {
     return (
       <Group flex={1} gap={"xs"}>
-        {renderModelIcon(option.logo)}
+        {renderModelIcon(option.icon)}
         {option.label}
       </Group>
     );
@@ -488,11 +487,9 @@ const WikiCreate = () => {
                   return {
                     value: model.id,
                     label: model.name,
-                    logo: model?.provider.logo,
+                    icon: model?.provider.logo,
                   };
                 })}
-                // leftSection={<Image src={model.logo} width={16} height={16} />}
-                renderOption={renderEmbeddingModelOptions}
                 withAsterisk
                 {...wikiCreateForm.getInputProps("wikiEmbeddingId")}
               />
@@ -505,6 +502,7 @@ const WikiCreate = () => {
                   return {
                     value: model.id,
                     label: model.name,
+                    icon: model?.provider.logo,
                   };
                 })}
                 withAsterisk

@@ -7,4 +7,5 @@ export * from "./tiptap";
 export * from "./sidebar/WikiSideBar";
 export * from "./common/Table";
 export * from "./common/SelectWithIcon.js";
+export * from "./common/Select.tsx";
 export * from "./common/markdownViewer/MarkDownViewer.tsx";
