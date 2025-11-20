@@ -33,7 +33,7 @@ import {
   FileText,
   LayoutPanelTop,
   Trash2,
-  FileBox,
+  Album,
   TextQuote,
   Eye,
   Cog,
@@ -883,10 +883,15 @@ const WikiCreate = () => {
       )}
 
       {currentStep === 4 && (
-        <Stack>
-          <Title order={4}>正在处理文档</Title>
+        <Card withBorder w={"50%"}>
+          <Title order={4} mb={"4"}>
+            正在为您构建可搜索的知识点
+          </Title>
+          <Text size={"xs"} c={"dimmed"} mb={"xs"}>
+            文件内容越丰富，处理时间可能越长, 完成后您可以在知识库中搜索到内容
+          </Text>
           <ScrollArea>
-            <Stack gap={"xs"} w={"50%"} mb={"sm"}>
+            <Stack gap={"xs"} mb={"xl"}>
               <Card>
                 <Group mb={"xs"} justify={"space-between"}>
                   <Group>
@@ -906,14 +911,18 @@ const WikiCreate = () => {
                 <Progress
                   value={60}
                   color={theme.colors.blue[5]}
-                  size="xl"
+                  size="md"
                   animated
                 />
               </Card>
             </Stack>
-            <Button>前往知识库</Button>
           </ScrollArea>
-        </Stack>
+          <Group>
+            <Button leftSection={<Album size={"18"} />} size={"xs"}>
+              前往知识库
+            </Button>
+          </Group>
+        </Card>
       )}
     </Stack>
   );
