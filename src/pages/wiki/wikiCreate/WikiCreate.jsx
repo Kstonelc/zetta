@@ -6,11 +6,12 @@ import {
   Group,
   Image,
   Center,
+  Loader,
   Modal,
   NumberInput,
   Radio,
   ScrollArea,
-  Slider,
+  Progress,
   Stack,
   Stepper,
   Text,
@@ -19,9 +20,11 @@ import {
   Chip,
   Accordion,
   useMantineTheme,
+  Title,
+  Badge,
 } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
-import { Loading, SelectWithIcon, Select } from "@/components";
+import { Loading, Select } from "@/components";
 import React, { useEffect, useState, useRef } from "react";
 import { useForm } from "@mantine/form";
 import {
@@ -67,6 +70,9 @@ const WikiCreate = () => {
       if (changedValues.wikiEmbeddingId !== undefined) {
         defaultEmbeddingModelRef.current = changedValues.wikiEmbeddingId;
       }
+      if (changedValues.wikiRerankId !== undefined) {
+        defaultRerankModelRef.current = changedValues.wikiRerankId;
+      }
     },
     validate: {
       wikiName: (value) => (value.trim() ? null : "名称不能为空"),
@@ -78,7 +84,7 @@ const WikiCreate = () => {
 
   const [embeddingModels, setEmbeddingModels] = useState([]);
   const [rerankModels, setRerankModels] = useState([]);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(4);
   const [wikiType, setWikiType] = useState(WikiType.Unstructured);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
@@ -93,9 +99,10 @@ const WikiCreate = () => {
   const childChunkSizeRef = useRef(200);
   const childChunkOverlapRef = useRef(50);
   const defaultEmbeddingModelRef = useRef("");
+  const defaultRerankModelRef = useRef("");
 
   const nextStep = () =>
-    setCurrentStep((current) => (current < 3 ? current + 1 : current));
+    setCurrentStep((current) => (current < 4 ? current + 1 : current));
   const prevStep = () =>
     setCurrentStep((current) => (current > 0 ? current - 1 : current));
 
@@ -162,7 +169,6 @@ const WikiCreate = () => {
       });
       return;
     }
-    console.log(111, response.data);
     setEmbeddingModels(response.data);
   };
 
@@ -243,21 +249,9 @@ const WikiCreate = () => {
   //region 组件渲染
 
   const renderFileIcon = (fileExt) => {
+    console.log(22, FileType.icon[FileType.getFileType(fileExt)]);
     return (
       <Image src={FileType.icon[FileType.getFileType(fileExt)]} w={20} h={20} />
-    );
-  };
-
-  const renderModelIcon = (modelIcon) => {
-    return <Image src={modelIcon} w={20} h={20} />;
-  };
-
-  const renderEmbeddingModelOptions = ({ option }) => {
-    return (
-      <Group flex={1} gap={"xs"}>
-        {renderModelIcon(option.icon)}
-        {option.label}
-      </Group>
     );
   };
 
@@ -627,6 +621,7 @@ const WikiCreate = () => {
               上一步
             </Button>
             <Button
+              disabled={appHelper.getLength(uploadedFiles) === 0}
               onClick={() => {
                 nextStep();
               }}
@@ -690,11 +685,6 @@ const WikiCreate = () => {
                       </Accordion.Control>
                       <Accordion.Panel>
                         <Group grow mb={"md"}>
-                          <Select
-                            description="切分方式"
-                            defaultValue={"按长度切分"}
-                            data={["按长度切分"]}
-                          />
                           <NumberInput
                             defaultValue={1024}
                             onChange={(value) => {
@@ -794,6 +784,7 @@ const WikiCreate = () => {
                         return {
                           value: model.id,
                           label: model.name,
+                          icon: model?.provider.logo,
                         };
                       })}
                     />
@@ -809,12 +800,29 @@ const WikiCreate = () => {
                         向量重排检索
                       </Text>
                     </Group>
-                    <Select description={"Rerank模型"} mb={"sm"} />
+                    <Select
+                      mb={"sm"}
+                      defaultValue={defaultRerankModelRef.current}
+                      description={"Rerank模型"}
+                      placeholder={"请选择Rerank模型"}
+                      data={rerankModels.map((model) => {
+                        return {
+                          value: model.id,
+                          label: model.name,
+                          icon: model?.provider.logo,
+                        };
+                      })}
+                    />
                     <Group grow>
                       <NumberInput
-                        description={"TopK(提取前几?)"}
+                        defaultValue={5}
+                        description={"TopK"}
                       ></NumberInput>
                       <NumberInput
+                        min={0}
+                        max={1}
+                        step={0.1}
+                        defaultValue={0.5}
                         description={"Score(匹配程度)"}
                       ></NumberInput>
                     </Group>
@@ -825,7 +833,13 @@ const WikiCreate = () => {
                 <Button variant={"subtle"} onClick={prevStep}>
                   上一步
                 </Button>
-                <Button>保存并处理</Button>
+                <Button
+                  onClick={() => {
+                    nextStep();
+                  }}
+                >
+                  保存并处理
+                </Button>
               </Group>
             </Stack>
           </Card>
@@ -835,14 +849,16 @@ const WikiCreate = () => {
                 预览分块
               </Text>
               <Group mb={"sm"}>
-                <SelectWithIcon
-                  size={"xs"}
-                  textSize={"xs"}
+                <Select
+                  w={300}
                   defaultValue={uploadedFiles.map((file) => file.fileName)[0]}
-                  options={uploadedFiles.map((file) => ({
-                    icon: renderFileIcon(file.fileExt),
-                    title: file.fileName,
-                  }))}
+                  data={uploadedFiles.map((file) => {
+                    return {
+                      label: file.fileName,
+                      value: file.fileName,
+                      icon: FileType.icon[FileType.getFileType(file.fileExt)],
+                    };
+                  })}
                 />
                 <Chip
                   color={theme.colors.blue[6]}
@@ -864,6 +880,40 @@ const WikiCreate = () => {
             </ScrollArea>
           </Card>
         </Group>
+      )}
+
+      {currentStep === 4 && (
+        <Stack>
+          <Title order={4}>正在处理文档</Title>
+          <ScrollArea>
+            <Stack gap={"xs"} w={"50%"} mb={"sm"}>
+              <Card>
+                <Group mb={"xs"} justify={"space-between"}>
+                  <Group>
+                    <Image src={"/markdown.png"} w={30} h={30}></Image>
+                    <Text size={"sm"} fw={"bold"}>
+                      read_me.md
+                    </Text>
+                  </Group>
+                  <Badge
+                    variant={"light"}
+                    color={theme.colors.blue[5]}
+                    leftSection={<Loader size={"10"}></Loader>}
+                  >
+                    嵌入中
+                  </Badge>
+                </Group>
+                <Progress
+                  value={60}
+                  color={theme.colors.blue[5]}
+                  size="xl"
+                  animated
+                />
+              </Card>
+            </Stack>
+            <Button>前往知识库</Button>
+          </ScrollArea>
+        </Stack>
       )}
     </Stack>
   );

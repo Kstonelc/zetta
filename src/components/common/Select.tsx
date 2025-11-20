@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useState } from "react";
+import React, { FC } from "react";
 import {
   Select as SelectMT,
   SelectProps,
@@ -23,31 +23,31 @@ export type SelectPropsMT = Omit<
 };
 
 const Select: FC<SelectPropsMT> = ({
-  label,
-  description,
+  label = "",
+  description = "",
   placeholder,
   data = [],
   onChange,
   ...props
 }) => {
-  const [leftIcon, setLeftIcon] = useState<ReactNode>(null);
+  const { value, defaultValue, ...rest } = props;
 
-  const handleChange = (value: string | null) => {
-    const selected = data.find((item) => item.value === value) ?? null;
-    const icon = selected?.icon;
+  const currentValue = (value ?? defaultValue ?? null) as string | null;
 
-    setLeftIcon(
-      icon ? <ImageMT src={icon} w={20} h={20} alt={selected?.label} /> : null,
-    );
+  const selected = data.find((item) => item.value === currentValue) ?? null;
+  const leftIcon = selected?.icon ? (
+    <ImageMT src={selected.icon} w={20} h={20} alt={selected.label} />
+  ) : null;
 
-    onChange?.(value);
+  const handleChange = (next: string | null) => {
+    onChange?.(next);
   };
 
   const renderOption: SelectProps["renderOption"] = ({ option }) => {
     const item = option as SelectOption;
 
     return (
-      <Group gap="xs" flex={1}>
+      <Group gap="xs" flex={1} wrap="nowrap">
         {item.icon && (
           <ImageMT src={item.icon} w={20} h={20} alt={item.label} />
         )}
@@ -62,10 +62,12 @@ const Select: FC<SelectPropsMT> = ({
       description={description}
       placeholder={placeholder}
       data={data}
+      value={value}
+      defaultValue={defaultValue}
       leftSection={leftIcon}
       renderOption={renderOption}
       onChange={handleChange}
-      {...props}
+      {...rest}
     />
   );
 };
