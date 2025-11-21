@@ -39,10 +39,17 @@ import {
   Cog,
   ScanEye,
   ChartScatter,
+  CircleX,
   CircleCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { WikiChunkType, FileType, ModelType, WikiType } from "@/enum.js";
+import {
+  WikiChunkType,
+  FileType,
+  ModelType,
+  WikiType,
+  DocumentIndexStatus,
+} from "@/enum.ts";
 import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
 import LocalFile from "/assets/wiki/local-file.png";
@@ -85,7 +92,7 @@ const WikiCreate = () => {
 
   const [embeddingModels, setEmbeddingModels] = useState([]);
   const [rerankModels, setRerankModels] = useState([]);
-  const [currentStep, setCurrentStep] = useState(3);
+  const [currentStep, setCurrentStep] = useState(1);
   const [wikiType, setWikiType] = useState(WikiType.Unstructured);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
@@ -95,6 +102,8 @@ const WikiCreate = () => {
   const [isPreviewingChunks, setIsPreviewingChunks] = useState(false);
   const [documentIndexProgress, setDocumentIndexProgress] = useState(null);
 
+  const currentWikiIdRef = useRef(null);
+  const currentUploadedFilesRef = useRef([]);
   const currentWikiChunkTypeRef = useRef(WikiChunkType.Classical);
   const parentChunkSizeRef = useRef(1000);
   const parentChunkOverlapRef = useRef(100);
@@ -128,7 +137,7 @@ const WikiCreate = () => {
 
   //region 方法
 
-  const onCreateBlankWiki = async (values) => {
+  const onCreateWiki = async (values, isBlank = true) => {
     const userId = userStore.id;
     const tenantId = userStore.current_tenant.id;
     values.wikiType = wikiType;
@@ -151,12 +160,17 @@ const WikiCreate = () => {
       setIsSubmitting(false);
       return;
     }
-    notify({
-      type: "success",
-      message: response.message,
-    });
+    if (isBlank) {
+      notify({
+        type: "success",
+        message: response.message,
+      });
+    }
+    currentWikiIdRef.current = response.data.id;
     setIsSubmitting(false);
-    nav(-1);
+    if (isBlank) {
+      nav(-1);
+    }
   };
 
   const getEmbeddingModels = async () => {
@@ -212,13 +226,17 @@ const WikiCreate = () => {
           prevMap.set(item.fileName, item);
         }
       }
-      return [...prevMap.values(), ...results];
+      currentUploadedFilesRef.current = [...prevMap.values(), ...results];
+      return currentUploadedFilesRef.current;
     });
     setIsUploading(false);
   };
 
   const onDeleteFile = (fileName) => {
     setUploadedFiles((prev) => {
+      currentUploadedFilesRef.current = prev.filter(
+        (item) => item.fileName !== fileName,
+      );
       return prev.filter((item) => item.fileName !== fileName);
     });
   };
@@ -241,10 +259,11 @@ const WikiCreate = () => {
   };
 
   const onIndexDocuments = async () => {
-    await appHelper.apiPost("/wiki/index-documents", {
-      filesPath: [],
-      wikiId: "",
-    });
+    console.log(111, uploadedFiles);
+    // await appHelper.apiPost("/wiki/index-documents", {
+    //   filesPath: [],
+    //   wikiId: currentWikiId.current,
+    // });
   };
 
   const getDocumentIndexProgress = async () => {
@@ -263,7 +282,6 @@ const WikiCreate = () => {
   //region 组件渲染
 
   const renderFileIcon = (fileExt) => {
-    console.log(22, FileType.icon[FileType.getFileType(fileExt)]);
     return (
       <Image src={FileType.icon[FileType.getFileType(fileExt)]} w={20} h={20} />
     );
@@ -307,6 +325,41 @@ const WikiCreate = () => {
           </Card>
         );
       });
+    }
+  };
+
+  const renderIndexStatus = (indexStatus) => {
+    switch (indexStatus) {
+      case DocumentIndexStatus.Processing:
+        return (
+          <Badge
+            variant={"light"}
+            color={theme.colors.blue[5]}
+            leftSection={<Loader size={"10"} />}
+          >
+            {DocumentIndexStatus.text[indexStatus]}
+          </Badge>
+        );
+      case DocumentIndexStatus.Success:
+        return (
+          <Badge
+            variant={"light"}
+            color={theme.colors.green[5]}
+            leftSection={<CircleCheck size={"12"} />}
+          >
+            {DocumentIndexStatus.text[indexStatus]}
+          </Badge>
+        );
+      case DocumentIndexStatus.Failed:
+        return (
+          <Badge
+            variant={"light"}
+            color={theme.colors.red[5]}
+            leftSection={<CircleX size={"10"} />}
+          >
+            {DocumentIndexStatus.text[indexStatus]}
+          </Badge>
+        );
     }
   };
 
@@ -377,7 +430,7 @@ const WikiCreate = () => {
       </Group>
       {currentStep === 1 && (
         <form
-          onSubmit={wikiCreateForm.onSubmit(onCreateBlankWiki)}
+          onSubmit={wikiCreateForm.onSubmit(onCreateWiki)}
           className={classes.step1Form}
         >
           <ScrollArea h={"calc(100vh - 250px)"}>
@@ -539,11 +592,12 @@ const WikiCreate = () => {
                 取消
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   const validateRes = wikiCreateForm.validate();
                   if (validateRes.hasErrors) {
                     return;
                   }
+                  await onCreateWiki(wikiCreateForm.values, false);
                   nextStep();
                 }}
               >
@@ -899,9 +953,12 @@ const WikiCreate = () => {
 
       {currentStep === 4 && (
         <Card withBorder w={"50%"} mt={"xl"}>
-          <Title order={4} mb={"4"}>
-            正在为您构建可搜索的知识点
-          </Title>
+          <Group mb={"xs"}>
+            <Loader type="bars" size={"sm"} />
+            <Title order={4} mb={"4"}>
+              正在为您构建可搜索的知识点
+            </Title>
+          </Group>
           <Text size={"xs"} c={"dimmed"} mb={"xs"}>
             文件内容越丰富，处理时间可能越长, 完成后您可以在知识库中搜索到内容
           </Text>
@@ -919,47 +976,33 @@ const WikiCreate = () => {
                               {item.file_name}
                             </Text>
                             <Group gap={"1"}>
-                              <Text size={"xs"} fw={"bold"}>
+                              <Text size={"xs"} c={"dimmed"}>
                                 {item.processed_chunks}
                               </Text>
-                              <Text size={"xs"} fw={"bold"}>
+                              <Text size={"xs"} c={"dimmed"}>
                                 /
                               </Text>
-                              <Text size={"xs"} fw={"bold"}>
+                              <Text size={"xs"} c={"dimmed"}>
                                 {item.total_chunks} chunks
                               </Text>
                             </Group>
                           </Stack>
                         </Group>
-                        <Badge
-                          variant={"light"}
-                          color={
-                            item.status === 2
-                              ? theme.colors.green[5]
-                              : theme.colors.blue[5]
-                          }
-                          leftSection={
-                            item.status === 2 ? (
-                              <CircleCheck size={"10"} />
-                            ) : (
-                              <Loader size={"10"} />
-                            )
-                          }
-                        >
-                          {item.current_phase}
-                        </Badge>
+                        {renderIndexStatus(item.status)}
                       </Group>
                       <Progress
                         value={
                           (item.processed_chunks / item.total_chunks) * 100
                         }
                         color={
-                          item.status === 2
+                          item.status === DocumentIndexStatus.Success
                             ? theme.colors.green[6]
-                            : theme.colors.blue[5]
+                            : item.status === DocumentIndexStatus.Failed
+                              ? theme.colors.red[6]
+                              : theme.colors.blue[6]
                         }
                         size="md"
-                        animated={!item.status === 2}
+                        animated={!item.status === DocumentIndexStatus.Success}
                       />
                     </Card>
                   );

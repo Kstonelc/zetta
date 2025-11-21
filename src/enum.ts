@@ -182,4 +182,14 @@ export class ConversationRole {
   };
 }
 
-export class DocumentIndexStatus {}
+export class DocumentIndexStatus {
+  static Processing = 1 << 0;
+  static Success = 1 << 1;
+  static Failed = 1 << 2;
+
+  static text: Record<number, string> = {
+    [this.Processing]: "解析中",
+    [this.Success]: "完成",
+    [this.Failed]: "错误",
+  };
+}
