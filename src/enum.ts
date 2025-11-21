@@ -181,3 +181,5 @@ export class ConversationRole {
     [this.Assistant]: "AI",
   };
 }
+
+export class DocumentIndexStatus {}

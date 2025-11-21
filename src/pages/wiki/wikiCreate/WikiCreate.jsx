@@ -39,6 +39,7 @@ import {
   Cog,
   ScanEye,
   ChartScatter,
+  CircleCheck,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { WikiChunkType, FileType, ModelType, WikiType } from "@/enum.js";
@@ -84,7 +85,7 @@ const WikiCreate = () => {
 
   const [embeddingModels, setEmbeddingModels] = useState([]);
   const [rerankModels, setRerankModels] = useState([]);
-  const [currentStep, setCurrentStep] = useState(4);
+  const [currentStep, setCurrentStep] = useState(3);
   const [wikiType, setWikiType] = useState(WikiType.Unstructured);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isExitModalVisible, setIsExitModalVisible] = useState(false);
@@ -92,6 +93,7 @@ const WikiCreate = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [chunks, setChunks] = useState([]);
   const [isPreviewingChunks, setIsPreviewingChunks] = useState(false);
+  const [documentIndexProgress, setDocumentIndexProgress] = useState(null);
 
   const currentWikiChunkTypeRef = useRef(WikiChunkType.Classical);
   const parentChunkSizeRef = useRef(1000);
@@ -244,6 +246,18 @@ const WikiCreate = () => {
       wikiId: "",
     });
   };
+
+  const getDocumentIndexProgress = async () => {
+    const response = await appHelper.apiPost("/wiki/index-document/progress", {
+      wikiId: "d6e12baf-6384-4344-9608-f26060e2cc46",
+      fileNames: ["禹神：Typescript速通教程.md"],
+    });
+    if (!response.ok) {
+      return;
+    }
+    setDocumentIndexProgress(response.data);
+  };
+
   //endregion
 
   //region 组件渲染
@@ -834,8 +848,9 @@ const WikiCreate = () => {
                   上一步
                 </Button>
                 <Button
-                  onClick={() => {
+                  onClick={async () => {
                     nextStep();
+                    await getDocumentIndexProgress();
                   }}
                 >
                   保存并处理
@@ -883,7 +898,7 @@ const WikiCreate = () => {
       )}
 
       {currentStep === 4 && (
-        <Card withBorder w={"50%"}>
+        <Card withBorder w={"50%"} mt={"xl"}>
           <Title order={4} mb={"4"}>
             正在为您构建可搜索的知识点
           </Title>
@@ -892,29 +907,63 @@ const WikiCreate = () => {
           </Text>
           <ScrollArea>
             <Stack gap={"xs"} mb={"xl"}>
-              <Card>
-                <Group mb={"xs"} justify={"space-between"}>
-                  <Group>
-                    <Image src={"/markdown.png"} w={30} h={30}></Image>
-                    <Text size={"sm"} fw={"bold"}>
-                      read_me.md
-                    </Text>
-                  </Group>
-                  <Badge
-                    variant={"light"}
-                    color={theme.colors.blue[5]}
-                    leftSection={<Loader size={"10"}></Loader>}
-                  >
-                    嵌入中
-                  </Badge>
-                </Group>
-                <Progress
-                  value={60}
-                  color={theme.colors.blue[5]}
-                  size="md"
-                  animated
-                />
-              </Card>
+              {appHelper.getLength(documentIndexProgress) > 0 &&
+                documentIndexProgress.map((item) => {
+                  return (
+                    <Card>
+                      <Group mb={"xs"} justify={"space-between"}>
+                        <Group>
+                          <Image src={"/markdown.png"} w={30} h={30} />
+                          <Stack gap={0}>
+                            <Text size={"sm"} fw={"bold"}>
+                              {item.file_name}
+                            </Text>
+                            <Group gap={"1"}>
+                              <Text size={"xs"} fw={"bold"}>
+                                {item.processed_chunks}
+                              </Text>
+                              <Text size={"xs"} fw={"bold"}>
+                                /
+                              </Text>
+                              <Text size={"xs"} fw={"bold"}>
+                                {item.total_chunks} chunks
+                              </Text>
+                            </Group>
+                          </Stack>
+                        </Group>
+                        <Badge
+                          variant={"light"}
+                          color={
+                            item.status === 2
+                              ? theme.colors.green[5]
+                              : theme.colors.blue[5]
+                          }
+                          leftSection={
+                            item.status === 2 ? (
+                              <CircleCheck size={"10"} />
+                            ) : (
+                              <Loader size={"10"} />
+                            )
+                          }
+                        >
+                          {item.current_phase}
+                        </Badge>
+                      </Group>
+                      <Progress
+                        value={
+                          (item.processed_chunks / item.total_chunks) * 100
+                        }
+                        color={
+                          item.status === 2
+                            ? theme.colors.green[6]
+                            : theme.colors.blue[5]
+                        }
+                        size="md"
+                        animated={!item.status === 2}
+                      />
+                    </Card>
+                  );
+                })}
             </Stack>
           </ScrollArea>
           <Group>
