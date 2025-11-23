@@ -111,6 +111,7 @@ const WikiCreate = () => {
   const childChunkOverlapRef = useRef(50);
   const defaultEmbeddingModelRef = useRef("");
   const defaultRerankModelRef = useRef("");
+  const autoRefreshIndexProgressTimer = useRef(null);
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 4 ? current + 1 : current));
@@ -143,12 +144,15 @@ const WikiCreate = () => {
     values.wikiType = wikiType;
     values.userId = userId;
     values.tenantId = tenantId;
+    if (!isBlank) {
+      values.wikiId = currentWikiIdRef.current;
+    }
     if (!wikiType) {
       notify({
         type: "error",
         message: "请选择知识库类型",
       });
-      return;
+      return false;
     }
     setIsSubmitting(true);
     const response = await appHelper.apiPost("/wiki/create-wiki", values);
@@ -158,7 +162,7 @@ const WikiCreate = () => {
         message: response.message,
       });
       setIsSubmitting(false);
-      return;
+      return false;
     }
     if (isBlank) {
       notify({
@@ -166,11 +170,11 @@ const WikiCreate = () => {
         message: response.message,
       });
     }
-    currentWikiIdRef.current = response.data.id;
     setIsSubmitting(false);
     if (isBlank) {
       nav(-1);
     }
+    return true;
   };
 
   const getEmbeddingModels = async () => {
@@ -259,22 +263,45 @@ const WikiCreate = () => {
   };
 
   const onIndexDocuments = async () => {
-    console.log(111, uploadedFiles);
-    // await appHelper.apiPost("/wiki/index-documents", {
-    //   filesPath: [],
-    //   wikiId: currentWikiId.current,
-    // });
+    const filesPath = currentUploadedFilesRef.current.map(
+      (item) => item.filePath,
+    );
+    const response = await appHelper.apiPost("/wiki/index-document", {
+      filesPath: filesPath,
+      wikiId: currentWikiIdRef.current,
+      chunkType: currentWikiChunkTypeRef.current,
+      parentChunkSize: parentChunkSizeRef.current,
+      parentChunkOverlap: parentChunkOverlapRef.current,
+      childChunkSize: childChunkSizeRef.current,
+      childChunkOverlap: childChunkOverlapRef.current,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return false;
+    }
+    return true;
   };
 
   const getDocumentIndexProgress = async () => {
-    const response = await appHelper.apiPost("/wiki/index-document/progress", {
-      wikiId: "d6e12baf-6384-4344-9608-f26060e2cc46",
-      fileNames: ["禹神：Typescript速通教程.md"],
-    });
-    if (!response.ok) {
-      return;
-    }
-    setDocumentIndexProgress(response.data);
+    autoRefreshIndexProgressTimer.current = setInterval(async () => {
+      const filesPath = currentUploadedFilesRef.current.map(
+        (item) => item.filePath,
+      );
+      const response = await appHelper.apiPost(
+        "/wiki/index-document/progress",
+        {
+          wikiId: currentWikiIdRef.current,
+          fileNames: filesPath,
+        },
+      );
+      if (!response.ok) {
+        return;
+      }
+      setDocumentIndexProgress(response.data);
+    }, 2000);
   };
 
   //endregion
@@ -292,11 +319,7 @@ const WikiCreate = () => {
       return uploadedFiles.map((file, index) => {
         const fileType = FileType.getFileType(file.fileExt);
         let fileSize = file.fileSize;
-        if (fileSize > 100) {
-          fileSize = (fileSize / 1000).toFixed(2) + "M";
-        } else {
-          fileSize = fileSize + "K";
-        }
+        fileSize = appHelper.getFileSize(fileSize);
         return (
           <Card miw={300} maw={600} withBorder p={"xs"} mb={"xs"} key={index}>
             <Group justify={"space-between"}>
@@ -597,7 +620,7 @@ const WikiCreate = () => {
                   if (validateRes.hasErrors) {
                     return;
                   }
-                  await onCreateWiki(wikiCreateForm.values, false);
+                  currentWikiIdRef.current = appHelper.getUuid();
                   nextStep();
                 }}
               >
@@ -903,8 +926,17 @@ const WikiCreate = () => {
                 </Button>
                 <Button
                   onClick={async () => {
-                    nextStep();
-                    await getDocumentIndexProgress();
+                    const isWikiCreated = await onCreateWiki(
+                      wikiCreateForm.values,
+                      false,
+                    );
+                    if (isWikiCreated) {
+                      if (!(await onIndexDocuments())) {
+                        return;
+                      }
+                      nextStep();
+                      getDocumentIndexProgress();
+                    }
                   }}
                 >
                   保存并处理

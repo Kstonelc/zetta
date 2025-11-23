@@ -31,16 +31,7 @@ const WikiHomeCard = ({ wikiId, name, desc }) => {
       padding="lg"
       withBorder
       onClick={() => {
-        nav(
-          {
-            pathname: "/wiki/detail",
-          },
-          {
-            state: {
-              wikiId: wikiId,
-            },
-          },
-        );
+        nav(`/wiki/detail/${wikiId}/docs`);
       }}
     >
       <Group mb={"md"} justify="space-between">
@@ -67,7 +58,7 @@ const WikiHomeCard = ({ wikiId, name, desc }) => {
             </Text>
           </Flex>
         </Group>
-        <Group>
+        <Group gap={0}>
           <ActionIcon variant="transparent">
             <Star size={16} color={theme.colors.yellow[9]} />
           </ActionIcon>

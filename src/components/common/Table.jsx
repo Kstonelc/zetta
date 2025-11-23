@@ -1,7 +1,7 @@
 import { Box, Button } from "@mantine/core";
 import { DataTable } from "mantine-datatable";
 
-const Table = ({ columns, data }) => {
+const Table = ({ columns, data, ...props }) => {
   return (
     <DataTable
       withRowBorders={true}
@@ -12,6 +12,7 @@ const Table = ({ columns, data }) => {
       onRowClick={({ record: { name, party, bornIn } }) => {
         console.log(record);
       }}
+      {...props}
     />
   );
 };

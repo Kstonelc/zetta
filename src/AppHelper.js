@@ -1,6 +1,8 @@
 import axios from "axios";
 import { HttpStatus } from "@/enum.js";
 import React from "react";
+import dayjs from "dayjs";
+import { v4 as uuidv4 } from "uuid";
 import config from "../app.json";
 
 class AppHelper {
@@ -201,7 +203,43 @@ class AppHelper {
     return React.isValidElement(element);
   }
 
+  formatDate(value, format) {
+    if (!value) {
+      return "";
+    }
+    const date = dayjs.isDayjs(value) ? value : dayjs(value);
+    return date.format(format);
+  }
+
+  getFileExt(filename) {
+    if (!filename || !this.isString(filename)) return "";
+
+    const index = filename.lastIndexOf(".");
+    if (index === -1 || index === filename.length - 1) {
+      return "";
+    }
+
+    return filename.slice(index);
+  }
+
+  getFileSize(fileSize) {
+    if (fileSize > 100) {
+      fileSize = (fileSize / 1000).toFixed(2) + "M";
+    } else {
+      fileSize = fileSize + "K";
+    }
+    return fileSize;
+  }
+
   //endregion
+
+  // region uuid
+
+  getUuid() {
+    return uuidv4();
+  }
+
+  // endregion
 }
 
 export default new AppHelper();

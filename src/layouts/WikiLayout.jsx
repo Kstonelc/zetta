@@ -1,10 +1,11 @@
 import { Flex, Group, Title, ScrollArea } from "@mantine/core";
-import { Outlet } from "react-router-dom";
-import React, { useEffect, useRef, useState } from "react";
+import { Outlet, useParams } from "react-router-dom";
+import React, { useEffect, useMemo } from "react";
 import { WikiSideBar } from "@/components";
-import { useParams } from "react-router-dom";
 
-const WikiLayout = ({ wikiId }) => {
+const WikiLayout = () => {
+  const { wikiId } = useParams();
+
   // region 初始化
 
   useEffect(() => {
@@ -14,13 +15,19 @@ const WikiLayout = ({ wikiId }) => {
     };
   }, []);
 
-  const initialize = async () => {
-    console.log("知识库", wikiId);
-  };
+  const initialize = async () => {};
 
   const onDestroy = async () => {};
 
   //endregion
+
+  // region 组件渲染
+
+  const renderWikiSideBar = useMemo(() => {
+    return <WikiSideBar wikiId={wikiId} />;
+  }, [wikiId]);
+
+  // endregion
 
   return (
     <Group
@@ -29,7 +36,7 @@ const WikiLayout = ({ wikiId }) => {
       style={{ overflow: "hidden" }}
       h={"calc(100vh - 66px)"}
     >
-      <WikiSideBar wikiId={wikiId} />
+      {renderWikiSideBar}
       <ScrollArea p={"lg"} direction={"column"} h={"100%"} w={"100%"}>
         <Outlet />
       </ScrollArea>

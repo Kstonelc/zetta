@@ -51,7 +51,7 @@ const Router = createBrowserRouter([
         element: <WikiCreate />,
       },
       {
-        path: "wiki/detail",
+        path: "wiki/detail/:wikiId",
         element: <WikiLayout />,
         children: [
           {
