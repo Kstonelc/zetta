@@ -1,0 +1,3 @@
+const WikiDocumentCreate = () => {};
+
+export { WikiDocumentCreate };

@@ -10,6 +10,7 @@ import {
   Button,
   ColorSchemeScript,
   TextInput,
+  Input,
   NumberInput,
   Textarea,
   Stack,
@@ -56,6 +57,12 @@ const theme = createTheme({
         radius: "md",
         variant: "filled",
         autoComplete: "new-password",
+      },
+    }),
+    Input: Input.extend({
+      defaultProps: {
+        radius: "md",
+        variant: "filled",
       },
     }),
     NumberInput: NumberInput.extend({

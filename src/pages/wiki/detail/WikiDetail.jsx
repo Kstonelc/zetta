@@ -11,18 +11,26 @@ import {
   Badge,
   Loader,
   useMantineTheme,
+  Input,
   Image,
   ActionIcon,
 } from "@mantine/core";
 import FatherSon from "/assets/wiki/father-son.svg";
-import { FolderUp, SquarePen, Trash2, Check, CircleX } from "lucide-react";
-import { Table } from "@/components";
+import {
+  FolderUp,
+  SquarePen,
+  Trash2,
+  Check,
+  CircleX,
+  Search,
+} from "lucide-react";
+import { Table } from "@/components/index.js";
 
 import QWen from "/assets/models/qwen.svg";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import appHelper from "@/AppHelper.js";
-import { DocumentIndexStatus, FileType, WikiChunkType } from "@/enum.js";
+import { DocumentIndexStatus, FileType, WikiChunkType } from "@/enum.ts";
 
 const WikiDetail = () => {
   const theme = useMantineTheme();
@@ -36,7 +44,7 @@ const WikiDetail = () => {
       accessor: "title",
       title: "名称",
       textAlign: "center",
-      width: 400,
+      width: 300,
       render: ({ title }) => (
         <Group justify={"center"} gap={"xs"}>
           {renderFileIcon(appHelper.getFileExt(title))}
@@ -128,12 +136,15 @@ const WikiDetail = () => {
   // region 方法
 
   const getWikiDocs = async () => {
+    setIsFetching(true);
     const response = await appHelper.apiPost("/wiki/find-docs", {
       wikiId: wikiId,
     });
     if (!response.ok) {
+      setIsFetching(false);
       return;
     }
+    setIsFetching(false);
     setDocs(response.data);
   };
 
@@ -189,7 +200,12 @@ const WikiDetail = () => {
   return (
     <Stack flex={1} h={"calc(100vh - 120px)"}>
       <Title order={3}>文档</Title>
-      <Group justify={"flex-end"}>
+      <Group justify={"space-between"}>
+        <Input
+          size={"xs"}
+          placeholder={"文件名"}
+          leftSection={<Search size={16} />}
+        ></Input>
         <Button leftSection={<FolderUp size={16} />}>导入文档</Button>
       </Group>
 
@@ -197,7 +213,7 @@ const WikiDetail = () => {
         <Table
           data={docs}
           totalRecords={appHelper.getLength(docs)}
-          // fetching={isFetching}
+          fetching={isFetching}
           columns={columns}
           selectedRecords={selectedRecords}
           onSelectedRecordsChange={setSelectedRecords}

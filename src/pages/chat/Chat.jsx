@@ -179,14 +179,6 @@ const Chat = () => {
   const userInteractingRef = useRef(false);
   const [showJump, setShowJump] = useState(false);
 
-  // ===== 问题导航 =====
-  const [qPtr, setQPtr] = useState(-1);
-  const qPtrRef = useRef(qPtr);
-
-  // ===== 会话列表 =====
-  const [conversations, setConversations] = useState([]);
-  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
-
   // 区分程序滚动与用户滚动
   const byProgrammaticRef = useRef(false);
   // 自动跟随禁用开关
@@ -227,8 +219,8 @@ const Chat = () => {
     userInteractingRef.current = false;
 
     // 初始化会话
-    const f = followRef.current;
     stopFollowSession();
+    const f = followRef.current;
     f.active = true;
     f.startTs = performance.now();
     f.lastHeight = el.scrollHeight;
@@ -280,6 +272,14 @@ const Chat = () => {
     });
   }, [stopFollowSession]);
 
+  // ===== 问题导航 =====
+  const [qPtr, setQPtr] = useState(-1);
+  const qPtrRef = useRef(qPtr);
+
+  // ===== 会话列表 =====
+  const [conversations, setConversations] = useState([]);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+
   // SSE/流控制
   const conversationStopControllerRef = useRef(null);
   const currentAssistantIdRef = useRef(null);
@@ -319,7 +319,7 @@ const Chat = () => {
     const height = Math.ceil(el.clientHeight);
     const scrollH = Math.ceil(el.scrollHeight);
     return top + height >= scrollH - BOTTOM_EPS;
-  }, []);
+  }, [BOTTOM_EPS]);
 
   const hardScrollToBottomNow = useCallback(() => {
     const el = scrollerElRef.current;
@@ -405,12 +405,23 @@ const Chat = () => {
     run();
   }, [messages, isReallyAtBottom]);
 
-  // 当生成结束或用户手动滚动时，停止跟随会话
+  // 生成中 & 在底部 & 未被禁用自动跟随 时，自动进入跟随会话
   useEffect(() => {
     if (!isGenerating) {
       stopFollowSession();
+      return;
     }
-  }, [isGenerating, stopFollowSession]);
+
+    // 生成中：如果当前在底部，且没有被用户操作禁用自动跟随，则自动开启丝滑跟随
+    if (
+      !autoFollowDisabledRef.current &&
+      !userInteractingRef.current &&
+      !isFollowActive() &&
+      isReallyAtBottom()
+    ) {
+      startFollowSession();
+    }
+  }, [isGenerating, stopFollowSession, startFollowSession, isReallyAtBottom]);
 
   // 问题（用户消息）导航
   const questionIndices = useMemo(
@@ -426,7 +437,7 @@ const Chat = () => {
   useEffect(() => {
     if (appHelper.getLength(questionIndices) === 0) setQPtr(-1);
     else setQPtr(appHelper.getLength(questionIndices) - 1);
-  }, [appHelper.getLength(questionIndices)]);
+  }, [questionIndices]);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -470,7 +481,7 @@ const Chat = () => {
     return () => {
       destroy();
     };
-  }, []); // eslint-disable-line
+  }, []);
 
   // endregion
 
@@ -503,6 +514,10 @@ const Chat = () => {
           if (isFollowActive()) stopFollowSession();
           const at = isAtBottomNow();
           userInteractingRef.current = !at;
+          // 只要用户主动滚动离开底部，就暂时禁用自动跟随，直到他点“跳到底”
+          if (!at) {
+            autoFollowDisabledRef.current = true;
+          }
         };
 
         return (
@@ -527,6 +542,14 @@ const Chat = () => {
               // 程序滚动或抑制窗口：不更新任何与 UI 相关的状态
               if (byProgrammaticRef.current || inSuppressWindow()) return;
 
+              // === 自动跟随会话时，忽略滚动回调，避免 UI 状态形成闭环 ===
+              if (isFollowActive()) {
+                atBottomRef.current = true;
+                userInteractingRef.current = false;
+                setShowJump(false);
+                return;
+              }
+
               const diff = el.scrollHeight - el.clientHeight - el.scrollTop;
               const at = diff <= BOTTOM_EPS;
               atBottomRef.current = at;
@@ -538,7 +561,7 @@ const Chat = () => {
           />
         );
       }),
-    [stopFollowSession],
+    [BOTTOM_EPS, stopFollowSession],
   );
 
   // 简单稳定 id 生成器
@@ -639,7 +662,11 @@ const Chat = () => {
   const handleUnknown = useCallback(
     (evt) => {
       const name = evt.section || "misc";
-      const summary = `[${evt.type}] ${typeof evt.delta === "string" ? evt.delta : JSON.stringify(evt.delta ?? "")}`;
+      const summary = `[${evt.type}] ${
+        typeof evt.delta === "string"
+          ? evt.delta
+          : JSON.stringify(evt.delta ?? "")
+      }`;
       upSection(name, { status: "running", logs: [summary] });
     },
     [upSection],
@@ -842,6 +869,7 @@ const Chat = () => {
     autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
 
+    // 点击“滚动到底”时，如果此时在生成或之后开始生成，都会进入丝滑跟随
     startFollowSession();
 
     setShowJump(false);
@@ -879,7 +907,7 @@ const Chat = () => {
     const nextPtr = qPtrRef.current <= 0 ? 0 : qPtrRef.current - 1;
     setQPtr(nextPtr);
     scrollToQuestionPtr(nextPtr);
-  }, [appHelper.getLength(questionIndices), scrollToQuestionPtr]);
+  }, [questionIndices, scrollToQuestionPtr]);
 
   const goNextQuestion = useCallback(() => {
     if (appHelper.getLength(questionIndices) === 0) return;
@@ -887,7 +915,7 @@ const Chat = () => {
     const nextPtr = qPtrRef.current >= last ? last : qPtrRef.current + 1;
     setQPtr(nextPtr);
     scrollToQuestionPtr(nextPtr);
-  }, [appHelper.getLength(questionIndices), scrollToQuestionPtr]);
+  }, [questionIndices, scrollToQuestionPtr]);
 
   //endregion
 
@@ -906,29 +934,28 @@ const Chat = () => {
           style={{ height: "100%", width: "100%" }}
           data={messages}
           computeItemKey={(_, msg) => msg.id}
-          increaseViewportBy={{ top: 400, bottom: 600 }}
+          increaseViewportBy={{ top: 200, bottom: 400 }}
           defaultItemHeight={160}
           components={{
             Scroller,
-            Footer: () => <div style={{ height: 24 }} />,
           }}
-          // 当处于“跟随会话”时，禁用 Virtuoso 的 followOutput，避免双重平滑引起抖动
-          followOutput={
-            isFollowActive()
-              ? false
-              : isGenerating &&
-                  atBottomRef.current &&
-                  !userInteractingRef.current &&
-                  !autoFollowDisabledRef.current
-                ? "smooth"
-                : false
-          }
+          // 关键：完全关闭 Virtuoso 的 followOutput，由我们自己的 followSession 控制滚动
+          followOutput={false}
           scrollSeekConfiguration={{
             enter: (v) => Math.abs(v) > 1400,
             exit: (v) => Math.abs(v) < 900,
           }}
           atBottomStateChange={() => {
             if (byProgrammaticRef.current || inSuppressWindow()) return;
+
+            // === 自动跟随会话时忽略底部状态回调，防止形成闭环 ===
+            if (isFollowActive()) {
+              atBottomRef.current = true;
+              userInteractingRef.current = false;
+              setShowJump(false);
+              return;
+            }
+
             const at = isReallyAtBottom();
             atBottomRef.current = at;
             if (at) userInteractingRef.current = false;
@@ -945,7 +972,7 @@ const Chat = () => {
         <Transition
           mounted={showJump && !inSuppressWindow()}
           transition="pop"
-          duration={200}
+          duration={100}
           timingFunction="ease-out"
         >
           {(styles) => (
@@ -1110,7 +1137,7 @@ const Chat = () => {
 
   return (
     <Flex p="lg" flex={1} gap="sm" style={{ minHeight: 0 }}>
-      <Card maw={220} miw={200} shadow="md" withBorder h="100%">
+      <Card w={220} shadow="md" withBorder h="100%">
         <Button
           mb="md"
           leftSection={<MessagesSquare size={16} />}

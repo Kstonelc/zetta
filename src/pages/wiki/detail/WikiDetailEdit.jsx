@@ -10,7 +10,7 @@ import {
   useMantineTheme,
 } from "@mantine/core";
 import { Send } from "lucide-react";
-import { TipTapEditor } from "@/components";
+import { TipTapEditor } from "@/components/index.js";
 
 const WikiDetailEdit = () => {
   const theme = useMantineTheme();
