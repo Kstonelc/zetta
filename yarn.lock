@@ -2344,10 +2344,10 @@ lucide-react@^0.523.0:
   resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-0.523.0.tgz#a855a3b5b6fdcdee597ecbbd3c16141711a1d974"
   integrity sha512-rUjQoy7egZT9XYVXBK1je9ckBnNp7qzRZOhLQx5RcEp2dCGlXo+mv6vf7Am4LimEcFBJIIZzSGfgTqc9QCrPSw==
 
-mantine-datatable@^8.2.0:
-  version "8.2.0"
-  resolved "https://registry.npmjs.org/mantine-datatable/-/mantine-datatable-8.2.0.tgz#05ee4f8ed59a0138bff2b9aee8ecc36fbb34f448"
-  integrity sha512-dkdOnDw1DF9t5kxl4VEPM0baubNW2Tc+lvbc0bkVU1bNaDpXphSeoTGU6lai0sQ21hrKSMbfiK0ACczdrSOKyg==
+mantine-datatable@^8.3.8:
+  version "8.3.8"
+  resolved "https://registry.npmjs.org/mantine-datatable/-/mantine-datatable-8.3.8.tgz#3c8e7f4295f3cb702a08556ccca90903b4c8f8b7"
+  integrity sha512-n6IHSCoZSojHSLLcRcxB0wiyMt+N2cIhp7gRSLsLdXv3xg4vq6wSW/n6cbd8SxN26T8JQlQ4Y2KNBgIuDdbHEg==
 
 markdown-it@^14.0.0:
   version "14.1.0"

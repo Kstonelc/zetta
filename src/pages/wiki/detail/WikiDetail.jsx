@@ -20,7 +20,7 @@ import {
   FolderUp,
   SquarePen,
   Trash2,
-  Check,
+  CircleCheckBig,
   CircleX,
   Search,
 } from "lucide-react";
@@ -28,12 +28,13 @@ import { Table } from "@/components/index.js";
 
 import QWen from "/assets/models/qwen.svg";
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import appHelper from "@/AppHelper.js";
 import { DocumentIndexStatus, FileType, WikiChunkType } from "@/enum.ts";
 
 const WikiDetail = () => {
   const theme = useMantineTheme();
+  const nav = useNavigate();
   const { wikiId } = useParams();
   const [docs, setDocs] = useState([]);
   const [selectedRecords, setSelectedRecords] = useState([]);
@@ -160,7 +161,7 @@ const WikiDetail = () => {
             variant={"light"}
             size={"sm"}
             color={theme.colors.green[5]}
-            leftSection={<Check size={12} />}
+            leftSection={<CircleCheckBig size={12} />}
           >
             {DocumentIndexStatus.text[status]}
           </Badge>
@@ -205,8 +206,15 @@ const WikiDetail = () => {
           size={"xs"}
           placeholder={"文件名"}
           leftSection={<Search size={16} />}
-        ></Input>
-        <Button leftSection={<FolderUp size={16} />}>导入文档</Button>
+        />
+        <Button
+          leftSection={<FolderUp size={16} />}
+          onClick={() => {
+            nav(`/wiki/detail/${wikiId}/docs/create`);
+          }}
+        >
+          导入文档
+        </Button>
       </Group>
 
       <Stack flex={5} px={"md"} mih={0}>

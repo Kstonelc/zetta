@@ -14,6 +14,7 @@ import {
   NotFound,
   UserActivate,
   ApplicationHome,
+  WikiDocumentCreate,
 } from "../pages";
 
 const AuthGuard = ({ children }) => {
@@ -67,6 +68,10 @@ const Router = createBrowserRouter([
             element: <WikiDetailEdit />,
           },
         ],
+      },
+      {
+        path: "wiki/detail/:wikiId/docs/create",
+        element: <WikiDocumentCreate />,
       },
       {
         path: "agent",

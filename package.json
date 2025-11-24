@@ -43,7 +43,7 @@
     "i18next": "^25.3.2",
     "i18next-browser-languagedetector": "^8.2.0",
     "lucide-react": "^0.523.0",
-    "mantine-datatable": "^8.2.0",
+    "mantine-datatable": "^8.3.8",
     "prettier": "^3.6.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

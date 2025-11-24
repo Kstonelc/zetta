@@ -4,7 +4,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useLayoutEffect,
 } from "react";
 import { flushSync } from "react-dom";
 import {
@@ -57,9 +56,6 @@ import { MarkdownViewer, SelectWithIcon, Loading } from "@/components";
 
 import classes from "./Chat.module.scss";
 
-/**
- * ===== 可扩展的分区阶段面板（显示搜索、本地检索、RAG 等阶段） =====
- */
 const SectionPanel = ({ sections, theme, isSectionVisible }) => {
   const names = Object.keys(sections || {});
 
@@ -108,13 +104,7 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
                       s.icons
                         .slice(0, 5)
                         .map((src, i) => (
-                          <Image
-                            key={i}
-                            w={"20"}
-                            h={"20"}
-                            src={src}
-                            radius="xl"
-                          />
+                          <Image key={i} w={20} h={20} src={src} radius="xl" />
                         ))}
                   </Group>
                 </Group>
@@ -147,7 +137,7 @@ const Chat = () => {
 
   // ===== 生成状态 =====
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const isGeneratingRef = useRef(false);
 
   // ===== 分区阶段状态（仅本轮渲染） =====
   const [sections, setSections] = useState({});
@@ -172,6 +162,10 @@ const Chat = () => {
   }, []);
   const [isSectionVisible, setIsSectionVisible] = useState(false);
 
+  useEffect(() => {
+    isGeneratingRef.current = isGenerating;
+  }, [isGenerating]);
+
   // ===== 滚动/列表 =====
   const virtuosoRef = useRef(null);
   const scrollerElRef = useRef(null);
@@ -181,96 +175,14 @@ const Chat = () => {
 
   // 区分程序滚动与用户滚动
   const byProgrammaticRef = useRef(false);
-  // 自动跟随禁用开关
+  // 自动跟随禁用开关：用户主动滚动离开底部后关闭
   const autoFollowDisabledRef = useRef(false);
+  // 点击“滚动到底”后开启：“生成时跟随到底”
+  const followOnGenerateRef = useRef(false);
 
-  // ==== 平滑跟随会话（核心优化）====
-  const followRef = useRef({
-    active: false,
-    raf: 0,
-    startTs: 0,
-    lastHeight: 0,
-  });
-
-  const isFollowActive = () => followRef.current.active;
-
-  const stopFollowSession = useCallback(() => {
-    const f = followRef.current;
-    if (f.raf) cancelAnimationFrame(f.raf);
-    f.raf = 0;
-    f.active = false;
-  }, []);
-
-  const suppressUiUntilRef = useRef(0);
-  const SUPPRESS_MS = 600;
-  const inSuppressWindow = () => performance.now() < suppressUiUntilRef.current;
-  const suppress = (ms = SUPPRESS_MS) => {
-    suppressUiUntilRef.current = performance.now() + ms;
-  };
-
-  const startFollowSession = useCallback(() => {
-    const el = scrollerElRef.current;
-    if (!el) return;
-
-    // 进入抑制窗口，避免按钮闪烁；标记程序滚动
-    suppress(250);
-    byProgrammaticRef.current = true;
-    autoFollowDisabledRef.current = false;
-    userInteractingRef.current = false;
-
-    // 初始化会话
-    stopFollowSession();
-    const f = followRef.current;
-    f.active = true;
-    f.startTs = performance.now();
-    f.lastHeight = el.scrollHeight;
-
-    // 立即把视图放到靠近底部，减少虚拟化影响
-    const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
-    try {
-      el.scrollTo({ top: maxTop, behavior: "auto" });
-    } catch {
-      el.scrollTop = maxTop;
-    }
-
-    // rAF 平滑跟随
-    const step = () => {
-      if (!f.active) return;
-      const el2 = scrollerElRef.current;
-      if (!el2) {
-        stopFollowSession();
-        return;
-      }
-
-      const target = Math.max(0, el2.scrollHeight - el2.clientHeight);
-      const cur = el2.scrollTop;
-      const dist = target - cur;
-
-      const curHeight = el2.scrollHeight;
-      const heightChanged = curHeight !== f.lastHeight;
-      f.lastHeight = curHeight;
-
-      if (Math.abs(dist) > 0.5 || heightChanged) {
-        const maxStep = 48; // px/frame 上限
-        const minStep = 8;
-        const stepPx = Math.min(
-          maxStep,
-          Math.max(minStep, Math.abs(dist) * 0.18),
-        );
-        el2.scrollTop = cur + Math.sign(dist) * stepPx;
-      } else {
-        el2.scrollTop = target;
-      }
-
-      f.raf = requestAnimationFrame(step);
-    };
-
-    f.raf = requestAnimationFrame(step);
-
-    requestAnimationFrame(() => {
-      byProgrammaticRef.current = false;
-    });
-  }, [stopFollowSession]);
+  // 抑制窗口：程序滚动后的短时间内忽略 onScroll 对 UI 状态的修改，防止按钮闪烁/抖动
+  const suppressUntilRef = useRef(0);
+  const SUPPRESS_MS = 320;
 
   // ===== 问题导航 =====
   const [qPtr, setQPtr] = useState(-1);
@@ -279,6 +191,7 @@ const Chat = () => {
   // ===== 会话列表 =====
   const [conversations, setConversations] = useState([]);
   const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   // SSE/流控制
   const conversationStopControllerRef = useRef(null);
@@ -294,32 +207,21 @@ const Chat = () => {
 
   // 单一事实源：按消息 id 累加 assistant 的“答案区”文本
   const assistantTextMapRef = useRef(new Map());
-  const getLatestAssistantText = useCallback(() => {
-    const id = currentAssistantIdRef.current;
-    if (!id) return "";
-    const inMap = assistantTextMapRef.current.get(id);
-    if (inMap != null) return inMap;
-    const msg = messagesRef.current.find((m) => m.id === id);
-    if (!msg) return "";
-    return appHelper.isString(msg.content) ? msg.content : "";
-  }, []);
 
+  const suppress = (ms = SUPPRESS_MS) => {
+    if (typeof performance === "undefined") return;
+    suppressUntilRef.current = performance.now() + ms;
+  };
+  const inSuppressWindow = () => {
+    if (typeof performance === "undefined") return false;
+    return performance.now() < suppressUntilRef.current;
+  };
+
+  // Mac 与其他平台底部阈值略微不同，兼容惯性滚动
   const isMac =
     typeof navigator !== "undefined" &&
     (/Mac/.test(navigator.platform) || /Mac OS/.test(navigator.userAgent));
-
   const BOTTOM_EPS = isMac ? 4 : 6; // 底部阈值（px）
-  // none | auto | smooth
-  const afterRenderScrollRef = useRef("none");
-
-  const isReallyAtBottom = useCallback(() => {
-    const el = scrollerElRef.current;
-    if (!el) return true;
-    const top = Math.ceil(el.scrollTop);
-    const height = Math.ceil(el.clientHeight);
-    const scrollH = Math.ceil(el.scrollHeight);
-    return top + height >= scrollH - BOTTOM_EPS;
-  }, [BOTTOM_EPS]);
 
   const hardScrollToBottomNow = useCallback(() => {
     const el = scrollerElRef.current;
@@ -332,96 +234,73 @@ const Chat = () => {
     }
   }, []);
 
-  // 渲染后到底（只执行一次）
-  useLayoutEffect(() => {
-    const mode = afterRenderScrollRef.current;
-    if (mode === "none") return;
-
+  /**
+   * 生成中每次 token 追加时调用：
+   * - 如果当前本来就在底部，或者用户之前点击过“滚动到底”（followOnGenerateRef = true）
+   *   就滚动到底；
+   * - 否则什么都不做，不打扰看历史。
+   *
+   * 同时：只有当“离底部有明显距离 diff > BOTTOM_EPS”时才真正 scrollTo，
+   * 避免 Mac 触控板那种 1~2 像素抖动也被我们拉直，造成视觉上的抖动。
+   */
+  const scrollToBottomIfNeeded = useCallback(() => {
     const el = scrollerElRef.current;
     if (!el) return;
 
-    // reset，防止重复
-    afterRenderScrollRef.current = "none";
+    const shouldFollow =
+      followOnGenerateRef.current ||
+      (!autoFollowDisabledRef.current && atBottomRef.current);
 
-    const run = async () => {
-      await new Promise((r) =>
-        requestAnimationFrame(() => requestAnimationFrame(r)),
-      );
+    if (!shouldFollow) return;
 
-      const toBottom = (behavior) => {
-        const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
-        try {
-          el.scrollTo({ top: maxTop, behavior });
-        } catch {
-          el.scrollTop = maxTop;
-        }
-      };
+    // 当前到底部的距离
+    const diff = el.scrollHeight - el.clientHeight - el.scrollTop;
 
-      byProgrammaticRef.current = true;
-      userInteractingRef.current = false;
-      autoFollowDisabledRef.current = false;
-      setShowJump(false);
-
-      if (mode === "auto") {
-        toBottom("auto");
-        byProgrammaticRef.current = false;
-        atBottomRef.current = true;
-        return;
-      }
-
-      // smooth：多帧追随 + 尺寸监听，2.5s 上限
-      let ro = null;
-      let inProgress = true;
-      const smoothToBottom = () => toBottom("smooth");
-
-      if (typeof ResizeObserver !== "undefined") {
-        ro = new ResizeObserver(() => {
-          if (inProgress) smoothToBottom();
-        });
-        ro.observe(el);
-      }
-
-      const MAX_WAIT_MS = 2500;
-      const START = performance.now();
-      let lastH = -1;
-
-      smoothToBottom();
-
-      while (performance.now() - START < MAX_WAIT_MS) {
-        await new Promise((r) => requestAnimationFrame(r));
-        const curH = el.scrollHeight;
-        const changed = curH !== lastH;
-        lastH = curH;
-        if (!changed && isReallyAtBottom()) break;
-        smoothToBottom();
-      }
-
-      inProgress = false;
-      ro?.unobserve(el);
-      byProgrammaticRef.current = false;
+    // 已经几乎在底部（考虑 EPS），不需要再强制 scrollTo，避免反复“微调”
+    if (diff <= BOTTOM_EPS) {
       atBottomRef.current = true;
-    };
-
-    run();
-  }, [messages, isReallyAtBottom]);
-
-  // 生成中 & 在底部 & 未被禁用自动跟随 时，自动进入跟随会话
-  useEffect(() => {
-    if (!isGenerating) {
-      stopFollowSession();
       return;
     }
 
-    // 生成中：如果当前在底部，且没有被用户操作禁用自动跟随，则自动开启丝滑跟随
-    if (
-      !autoFollowDisabledRef.current &&
-      !userInteractingRef.current &&
-      !isFollowActive() &&
-      isReallyAtBottom()
-    ) {
-      startFollowSession();
-    }
-  }, [isGenerating, stopFollowSession, startFollowSession, isReallyAtBottom]);
+    suppress();
+
+    byProgrammaticRef.current = true;
+    requestAnimationFrame(() => {
+      const el2 = scrollerElRef.current;
+      if (!el2) {
+        byProgrammaticRef.current = false;
+        return;
+      }
+
+      const maxTop = Math.max(0, el2.scrollHeight - el2.clientHeight);
+      try {
+        // 避免 smooth + Mac 惯性叠加，使用 auto 更稳定
+        el2.scrollTo({ top: maxTop, behavior: "auto" });
+      } catch {
+        el2.scrollTop = maxTop;
+      }
+
+      requestAnimationFrame(() => {
+        byProgrammaticRef.current = false;
+        atBottomRef.current = true;
+        setShowJump(false);
+      });
+    });
+  }, [BOTTOM_EPS]);
+
+  const getLatestAssistantText = useCallback(() => {
+    const id = currentAssistantIdRef.current;
+    if (!id) return "";
+    const inMap = assistantTextMapRef.current.get(id);
+    if (inMap != null) return inMap;
+    const msg = messagesRef.current.find((m) => m.id === id);
+    if (!msg) return "";
+    return appHelper.isString(msg.content) ? msg.content : "";
+  }, []);
+
+  // 简单稳定 id 生成器
+  const genId = (prefix = "m") =>
+    `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   // 问题（用户消息）导航
   const questionIndices = useMemo(
@@ -473,7 +352,6 @@ const Chat = () => {
       conversationStopControllerRef.current = null;
     }
     lineBufRef.current = "";
-    stopFollowSession();
   };
 
   useEffect(() => {
@@ -481,6 +359,7 @@ const Chat = () => {
     return () => {
       destroy();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // endregion
@@ -498,25 +377,37 @@ const Chat = () => {
     [models],
   );
 
-  // 自定义 Scroller（仅维护 atBottom/交互状态）
+  // 自定义 Scroller（只维护 atBottom/交互状态和按钮显隐）
   const Scroller = useMemo(
     () =>
       React.forwardRef(({ style, onScroll, className, ...props }, ref) => {
         const isAtBottomNow = () => {
           const el = scrollerElRef.current;
           if (!el) return true;
-          const diff = el.scrollHeight - el.scrollTop - el.clientHeight;
-          return diff <= BOTTOM_EPS;
+          const top = Math.ceil(el.scrollTop);
+          const h = Math.ceil(el.clientHeight);
+          const sh = Math.ceil(el.scrollHeight);
+          return top + h >= sh - BOTTOM_EPS;
         };
 
-        const markUserInteracting = () => {
+        const markUserInteracting = (ev) => {
           if (byProgrammaticRef.current || inSuppressWindow()) return;
-          if (isFollowActive()) stopFollowSession();
+
+          const el = scrollerElRef.current;
           const at = isAtBottomNow();
-          userInteractingRef.current = !at;
-          // 只要用户主动滚动离开底部，就暂时禁用自动跟随，直到他点“跳到底”
+
+          // 关键：Mac 触控板在“已经在底部”时继续往下滑（deltaY > 0），
+          // 我们直接忽略，不把它当成“离开底部”的交互，避免状态来回抖动。
+          if (at && ev?.type === "wheel" && typeof ev.deltaY === "number") {
+            if (ev.deltaY > 0) {
+              return;
+            }
+          }
+
           if (!at) {
+            userInteractingRef.current = true;
             autoFollowDisabledRef.current = true;
+            followOnGenerateRef.current = false; // 手动滚动后，不再跟随生成
           }
         };
 
@@ -531,42 +422,33 @@ const Chat = () => {
               else if (ref) ref.current = node;
             }}
             style={{ ...style }}
-            onWheel={markUserInteracting}
-            onTouchStart={markUserInteracting}
-            onPointerDown={markUserInteracting}
+            onWheel={(e) => {
+              markUserInteracting(e);
+            }}
+            onTouchStart={(e) => markUserInteracting(e)}
+            onPointerDown={(e) => markUserInteracting(e)}
             onScroll={(e) => {
               onScroll?.(e);
               const el = scrollerElRef.current;
               if (!el) return;
 
-              // 程序滚动或抑制窗口：不更新任何与 UI 相关的状态
               if (byProgrammaticRef.current || inSuppressWindow()) return;
 
-              // === 自动跟随会话时，忽略滚动回调，避免 UI 状态形成闭环 ===
-              if (isFollowActive()) {
-                atBottomRef.current = true;
+              const at = isAtBottomNow();
+              atBottomRef.current = at;
+              if (at) {
                 userInteractingRef.current = false;
                 setShowJump(false);
-                return;
+              } else {
+                const overflow = el.scrollHeight - el.clientHeight > 1;
+                setShowJump(overflow);
               }
-
-              const diff = el.scrollHeight - el.clientHeight - el.scrollTop;
-              const at = diff <= BOTTOM_EPS;
-              atBottomRef.current = at;
-              if (at) userInteractingRef.current = false;
-
-              const overflow = el.scrollHeight - el.clientHeight > 1;
-              setShowJump(overflow && !at);
             }}
           />
         );
       }),
-    [BOTTOM_EPS, stopFollowSession],
+    [BOTTOM_EPS],
   );
-
-  // 简单稳定 id 生成器
-  const genId = (prefix = "m") =>
-    `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   /** 分区增量：将文本片段追加到 assistant 消息的指定字段（content/thinking） */
   const appendToAssistantField = useCallback(
@@ -602,8 +484,13 @@ const Chat = () => {
         };
         return next;
       });
+
+      // 生成过程中，根据标志决定是否跟随到底
+      if (isGeneratingRef.current) {
+        scrollToBottomIfNeeded();
+      }
     },
-    [],
+    [scrollToBottomIfNeeded],
   );
 
   // ===== 事件处理器注册表（可扩展） =====
@@ -623,6 +510,7 @@ const Chat = () => {
       },
       done: () => {
         setIsGenerating(false);
+        isGeneratingRef.current = false;
         latestAssistantTextRef.current = getLatestAssistantText();
         // 把所有 running 的 section 标记 done
         setSections((prev) =>
@@ -636,7 +524,6 @@ const Chat = () => {
       },
       // Web 搜索阶段
       search_begin: (evt) => {
-        // example: {type: 'search_begin', delta: '正在搜索....', section: 'search:web'}
         const name = evt.section || "search:web";
         setIsSectionVisible(true);
         upSection(name, { status: "running", logs: [String(evt.delta ?? "")] });
@@ -680,6 +567,7 @@ const Chat = () => {
     conversationStopControllerRef.current = null;
 
     setIsGenerating(false);
+    isGeneratingRef.current = false;
     latestAssistantTextRef.current = getLatestAssistantText();
   }, [getLatestAssistantText]);
 
@@ -699,10 +587,12 @@ const Chat = () => {
     latestUserTextRef.current = input;
 
     setIsGenerating(true);
+    isGeneratingRef.current = true;
 
-    // 发送后不要自动跟随（让历史被顶上去）
+    // 发送后暂时关闭自动跟随（新问题顶到视口顶部）
     autoFollowDisabledRef.current = true;
     userInteractingRef.current = true;
+    followOnGenerateRef.current = false;
 
     // 基于当前长度计算“用户消息”的索引位置
     const baseLen = appHelper.getLength(messagesRef.current) ?? 0;
@@ -743,7 +633,6 @@ const Chat = () => {
       byProgrammaticRef.current = false;
     });
 
-    afterRenderScrollRef.current = "none";
     setShowJump(true);
 
     // 模型提供商
@@ -770,7 +659,6 @@ const Chat = () => {
           modelName: currentModel,
           modelProvider: currentModelProvider,
           assistantMessageId: assistant_message_id,
-          // 根据 UI 开关，服务端可选启用联网/深度思考
           isOnline: isOnline,
           isDeepThink: isDeepThink,
         },
@@ -778,6 +666,7 @@ const Chat = () => {
       );
     } catch (err) {
       setIsGenerating(false);
+      isGeneratingRef.current = false;
       console.error("请求失败:", err);
       return;
     }
@@ -785,6 +674,7 @@ const Chat = () => {
     const reader = result?.response?.body?.getReader?.();
     if (!reader) {
       setIsGenerating(false);
+      isGeneratingRef.current = false;
       console.error("流读取器不可用");
       return;
     }
@@ -839,6 +729,7 @@ const Chat = () => {
         console.error("请求发生错误:", e);
       }
       setIsGenerating(false);
+      isGeneratingRef.current = false;
     }
   }, [
     input,
@@ -846,34 +737,42 @@ const Chat = () => {
     models,
     isGenerating,
     stopSend,
-    appendToAssistantField,
-    getLatestAssistantText,
-    handlers,
-    handleUnknown,
     resetSections,
     isOnline,
     isDeepThink,
+    handlers,
+    handleUnknown,
   ]);
 
-  // 跳到底部（恢复自动跟随 + 关闭按钮）
-  const jumpToBottomNow = useCallback(async () => {
-    suppress(800);
-
-    const lastIdx = appHelper.getLength(messagesRef.current) - 1;
-    virtuosoRef.current?.scrollToIndex({
-      index: Math.max(0, lastIdx),
-      align: "end",
-      behavior: "auto",
-    });
+  // 点击“滚动到底”：
+  // 1. 立即滚到最底
+  // 2. 打开 followOnGenerateRef：后续生成时持续跟随到底，直到用户再手动滚动
+  const jumpToBottomNow = useCallback(() => {
+    const el = scrollerElRef.current;
+    if (!el) return;
 
     autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
+    followOnGenerateRef.current = true;
 
-    // 点击“滚动到底”时，如果此时在生成或之后开始生成，都会进入丝滑跟随
-    startFollowSession();
+    suppress();
 
-    setShowJump(false);
-  }, [startFollowSession]);
+    byProgrammaticRef.current = true;
+    const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
+    try {
+      el.scrollTo({
+        top: maxTop,
+        behavior: isMac ? "auto" : "smooth",
+      });
+    } catch {
+      el.scrollTop = maxTop;
+    }
+    requestAnimationFrame(() => {
+      byProgrammaticRef.current = false;
+      atBottomRef.current = true;
+      setShowJump(false);
+    });
+  }, [isMac]);
 
   // region 问题导航定位（禁用自动跟随）
   const scrollToQuestionPtr = useCallback(
@@ -882,10 +781,9 @@ const Chat = () => {
       const itemIndex = questionIndices[qIdx];
       if (itemIndex == null) return;
 
-      stopFollowSession();
-
       autoFollowDisabledRef.current = true;
       userInteractingRef.current = true;
+      followOnGenerateRef.current = false;
 
       byProgrammaticRef.current = true;
       virtuosoRef.current?.scrollToIndex({
@@ -899,7 +797,7 @@ const Chat = () => {
 
       setShowJump(true);
     },
-    [questionIndices, stopFollowSession],
+    [questionIndices],
   );
 
   const goPrevQuestion = useCallback(() => {
@@ -939,30 +837,14 @@ const Chat = () => {
           components={{
             Scroller,
           }}
-          // 关键：完全关闭 Virtuoso 的 followOutput，由我们自己的 followSession 控制滚动
+          // 完全关闭 Virtuoso 的 followOutput，由我们自己的逻辑控制（轻量自动跟随）
           followOutput={false}
           scrollSeekConfiguration={{
             enter: (v) => Math.abs(v) > 1400,
             exit: (v) => Math.abs(v) < 900,
           }}
-          atBottomStateChange={() => {
-            if (byProgrammaticRef.current || inSuppressWindow()) return;
-
-            // === 自动跟随会话时忽略底部状态回调，防止形成闭环 ===
-            if (isFollowActive()) {
-              atBottomRef.current = true;
-              userInteractingRef.current = false;
-              setShowJump(false);
-              return;
-            }
-
-            const at = isReallyAtBottom();
-            atBottomRef.current = at;
-            if (at) userInteractingRef.current = false;
-            const el = scrollerElRef.current;
-            const overflow = !!el && el.scrollHeight - el.clientHeight > 1;
-            setShowJump(overflow && !at);
-          }}
+          // 按钮显隐统一用自定义 Scroller 控制，这里不再改 showJump，避免竞态
+          atBottomStateChange={() => {}}
           itemContent={(_, msg) => (
             <MessageItem key={msg.id} msg={msg} theme={theme} />
           )}
@@ -970,7 +852,7 @@ const Chat = () => {
 
         {/* 底部"跳至最新" */}
         <Transition
-          mounted={showJump && !inSuppressWindow()}
+          mounted={showJump}
           transition="pop"
           duration={100}
           timingFunction="ease-out"
@@ -1080,9 +962,6 @@ const Chat = () => {
   const getConversationMessages = async (conversationId) => {
     if (conversationId === currentConversationIdRef.current) return;
 
-    // 切换会话前，停止任何跟随会话
-    stopFollowSession();
-
     currentConversationIdRef.current = conversationId;
     setIsLoadingMessages(true);
     const response = await appHelper.apiPost("/conversation/find-messages", {
@@ -1091,13 +970,12 @@ const Chat = () => {
     setIsLoadingMessages(false);
     if (!response.ok) return;
 
-    // 切换会话：进入抑制窗口 + 标记程序滚动
-    suppress(800);
-    byProgrammaticRef.current = true;
-    userInteractingRef.current = false;
     autoFollowDisabledRef.current = false;
+    userInteractingRef.current = false;
     atBottomRef.current = true;
     setShowJump(false);
+    byProgrammaticRef.current = true;
+    followOnGenerateRef.current = false;
 
     // 兼容旧数据：补齐 thinking 字段
     const withThinking = (response.data || []).map((m) =>
@@ -1108,7 +986,7 @@ const Chat = () => {
 
     setMessages(withThinking);
 
-    // 不使用 afterRenderScrollRef，直接手动滚动
+    // 手动滚到最底部，多次兜底，避免虚拟化高度变化导致偏差
     setTimeout(() => {
       const lastIdx = Math.max(0, appHelper.getLength(withThinking) - 1);
 
@@ -1196,7 +1074,6 @@ const Chat = () => {
       </Card>
 
       <Stack h="100%" flex={1} align="center" justify="flex-start" mih={0}>
-        {/* 阶段分区面板：展示搜索/本地检索/RAG 等 */}
         {appHelper.getLength(messages) === 0 ? (
           <Stack pos="absolute" top="20%" align="center">
             {isLoadingMessages ? (
@@ -1253,12 +1130,10 @@ const MessageItem = React.memo(
           wrap="nowrap"
           w={"100%"}
           gap={"xs"}
-          // 根据 isUser 切换行方向
           style={{
             flexDirection: isUser ? "row-reverse" : "row",
           }}
         >
-          {/* 头像：左右通过 row-reverse 自动换位，无需两段条件渲染 */}
           <Avatar
             variant="light"
             color={isUser ? theme.colors.blue[7] : theme.colors.violet[7]}
@@ -1266,14 +1141,12 @@ const MessageItem = React.memo(
             {isUser ? "AD" : "BI"}
           </Avatar>
 
-          {/* 消息容器（纵向） */}
           <Stack
             gap="xs"
             miw="20%"
             maw="80%"
             align={isUser ? "flex-end" : "flex-start"}
           >
-            {/* 助手思考块：仅助手且靠左 */}
             {!isUser && thinkingString && (
               <Paper
                 p="xs"
@@ -1323,7 +1196,6 @@ const MessageItem = React.memo(
               </Paper>
             )}
 
-            {/* 主消息气泡：用户靠右、助手靠左 */}
             <Paper
               p={isUser ? "xs" : 4}
               radius="md"
@@ -1346,7 +1218,6 @@ const MessageItem = React.memo(
               )}
             </Paper>
 
-            {/* 工具条：跟随消息侧 */}
             <Group
               justify={isUser ? "flex-end" : "flex-start"}
               className={classes.messageTools}
@@ -1470,18 +1341,19 @@ const ChatInput = React.memo(function ChatInput({
                   onChange={setCurrentModel}
                   value={currentModel}
                 />
-                {/*<Button*/}
-                {/*  variant={isOnline ? "light" : "subtle"}*/}
-                {/*  color={isOnline ? theme.colors.blue[7] : theme.colors.gray[7]}*/}
-                {/*  onClick={() => setIsOnline((v) => !v)}*/}
-                {/*  leftSection={<Globe size={16} />}*/}
-                {/*  radius={"xl"}*/}
-                {/*  size="xs"*/}
-                {/*>*/}
-                {/*  <Text size="xs" fw="bold">*/}
-                {/*    联网搜索*/}
-                {/*  </Text>*/}
-                {/*</Button>*/}
+                {/* 如需开启联网搜索，解开下面注释 */}
+                {/*<Button
+                  variant={isOnline ? "light" : "subtle"}
+                  color={isOnline ? theme.colors.blue[7] : theme.colors.gray[7]}
+                  onClick={() => setIsOnline((v) => !v)}
+                  leftSection={<Globe size={16} />}
+                  radius={"xl"}
+                  size="xs"
+                >
+                  <Text size="xs" fw="bold">
+                    联网搜索
+                  </Text>
+                </Button>*/}
                 <Button
                   variant={isDeepThink ? "light" : "subtle"}
                   color={
