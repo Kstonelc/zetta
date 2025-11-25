@@ -1060,11 +1060,7 @@ const Chat = () => {
                     color={active ? theme.white : theme.colors.gray[8]}
                     bg={active ? theme.colors.blue[6] : ""}
                   >
-                    <Text size={"xs"}>
-                      {item.name && appHelper.getLength(item.name) > 8
-                        ? item.name.slice(0, 9) + "..."
-                        : item.name}
-                    </Text>
+                    <Text size={"xs"}>{item?.name}</Text>
                   </Menu.Item>
                 );
               })}
