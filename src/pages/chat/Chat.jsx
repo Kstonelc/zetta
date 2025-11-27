@@ -177,7 +177,7 @@ const Chat = () => {
   const byProgrammaticRef = useRef(false);
   // 自动跟随禁用开关：用户主动滚动离开底部后关闭
   const autoFollowDisabledRef = useRef(false);
-  // 点击“滚动到底”后开启：“生成时跟随到底”
+  // 点击“滚动到底”或发起新一轮后开启：“生成时跟随到底”
   const followOnGenerateRef = useRef(false);
 
   // 抑制窗口：程序滚动后的短时间内忽略 onScroll 对 UI 状态的修改，防止按钮闪烁/抖动
@@ -235,9 +235,8 @@ const Chat = () => {
   }, []);
 
   /**
-   * 生成中每次 token 追加时调用：
-   * - 如果当前本来就在底部，或者用户之前点击过“滚动到底”（followOnGenerateRef = true）
-   *   就滚动到底；
+   * 生成中或“滚动到底”时调用：
+   * - 如果当前本来就在底部，或者 followOnGenerateRef = true 就滚动到底；
    * - 否则什么都不做，不打扰看历史。
    *
    * 同时：只有当“离底部有明显距离 diff > BOTTOM_EPS”时才真正 scrollTo，
@@ -391,13 +390,13 @@ const Chat = () => {
         };
 
         const markUserInteracting = (ev) => {
+          // 导航/程序滚动 & 抑制窗口内：直接忽略
           if (byProgrammaticRef.current || inSuppressWindow()) return;
 
-          const el = scrollerElRef.current;
           const at = isAtBottomNow();
 
-          // 关键：Mac 触控板在“已经在底部”时继续往下滑（deltaY > 0），
-          // 我们直接忽略，不把它当成“离开底部”的交互，避免状态来回抖动。
+          // Mac 触控板在“已经在底部”时继续往下滑（deltaY > 0），
+          // 直接忽略，避免状态来回抖动。
           if (at && ev?.type === "wheel" && typeof ev.deltaY === "number") {
             if (ev.deltaY > 0) {
               return;
@@ -407,7 +406,8 @@ const Chat = () => {
           if (!at) {
             userInteractingRef.current = true;
             autoFollowDisabledRef.current = true;
-            followOnGenerateRef.current = false; // 手动滚动后，不再跟随生成
+            // 手动滚动后，不再跟随生成
+            followOnGenerateRef.current = false;
           }
         };
 
@@ -432,7 +432,19 @@ const Chat = () => {
               const el = scrollerElRef.current;
               if (!el) return;
 
+              // 导航/程序滚动 + 抑制窗口：不更新状态，防止“上下跳”
               if (byProgrammaticRef.current || inSuppressWindow()) return;
+
+              // 生成中 + 跟随开启 + 用户没交互：认为在底部，避免按钮闪烁
+              if (
+                isGeneratingRef.current &&
+                followOnGenerateRef.current &&
+                !userInteractingRef.current
+              ) {
+                atBottomRef.current = true;
+                setShowJump(false);
+                return;
+              }
 
               const at = isAtBottomNow();
               atBottomRef.current = at;
@@ -571,7 +583,7 @@ const Chat = () => {
     latestAssistantTextRef.current = getLatestAssistantText();
   }, [getLatestAssistantText]);
 
-  // 发送：顺序追加 + “新问题”顶到可视区顶部
+  // 发送：顺序追加 + 默认跟随到底（只“贴底”，不额外把消息顶上去）
   const handleSend = useCallback(async () => {
     latestAssistantTextRef.current = "";
 
@@ -589,13 +601,10 @@ const Chat = () => {
     setIsGenerating(true);
     isGeneratingRef.current = true;
 
-    // 发送后暂时关闭自动跟随（新问题顶到视口顶部）
-    autoFollowDisabledRef.current = true;
-    userInteractingRef.current = true;
-    followOnGenerateRef.current = false;
-
-    // 基于当前长度计算“用户消息”的索引位置
-    const baseLen = appHelper.getLength(messagesRef.current) ?? 0;
+    // 新问题：默认开启自动跟随
+    autoFollowDisabledRef.current = false;
+    userInteractingRef.current = false;
+    followOnGenerateRef.current = true;
 
     // 组装消息
     const userMsgId = genId("user");
@@ -614,26 +623,21 @@ const Chat = () => {
     currentAssistantIdRef.current = assistantId;
     assistantTextMapRef.current.set(assistantId, "");
 
-    // 立刻把消息刷入，随后滚动
+    // 立刻把消息刷入
     flushSync(() => {
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
     });
 
     setInput("");
 
-    // 把“新问题”顶到可视区顶部
+    // 保持“贴底”，通常能同时看到问题和生成内容的起始部分
     byProgrammaticRef.current = true;
-    const userIndex = baseLen; // 新用户消息的实际索引
-    virtuosoRef.current?.scrollToIndex({
-      index: userIndex,
-      align: "start",
-      behavior: "auto",
-    });
+    scrollToBottomIfNeeded();
     requestAnimationFrame(() => {
       byProgrammaticRef.current = false;
+      atBottomRef.current = true;
+      setShowJump(false);
     });
-
-    setShowJump(true);
 
     // 模型提供商
     let currentModelProvider;
@@ -742,60 +746,48 @@ const Chat = () => {
     isDeepThink,
     handlers,
     handleUnknown,
+    scrollToBottomIfNeeded,
   ]);
 
-  // 点击“滚动到底”：
-  // 1. 立即滚到最底
-  // 2. 打开 followOnGenerateRef：后续生成时持续跟随到底，直到用户再手动滚动
+  // 点击“滚动到底”：开启跟随，使用统一逻辑滚动
   const jumpToBottomNow = useCallback(() => {
-    const el = scrollerElRef.current;
-    if (!el) return;
-
     autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
     followOnGenerateRef.current = true;
 
-    suppress();
-
-    byProgrammaticRef.current = true;
-    const maxTop = Math.max(0, el.scrollHeight - el.clientHeight);
-    try {
-      el.scrollTo({
-        top: maxTop,
-        behavior: isMac ? "auto" : "smooth",
-      });
-    } catch {
-      el.scrollTop = maxTop;
-    }
-    requestAnimationFrame(() => {
-      byProgrammaticRef.current = false;
-      atBottomRef.current = true;
-      setShowJump(false);
-    });
-  }, [isMac]);
+    scrollToBottomIfNeeded();
+  }, [scrollToBottomIfNeeded]);
 
   // region 问题导航定位（禁用自动跟随）
   const scrollToQuestionPtr = useCallback(
-    (qIdx, behavior = "smooth") => {
+    (qIdx, behavior = "auto") => {
       if (qIdx < 0 || qIdx >= appHelper.getLength(questionIndices)) return;
       const itemIndex = questionIndices[qIdx];
       if (itemIndex == null) return;
 
+      // 导航操作视为“主动浏览”，关闭自动跟随
       autoFollowDisabledRef.current = true;
       userInteractingRef.current = true;
       followOnGenerateRef.current = false;
 
+      // 导航滚动期间，屏蔽 onScroll 的状态更新，防抖动
+      suppress();
       byProgrammaticRef.current = true;
-      virtuosoRef.current?.scrollToIndex({
-        index: itemIndex,
-        align: "start",
-        behavior,
-      });
-      setTimeout(() => {
-        byProgrammaticRef.current = false;
-      }, 120);
 
-      setShowJump(true);
+      requestAnimationFrame(() => {
+        virtuosoRef.current?.scrollToIndex({
+          index: itemIndex,
+          align: "start",
+          behavior, // 使用 auto，避免 smooth 与虚拟化高度变动叠加抖动
+        });
+
+        // 延长一点点保护时间，让列表高度稳定下来
+        setTimeout(() => {
+          byProgrammaticRef.current = false;
+        }, 160);
+      });
+
+      // 不再手动 setShowJump，让 onScroll 根据是否在底部统一控制
     },
     [questionIndices],
   );
@@ -837,13 +829,11 @@ const Chat = () => {
           components={{
             Scroller,
           }}
-          // 完全关闭 Virtuoso 的 followOutput，由我们自己的逻辑控制（轻量自动跟随）
           followOutput={false}
           scrollSeekConfiguration={{
             enter: (v) => Math.abs(v) > 1400,
             exit: (v) => Math.abs(v) < 900,
           }}
-          // 按钮显隐统一用自定义 Scroller 控制，这里不再改 showJump，避免竞态
           atBottomStateChange={() => {}}
           itemContent={(_, msg) => (
             <MessageItem key={msg.id} msg={msg} theme={theme} />
@@ -1125,6 +1115,7 @@ const MessageItem = React.memo(
           align="flex-start"
           wrap="nowrap"
           w={"100%"}
+          h={"100%"}
           gap={"xs"}
           style={{
             flexDirection: isUser ? "row-reverse" : "row",
@@ -1161,7 +1152,7 @@ const MessageItem = React.memo(
                   align="center"
                   justify="space-between"
                   wrap="nowrap"
-                  mih={24}
+                  h={24}
                 >
                   <Group gap={6} align="center" wrap="nowrap" miw={0}>
                     <Badge variant="light" color="grape" size="xs">
