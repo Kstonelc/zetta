@@ -19,6 +19,7 @@ import {
   FileText,
   FolderCog,
   FilePlus2,
+  Target,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import WikiIcon from "/wiki.svg";
@@ -44,6 +45,11 @@ const WikiSideBar = ({ wikiId }) => {
       icon: <FolderCog size={16} />,
       label: "设置",
       path: `/wiki/detail/${wikiId}/settings`,
+    },
+    {
+      icon: <Target size={16} />,
+      label: "命中测试",
+      path: `/wiki/detail/${wikiId}/target-test`,
     },
   ];
 

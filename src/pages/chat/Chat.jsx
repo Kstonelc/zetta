@@ -848,17 +848,17 @@ const Chat = () => {
           timingFunction="ease-out"
         >
           {(styles) => (
-            <div style={styles} className={classes.agentJumpLatest}>
-              <ActionIcon
-                variant="default"
-                onClick={jumpToBottomNow}
-                size="xl"
-                radius="xl"
-                aria-label="跳至最新"
-              >
-                <ArrowDown />
-              </ActionIcon>
-            </div>
+            <ActionIcon
+              style={styles}
+              className={classes.agentJumpLatest}
+              variant="default"
+              onClick={jumpToBottomNow}
+              size="xl"
+              radius="xl"
+              aria-label="跳至最新"
+            >
+              <ArrowDown />
+            </ActionIcon>
           )}
         </Transition>
 
@@ -1210,10 +1210,7 @@ const MessageItem = React.memo(
               className={classes.messageTools}
               w={"100%"}
             >
-              <Tooltip
-                label={clipboard.copied ? "已复制" : "复制答案"}
-                withArrow
-              >
+              <Tooltip label={clipboard.copied ? "已复制" : "复制"} withArrow>
                 <ActionIcon
                   variant="subtle"
                   size="sm"

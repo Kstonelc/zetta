@@ -55,6 +55,7 @@ const theme = createTheme({
         radius: "md",
         variant: "filled",
         autoComplete: "new-password",
+        labelProps: { mb: 8 },
       },
     }),
     Input: Input.extend({
@@ -75,6 +76,7 @@ const theme = createTheme({
         variant: "filled",
         autosize: true,
         minRows: 3,
+        labelProps: { mb: 8 },
       },
     }),
     TagsInput: TagsInput.extend({

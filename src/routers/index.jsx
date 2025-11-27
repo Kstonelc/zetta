@@ -15,6 +15,7 @@ import {
   UserActivate,
   ApplicationHome,
   WikiDocumentCreate,
+  WikiSettings,
 } from "../pages";
 
 const AuthGuard = ({ children }) => {
@@ -65,7 +66,7 @@ const Router = createBrowserRouter([
           },
           {
             path: "settings",
-            element: <WikiDetailEdit />,
+            element: <WikiSettings />,
           },
         ],
       },
