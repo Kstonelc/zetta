@@ -10,12 +10,12 @@ import {
   UserForgotPassword,
   WikiDetail,
   WikiCreate,
-  WikiDetailEdit,
   NotFound,
   UserActivate,
   ApplicationHome,
   WikiDocumentCreate,
   WikiSettings,
+  WikiRecallTest,
 } from "../pages";
 
 const AuthGuard = ({ children }) => {
@@ -67,6 +67,10 @@ const Router = createBrowserRouter([
           {
             path: "settings",
             element: <WikiSettings />,
+          },
+          {
+            path: "recall-test",
+            element: <WikiRecallTest />,
           },
         ],
       },

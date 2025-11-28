@@ -31,8 +31,8 @@ import { ColorScheme } from "@/enum.js";
 import "./index.css";
 
 const theme = createTheme({
-  fontFamily:
-    'g SC", "Hiragino Sans GB", "Microsoft Yahei UI", "Microsoft Yahei", "Source Han Sans CN", sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", "Apple Color Emoji", "Twemoji Mozilla", "Noto Color Emoji", "Android Emoji',
+  fontFamily: `Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+             "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif`,
   components: {
     Stack: Stack.extend({
       defaultProps: {

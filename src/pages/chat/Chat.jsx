@@ -1050,7 +1050,7 @@ const Chat = () => {
                     color={active ? theme.white : theme.colors.gray[8]}
                     bg={active ? theme.colors.blue[6] : ""}
                   >
-                    <Text size={"xs"}>{item?.name}</Text>
+                    <Text size={"xs"}>{item?.name.slice(0, 20) + "..."}</Text>
                   </Menu.Item>
                 );
               })}

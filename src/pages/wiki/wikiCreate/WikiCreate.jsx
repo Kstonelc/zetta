@@ -56,7 +56,7 @@ import LocalFile from "/assets/wiki/local-file.png";
 import MarkDown from "/markdown.png";
 import Pdf from "/pdf.png";
 import Chrome from "/chrome.png";
-import InBox from "/inbox.svg";
+import FileUpload from "/file-upload.svg";
 import { useNotify } from "@/utils/notify.js";
 import { useUserStore } from "@/stores/useUserStore.js";
 import WikiChunkPreview from "./WikiChunkPreview";
@@ -686,7 +686,7 @@ const WikiCreate = () => {
               maw={600}
             >
               <Group justify="center" gap="xl" mih={150}>
-                <Image src={InBox} w={50} h={50} />
+                <Image src={FileUpload} w={100} h={50} />
                 <div>
                   <Text inline mb={"sm"}>
                     拖拽或点击文件上传

@@ -9,6 +9,7 @@ import {
   ScrollArea,
   Paper,
   Badge,
+  Menu,
   Loader,
   useMantineTheme,
   Input,
@@ -23,6 +24,8 @@ import {
   CircleCheckBig,
   CircleX,
   Search,
+  FileText,
+  FolderOpenDot,
 } from "lucide-react";
 import { Table } from "@/components/index.js";
 
@@ -47,9 +50,9 @@ const WikiDetail = () => {
       textAlign: "center",
       width: 300,
       render: ({ title }) => (
-        <Group justify={"center"} gap={"xs"}>
+        <Group justify={"center"} gap={"xs"} wrap={"noWrap"}>
           {renderFileIcon(appHelper.getFileExt(title))}
-          <Text size={"xs"}>{title}</Text>
+          <Text size={"sm"}>{title}</Text>
         </Group>
       ),
     },
@@ -59,7 +62,7 @@ const WikiDetail = () => {
       textAlign: "center",
       width: 50,
       render: ({ size }) => (
-        <Text size={"xs"}>{appHelper.getFileSize(size)}</Text>
+        <Text size={"sm"}>{appHelper.getFileSize(size)}</Text>
       ),
     },
     {
@@ -94,7 +97,7 @@ const WikiDetail = () => {
       title: "上传时间",
       textAlign: "center",
       render: ({ created_at }) => (
-        <Text size={"xs"}>
+        <Text size={"sm"}>
           {appHelper.formatDate(created_at, "YYYY-MM-DD HH:mm:ss")}
         </Text>
       ),
@@ -103,7 +106,7 @@ const WikiDetail = () => {
       accessor: "option",
       title: "操作",
       textAlign: "center",
-      width: 100,
+      width: 200,
       render: () => (
         <Group gap={"0"} justify={"center"}>
           <ActionIcon variant={"transparent"}>
@@ -207,14 +210,31 @@ const WikiDetail = () => {
           placeholder={"文件名"}
           leftSection={<Search size={16} />}
         />
-        <Button
-          leftSection={<FolderUp size={16} />}
-          onClick={() => {
-            nav(`/wiki/detail/${wikiId}/docs/create`);
-          }}
-        >
-          导入文档
-        </Button>
+        <Menu>
+          <Menu.Target>
+            <Button
+              leftSection={<FolderUp size={16} />}
+              // nav(`/wiki/detail/${wikiId}/docs/create`);
+            >
+              新建/导入
+            </Button>
+          </Menu.Target>
+
+          <Menu.Dropdown>
+            <Menu.Item
+              leftSection={
+                <FolderOpenDot size={18} color={theme.colors.yellow[7]} />
+              }
+            >
+              文件夹
+            </Menu.Item>
+            <Menu.Item
+              leftSection={<FileText size={18} color={theme.colors.blue[7]} />}
+            >
+              本地文件
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
       </Group>
 
       <Stack flex={5} px={"md"} mih={0}>

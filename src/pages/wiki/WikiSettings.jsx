@@ -8,7 +8,7 @@ import {
   Group,
   useMantineTheme,
 } from "@mantine/core";
-import { Cog } from "lucide-react";
+import { Cog, TextQuote } from "lucide-react";
 import React from "react";
 
 const WikiSettings = () => {
@@ -36,7 +36,7 @@ const WikiSettings = () => {
         <Text fw={"bold"} size={"sm"}>
           分段模式
         </Text>
-        <Card withBorder>
+        <Card withBorder p={"xs"}>
           <Group>
             <Cog w={20} h={20} color={theme.colors.violet[6]} />
             <Stack gap={0}>
@@ -45,6 +45,19 @@ const WikiSettings = () => {
               </Text>
               <Text size={"xs"} c={"dimmed"}>
                 常规按照固定大小分段, 可配置分段大小和重叠大小
+              </Text>
+            </Stack>
+          </Group>
+        </Card>
+        <Card withBorder p={"xs"}>
+          <Group>
+            <TextQuote w={20} h={20} color={theme.colors.yellow[6]} />
+            <Stack gap={0}>
+              <Text size={"sm"} fw={"bold"}>
+                父子模式
+              </Text>
+              <Text size={"xs"} c={"dimmed"}>
+                基于文档的层级结构进行分段, 保持内容的完整性
               </Text>
             </Stack>
           </Group>

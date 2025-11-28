@@ -4,6 +4,7 @@ export * from "./wiki/wikiCreate/WikiCreate";
 export * from "./wiki/detail/WikiDetailEdit";
 export * from "./wiki/detail/WikiDocumentCreate";
 export * from "./wiki/WikiSettings";
+export * from "./wiki/WikiRecallTest";
 export * from "./wiki/WikiHomeCard";
 export * from "./chat/Chat.jsx";
 export * from "./settings/UserSettings";

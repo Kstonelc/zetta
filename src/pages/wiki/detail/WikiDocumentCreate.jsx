@@ -26,7 +26,7 @@ import {
   TextQuote,
   Trash2,
 } from "lucide-react";
-import InBox from "/inbox.svg";
+import FileUpload from "/file-upload.svg";
 import { useNavigate } from "react-router-dom";
 import React, { useRef, useState } from "react";
 import { useNotify } from "@/utils/notify.js";
@@ -199,7 +199,7 @@ const WikiDocumentCreate = () => {
             maw={600}
           >
             <Group justify="center" gap="xl" mih={150}>
-              <Image src={InBox} w={50} h={50} />
+              <Image src={FileUpload} w={100} h={50} />
               <div>
                 <Text inline mb={"sm"}>
                   拖拽或点击文件上传

@@ -49,7 +49,7 @@ const WikiSideBar = ({ wikiId }) => {
     {
       icon: <Target size={16} />,
       label: "命中测试",
-      path: `/wiki/detail/${wikiId}/target-test`,
+      path: `/wiki/detail/${wikiId}/recall-test`,
     },
   ];
 
