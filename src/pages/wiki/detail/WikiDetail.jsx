@@ -11,6 +11,8 @@ import {
   Badge,
   Menu,
   Loader,
+  Anchor,
+  Breadcrumbs,
   useMantineTheme,
   Input,
   Image,
@@ -26,7 +28,10 @@ import {
   Search,
   FileText,
   FolderOpenDot,
+  ChevronRight,
 } from "lucide-react";
+import Folder from "/folder.png";
+import LocalFile from "/local-file.png";
 import { Table } from "@/components/index.js";
 
 import QWen from "/assets/models/qwen.svg";
@@ -199,42 +204,63 @@ const WikiDetail = () => {
     );
   };
 
+  // 定一个属性结构 后端返回
+  const items = [
+    { title: "根目录", href: "#" },
+    { title: "react native", href: "#" },
+    { title: "base", href: "#" },
+  ].map((item, index) => (
+    <Anchor href={item.href} key={index} underline={"never"}>
+      <Button
+        c={theme.colors.gray[7]}
+        fw={"bold"}
+        size={"xs"}
+        variant={"subtle"}
+      >
+        {item.title}
+      </Button>
+    </Anchor>
+  ));
+
   // endregion
 
   return (
     <Stack flex={1} h={"calc(100vh - 120px)"}>
       <Title order={3}>文档</Title>
       <Group justify={"space-between"}>
-        <Input
-          size={"xs"}
-          placeholder={"文件名"}
-          leftSection={<Search size={16} />}
-        />
-        <Menu>
-          <Menu.Target>
-            <Button
-              leftSection={<FolderUp size={16} />}
-              // nav(`/wiki/detail/${wikiId}/docs/create`);
-            >
-              新建/导入
-            </Button>
-          </Menu.Target>
+        <Breadcrumbs
+          separator={<ChevronRight size={16} />}
+          separatorMargin="0"
+          mt="xs"
+        >
+          {items}
+        </Breadcrumbs>
+        <Group>
+          <Input
+            size={"xs"}
+            placeholder={"文件名"}
+            leftSection={<Search size={16} />}
+          />
+          <Menu>
+            <Menu.Target>
+              <Button leftSection={<FolderUp size={16} />}>新建/导入</Button>
+            </Menu.Target>
 
-          <Menu.Dropdown>
-            <Menu.Item
-              leftSection={
-                <FolderOpenDot size={18} color={theme.colors.yellow[7]} />
-              }
-            >
-              文件夹
-            </Menu.Item>
-            <Menu.Item
-              leftSection={<FileText size={18} color={theme.colors.blue[7]} />}
-            >
-              本地文件
-            </Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
+            <Menu.Dropdown>
+              <Menu.Item leftSection={<Image src={Folder} w={20} h={20} />}>
+                文件夹
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<Image src={LocalFile} w={14} h={20} />}
+                onClick={() => {
+                  nav(`/wiki/detail/${wikiId}/docs/create`);
+                }}
+              >
+                本地文件
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </Group>
 
       <Stack flex={5} px={"md"} mih={0}>

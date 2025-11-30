@@ -42,7 +42,7 @@
 .agentChatWrap {
   position: relative;
   width: 90%;
-  height: 66vh;
+  height: 70vh;
   min-height: 0;
 }
 
@@ -50,6 +50,7 @@
 .agentJumpLatest {
   position: absolute;
   left: 50%;
+  bottom: 8px;
   z-index: 9;
 }
 

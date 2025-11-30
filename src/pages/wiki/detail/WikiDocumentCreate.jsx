@@ -27,11 +27,11 @@ import {
   Trash2,
 } from "lucide-react";
 import FileUpload from "/file-upload.svg";
-import { useNavigate } from "react-router-dom";
-import React, { useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
 import { useNotify } from "@/utils/notify.js";
 import appHelper from "@/AppHelper.js";
-import { FileType, WikiChunkType } from "@/enum.js";
+import { FileType, ModelType, WikiChunkType } from "@/enum.js";
 import classes from "@/pages/wiki/wikiCreate/WikiCreate.module.scss";
 import { Loading, Select } from "@/components/index.js";
 import WikiChunkPreview from "@/pages/wiki/wikiCreate/WikiChunkPreview.jsx";
@@ -39,6 +39,7 @@ import WikiChunkPreview from "@/pages/wiki/wikiCreate/WikiChunkPreview.jsx";
 const WikiDocumentCreate = () => {
   const nav = useNavigate();
   const { notify } = useNotify();
+  const { wikiId } = useParams();
   const theme = useMantineTheme();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -46,13 +47,52 @@ const WikiDocumentCreate = () => {
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const currentUploadedFilesRef = useRef([]);
+  const currentWikiChunkTypeRef = useRef(null);
+  const parentChunkSizeRef = useRef(1000);
+  const parentChunkOverlapRef = useRef(100);
+  const childChunkSizeRef = useRef(200);
+  const childChunkOverlapRef = useRef(50);
+  const defaultEmbeddingModelRef = useRef("");
+  const defaultRerankModelRef = useRef("");
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 3 ? current + 1 : current));
   const prevStep = () =>
     setCurrentStep((current) => (current > 0 ? current - 1 : current));
 
+  // region 初始化
+
+  useEffect(() => {
+    initialize();
+    return () => {
+      destroy();
+    };
+  }, []);
+
+  const initialize = async () => {
+    await getWikiInfo();
+  };
+
+  const destroy = async () => {};
+
+  // endregion
+
   // region 方法
+  const getWikiInfo = async () => {
+    const response = await appHelper.apiPost("/wiki/find-wiki", {
+      wikiId: wikiId,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
+    currentWikiChunkTypeRef.current = response.data.chunk_type;
+    defaultEmbeddingModelRef.current = response.data.embedding_model;
+  };
+
   const onUploadFile = async (files) => {
     const fileMap = new Map();
     for (const file of files) {
@@ -247,15 +287,32 @@ const WikiDocumentCreate = () => {
                     </Group>
                   </Group>
                   <Accordion
-                    defaultValue={WikiChunkType.text[WikiChunkType.Classical]}
+                    defaultValue={
+                      WikiChunkType.text[currentWikiChunkTypeRef.current]
+                    }
                     variant="separated"
-                    onChange={(value) => {}}
+                    onChange={(value) => {
+                      switch (value) {
+                        case WikiChunkType.text[WikiChunkType.Classical]:
+                          currentWikiChunkTypeRef.current =
+                            WikiChunkType.Classical;
+                          break;
+                        case WikiChunkType.text[WikiChunkType.ParentChild]:
+                          currentWikiChunkTypeRef.current =
+                            WikiChunkType.ParentChild;
+                          break;
+                      }
+                    }}
                   >
                     <Accordion.Item
                       value={WikiChunkType.text[WikiChunkType.Classical]}
                     >
                       <Accordion.Control
                         value={WikiChunkType.text[WikiChunkType.Classical]}
+                        disabled={
+                          currentWikiChunkTypeRef.current !==
+                          WikiChunkType.Classical
+                        }
                       >
                         <Group>
                           <Cog w={20} h={20} color={theme.colors.violet[6]} />
@@ -271,13 +328,17 @@ const WikiDocumentCreate = () => {
                         <Group grow mb={"md"}>
                           <NumberInput
                             defaultValue={1024}
-                            onChange={(value) => {}}
+                            onChange={(value) => {
+                              parentChunkSizeRef.current = value;
+                            }}
                             description={"分段预估长度(字符)"}
                           />
                           <NumberInput
                             defaultValue={50}
                             description={"分段重叠长度(字符)"}
-                            onChange={(value) => {}}
+                            onChange={(value) => {
+                              parentChunkOverlapRef.current = value;
+                            }}
                           />
                         </Group>
                       </Accordion.Panel>
@@ -287,6 +348,10 @@ const WikiDocumentCreate = () => {
                     >
                       <Accordion.Control
                         value={WikiChunkType.text[WikiChunkType.ParentChild]}
+                        disabled={
+                          currentWikiChunkTypeRef.current !==
+                          WikiChunkType.ParentChild
+                        }
                       >
                         <Group>
                           <TextQuote
@@ -324,12 +389,16 @@ const WikiDocumentCreate = () => {
                         <Group grow mb={"md"}>
                           <NumberInput
                             defaultValue={400}
-                            onChange={(value) => {}}
+                            onChange={(value) => {
+                              childChunkSizeRef.current = value;
+                            }}
                             description={"子分段预估长度(字符)"}
                           />
                           <NumberInput
                             defaultValue={50}
-                            onChange={(value) => {}}
+                            onChange={(value) => {
+                              childChunkOverlapRef.current = value;
+                            }}
                             description={"子分段重叠长度(字符)"}
                           />
                         </Group>

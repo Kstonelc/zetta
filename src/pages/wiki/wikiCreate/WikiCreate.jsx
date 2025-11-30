@@ -52,7 +52,7 @@ import {
 } from "@/enum.ts";
 import classes from "./WikiCreate.module.scss";
 import appHelper from "@/AppHelper.js";
-import LocalFile from "/assets/wiki/local-file.png";
+import LocalFile from "/local-file.png";
 import MarkDown from "/markdown.png";
 import Pdf from "/pdf.png";
 import Chrome from "/chrome.png";
@@ -263,11 +263,14 @@ const WikiCreate = () => {
   };
 
   const onIndexDocuments = async () => {
-    const filesPath = currentUploadedFilesRef.current.map(
-      (item) => item.filePath,
-    );
+    const filesInfo = currentUploadedFilesRef.current.map((item) => {
+      return {
+        fileSize: item.fileSize,
+        filePath: item.filePath,
+      };
+    });
     const response = await appHelper.apiPost("/wiki/index-document", {
-      filesPath: filesPath,
+      filesInfo: filesInfo,
       wikiId: currentWikiIdRef.current,
       chunkType: currentWikiChunkTypeRef.current,
       parentChunkSize: parentChunkSizeRef.current,
@@ -646,7 +649,7 @@ const WikiCreate = () => {
                 }}
               >
                 <Group gap={"xs"}>
-                  <Image src={LocalFile} w={25} h={25} />
+                  <Image src={LocalFile} w={20} h={25} />
                   <Text size={"sm"}>上传本地文件</Text>
                 </Group>
               </Card>
@@ -1042,7 +1045,13 @@ const WikiCreate = () => {
             </Stack>
           </ScrollArea>
           <Group>
-            <Button leftSection={<Album size={"18"} />} size={"xs"}>
+            <Button
+              leftSection={<Album size={"18"} />}
+              size={"xs"}
+              onClick={() => {
+                nav(`/wiki/detail/${currentWikiIdRef.current}/docs`);
+              }}
+            >
               前往知识库
             </Button>
           </Group>
