@@ -4,7 +4,6 @@ import {
   Group,
   Button,
   Title,
-  Divider,
   Image,
   Card,
   Stepper,
@@ -14,6 +13,9 @@ import {
   Accordion,
   NumberInput,
   Chip,
+  Loader,
+  Progress,
+  Badge,
 } from "@mantine/core";
 import { Dropzone } from "@mantine/dropzone";
 import {
@@ -25,35 +27,53 @@ import {
   ScanEye,
   TextQuote,
   Trash2,
+  ExternalLink,
+  Album,
+  CircleCheck,
+  CircleX,
 } from "lucide-react";
 import FileUpload from "/file-upload.svg";
 import { useNavigate, useParams } from "react-router-dom";
 import React, { useEffect, useRef, useState } from "react";
 import { useNotify } from "@/utils/notify.js";
 import appHelper from "@/AppHelper.js";
-import { FileType, ModelType, WikiChunkType } from "@/enum.js";
+import {
+  DocumentIndexStatus,
+  FileType,
+  ModelType,
+  WikiChunkType,
+} from "@/enum.js";
 import classes from "@/pages/wiki/wikiCreate/WikiCreate.module.scss";
 import { Loading, Select } from "@/components/index.js";
 import WikiChunkPreview from "@/pages/wiki/wikiCreate/WikiChunkPreview.jsx";
+import { useUserStore } from "@/stores/useUserStore.js";
 
 const WikiDocumentCreate = () => {
   const nav = useNavigate();
   const { notify } = useNotify();
+  const { userStore, setUserStore } = useUserStore();
   const { wikiId } = useParams();
   const theme = useMantineTheme();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [embeddingModels, setEmbeddingModels] = useState([]);
+  const [rerankModels, setRerankModels] = useState([]);
+  const [chunks, setChunks] = useState([]);
+  const [isPreviewingChunks, setIsPreviewingChunks] = useState(false);
+  const [documentIndexProgress, setDocumentIndexProgress] = useState(null);
 
+  const currentWikiIdRef = useRef(null);
   const currentUploadedFilesRef = useRef([]);
   const currentWikiChunkTypeRef = useRef(null);
   const parentChunkSizeRef = useRef(1000);
   const parentChunkOverlapRef = useRef(100);
   const childChunkSizeRef = useRef(200);
   const childChunkOverlapRef = useRef(50);
-  const defaultEmbeddingModelRef = useRef("");
-  const defaultRerankModelRef = useRef("");
+  const defaultEmbeddingModelRef = useRef({});
+  const defaultRerankModelRef = useRef({});
+  const autoRefreshIndexProgressTimer = useRef(null);
 
   const nextStep = () =>
     setCurrentStep((current) => (current < 3 ? current + 1 : current));
@@ -70,7 +90,10 @@ const WikiDocumentCreate = () => {
   }, []);
 
   const initialize = async () => {
+    currentWikiIdRef.current = wikiId;
     await getWikiInfo();
+    await getEmbeddingModels();
+    await getRerankModels();
   };
 
   const destroy = async () => {};
@@ -91,6 +114,37 @@ const WikiDocumentCreate = () => {
     }
     currentWikiChunkTypeRef.current = response.data.chunk_type;
     defaultEmbeddingModelRef.current = response.data.embedding_model;
+    defaultRerankModelRef.current = response.data.rerank_model;
+  };
+
+  const getEmbeddingModels = async () => {
+    const response = await appHelper.apiPost("model/find-models", {
+      modelType: ModelType.TextEmbedding,
+      tenantId: userStore.current_tenant.id,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
+    setEmbeddingModels(response.data);
+  };
+
+  const getRerankModels = async () => {
+    const response = await appHelper.apiPost("model/find-models", {
+      modelType: ModelType.ReRank,
+      tenantId: userStore.current_tenant.id,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return;
+    }
+    setRerankModels(response.data);
   };
 
   const onUploadFile = async (files) => {
@@ -129,6 +183,42 @@ const WikiDocumentCreate = () => {
       );
       return prev.filter((item) => item.fileName !== fileName);
     });
+  };
+
+  const onPreviewChunks = async () => {
+    setIsPreviewingChunks(true);
+    const response = await appHelper.apiPost("/wiki/preview-file-chunks", {
+      filePath: uploadedFiles[0].filePath,
+      chunkType: currentWikiChunkTypeRef.current,
+      parentChunkSize: parentChunkSizeRef.current,
+      parentChunkOverlap: parentChunkOverlapRef.current,
+      childChunkSize: childChunkSizeRef.current,
+      childChunkOverlap: childChunkOverlapRef.current,
+    });
+    if (response.ok) {
+      setChunks(response.data);
+      setIsPreviewingChunks(false);
+    }
+    setIsPreviewingChunks(false);
+  };
+
+  const getDocumentIndexProgress = async () => {
+    autoRefreshIndexProgressTimer.current = setInterval(async () => {
+      const filesPath = currentUploadedFilesRef.current.map(
+        (item) => item.filePath,
+      );
+      const response = await appHelper.apiPost(
+        "/wiki/index-document/progress",
+        {
+          wikiId: currentWikiIdRef.current,
+          fileNames: filesPath,
+        },
+      );
+      if (!response.ok) {
+        return;
+      }
+      setDocumentIndexProgress(response.data);
+    }, 2000);
   };
 
   // endregion
@@ -177,11 +267,72 @@ const WikiDocumentCreate = () => {
     }
   };
 
+  const renderIndexStatus = (indexStatus) => {
+    switch (indexStatus) {
+      case DocumentIndexStatus.Processing:
+        return (
+          <Badge
+            variant={"light"}
+            color={theme.colors.blue[5]}
+            leftSection={<Loader size={"10"} />}
+          >
+            {DocumentIndexStatus.text[indexStatus]}
+          </Badge>
+        );
+      case DocumentIndexStatus.Success:
+        return (
+          <Badge
+            variant={"light"}
+            color={theme.colors.green[5]}
+            leftSection={<CircleCheck size={"12"} />}
+          >
+            {DocumentIndexStatus.text[indexStatus]}
+          </Badge>
+        );
+      case DocumentIndexStatus.Failed:
+        return (
+          <Badge
+            variant={"light"}
+            color={theme.colors.red[5]}
+            leftSection={<CircleX size={"10"} />}
+          >
+            {DocumentIndexStatus.text[indexStatus]}
+          </Badge>
+        );
+    }
+  };
+
+  const onIndexDocuments = async () => {
+    const filesInfo = currentUploadedFilesRef.current.map((item) => {
+      return {
+        fileSize: item.fileSize,
+        filePath: item.filePath,
+      };
+    });
+    const response = await appHelper.apiPost("/wiki/index-document", {
+      filesInfo: filesInfo,
+      wikiId: currentWikiIdRef.current,
+      chunkType: currentWikiChunkTypeRef.current,
+      parentChunkSize: parentChunkSizeRef.current,
+      parentChunkOverlap: parentChunkOverlapRef.current,
+      childChunkSize: childChunkSizeRef.current,
+      childChunkOverlap: childChunkOverlapRef.current,
+    });
+    if (!response.ok) {
+      notify({
+        type: "error",
+        message: response.message,
+      });
+      return false;
+    }
+    return true;
+  };
+
   // endregion
 
   return (
     <Stack p={"lg"} flex={1} gap={"xs"}>
-      <Group justify={"space-between"} mb={"0"}>
+      <Group justify={"space-between"} mb={"xs"}>
         <Button
           variant={"light"}
           leftSection={<ArrowLeft size={16} />}
@@ -204,7 +355,6 @@ const WikiDocumentCreate = () => {
           <Stepper.Step label="数据处理" />
         </Stepper>
       </Group>
-      <Divider mb={"xl"}></Divider>
       {currentStep === 1 && (
         <Stack px={"100"}>
           <Title order={4}>上传文档</Title>
@@ -279,7 +429,7 @@ const WikiDocumentCreate = () => {
                     <Group>
                       <Button
                         size={"xs"}
-                        onClick={() => {}}
+                        onClick={onPreviewChunks}
                         leftSection={<Eye size={16} />}
                       >
                         预览
@@ -408,17 +558,38 @@ const WikiDocumentCreate = () => {
                 </Card>
                 <Group gap={"xs"} grow align={"flex-start"}>
                   <Card shadow="xs" mb={"md"}>
-                    <Group gap={"xs"} mb={"md"}>
-                      <ChartScatter
-                        w={16}
-                        h={16}
-                        color={theme.colors.green[6]}
-                      ></ChartScatter>
-                      <Text size={"sm"} fw={"bold"}>
-                        向量化模型
-                      </Text>
+                    <Group mb={"md"} justify={"space-between"}>
+                      <Group gap={"xs"}>
+                        <ChartScatter
+                          w={16}
+                          h={16}
+                          color={theme.colors.green[6]}
+                        ></ChartScatter>
+                        <Text size={"sm"} fw={"bold"}>
+                          向量化模型
+                        </Text>
+                      </Group>
+                      <Button
+                        size={"xs"}
+                        variant={"transparent"}
+                        leftSection={<ExternalLink size={16} />}
+                      >
+                        前往知识库配置
+                      </Button>
                     </Group>
-                    <Select description={"Embedding模型"} defaultValue={""} />
+                    <Select
+                      description={"Embedding模型"}
+                      disabled={true}
+                      placeholder={"请选择Embedding模型"}
+                      defaultValue={defaultEmbeddingModelRef.current.id}
+                      data={embeddingModels.map((model) => {
+                        return {
+                          value: model.id,
+                          label: model.name,
+                          icon: model?.provider.logo,
+                        };
+                      })}
+                    />
                   </Card>
                   <Card shadow="xs">
                     <Group gap={"xs"} mb={"md"}>
@@ -433,8 +604,17 @@ const WikiDocumentCreate = () => {
                     </Group>
                     <Select
                       mb={"sm"}
+                      disabled={true}
                       description={"Rerank模型"}
                       placeholder={"请选择Rerank模型"}
+                      defaultValue={defaultRerankModelRef.current.id}
+                      data={rerankModels.map((model) => {
+                        return {
+                          value: model.id,
+                          label: model.name,
+                          icon: model?.provider.logo,
+                        };
+                      })}
                     />
                     <Group grow>
                       <NumberInput
@@ -456,7 +636,17 @@ const WikiDocumentCreate = () => {
                 <Button variant={"subtle"} onClick={prevStep}>
                   上一步
                 </Button>
-                <Button onClick={async () => {}}>保存并处理</Button>
+                <Button
+                  onClick={async () => {
+                    if (!(await onIndexDocuments())) {
+                      return;
+                    }
+                    nextStep();
+                    getDocumentIndexProgress();
+                  }}
+                >
+                  保存并处理
+                </Button>
               </Group>
             </Stack>
           </Card>
@@ -483,20 +673,91 @@ const WikiDocumentCreate = () => {
                   size={"xs"}
                   checked={true}
                 >
-                  {/*{appHelper.getLength(chunks)}个预览块*/}
+                  {appHelper.getLength(chunks)}个预览块
                 </Chip>
               </Group>
-              {/*<Loading visible={isPreviewingChunks} size={"sm"}>*/}
-              {/*  {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}*/}
-              {/*  <WikiChunkPreview*/}
-              {/*    chunks={chunks}*/}
-              {/*    chunkType={currentWikiChunkTypeRef.current}*/}
-              {/*    theme={theme}*/}
-              {/*  />*/}
-              {/*</Loading>*/}
+              <Loading visible={isPreviewingChunks} size={"sm"}>
+                {appHelper.getLength(chunks) === 0 && <Stack h={"400"}></Stack>}
+                <WikiChunkPreview
+                  chunks={chunks}
+                  chunkType={currentWikiChunkTypeRef.current}
+                  theme={theme}
+                />
+              </Loading>
             </ScrollArea>
           </Card>
         </Group>
+      )}
+      {currentStep === 3 && (
+        <Card withBorder w={"50%"} mt={"xl"}>
+          <Group mb={"xs"}>
+            <Loader type="bars" size={"sm"} />
+            <Title order={4} mb={"4"}>
+              正在为您构建可搜索的知识点
+            </Title>
+          </Group>
+          <Text size={"xs"} c={"dimmed"} mb={"xs"}>
+            文件内容越丰富，处理时间可能越长, 完成后您可以在知识库中搜索到内容
+          </Text>
+          <ScrollArea>
+            <Stack gap={"xs"} mb={"xl"}>
+              {appHelper.getLength(documentIndexProgress) > 0 &&
+                documentIndexProgress.map((item) => {
+                  return (
+                    <Card>
+                      <Group mb={"xs"} justify={"space-between"}>
+                        <Group>
+                          <Image src={"/markdown.png"} w={30} h={30} />
+                          <Stack gap={0}>
+                            <Text size={"sm"} fw={"bold"}>
+                              {item.file_name}
+                            </Text>
+                            <Group gap={"1"}>
+                              <Text size={"xs"} c={"dimmed"}>
+                                {item.processed_chunks}
+                              </Text>
+                              <Text size={"xs"} c={"dimmed"}>
+                                /
+                              </Text>
+                              <Text size={"xs"} c={"dimmed"}>
+                                {item.total_chunks} chunks
+                              </Text>
+                            </Group>
+                          </Stack>
+                        </Group>
+                        {renderIndexStatus(item.status)}
+                      </Group>
+                      <Progress
+                        value={
+                          (item.processed_chunks / item.total_chunks) * 100
+                        }
+                        color={
+                          item.status === DocumentIndexStatus.Success
+                            ? theme.colors.green[6]
+                            : item.status === DocumentIndexStatus.Failed
+                              ? theme.colors.red[6]
+                              : theme.colors.blue[6]
+                        }
+                        size="md"
+                        animated={!item.status === DocumentIndexStatus.Success}
+                      />
+                    </Card>
+                  );
+                })}
+            </Stack>
+          </ScrollArea>
+          <Group>
+            <Button
+              leftSection={<Album size={"18"} />}
+              size={"xs"}
+              onClick={() => {
+                nav(`/wiki/detail/${currentWikiIdRef.current}/docs`);
+              }}
+            >
+              前往知识库
+            </Button>
+          </Group>
+        </Card>
       )}
     </Stack>
   );

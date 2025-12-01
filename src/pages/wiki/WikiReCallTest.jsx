@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Stack,
   Title,
@@ -27,13 +27,14 @@ const WikiRecallTest = () => {
 
   const [recallRes, setRecallRes] = useState(null);
   const [isRecalling, setIsRecalling] = useState(false);
+  const [recallTestQuery, setRecallTestQuery] = useState("");
 
   // region 方法
   const onRecall = async () => {
     setIsRecalling(true);
     const response = await appHelper.apiPost("wiki/recall-docs", {
       wikiId: wikiId,
-      queryContent: "如何安装react-native-smooth-wheel",
+      queryContent: recallTestQuery,
     });
     if (!response.ok) {
       setIsRecalling(false);
@@ -67,10 +68,14 @@ const WikiRecallTest = () => {
             placeholder={"请输入查询文本，建议使用陈述句"}
             minRows={10}
             maxRows={12}
+            onChange={(e) => {
+              setRecallTestQuery(e.target.value);
+            }}
           />
           <Group justify={"flex-end"}>
             <Button
               leftSection={<FileSearch size={16} />}
+              disabled={appHelper.getLength(recallTestQuery) === 0}
               onClick={async () => {
                 await onRecall();
               }}
@@ -102,7 +107,9 @@ const WikiRecallTest = () => {
                   {recallRes.map((item, index) => {
                     const score = item[1].toFixed(3);
                     const content = item[0].page_content;
-                    const source = item[0].metadata.source.split("/")[1];
+                    const sourcePath = item[0].metadata.source;
+                    const normalizedPath = sourcePath.replace(/\\/g, "/");
+                    const source = normalizedPath.split("/")[1];
                     return (
                       <Card key={index} mb={"xs"}>
                         <Stack>
