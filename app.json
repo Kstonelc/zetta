@@ -1,6 +1,6 @@
 {
   "name": "Bichon",
   "version": "1.0.0",
-  "apiUrl": "http://localhost:8001/api",
+  "apiUrl": "http://192.168.2.13:8001/api",
   "qWenUrl": "https://bailian.console.aliyun.com/"
 }

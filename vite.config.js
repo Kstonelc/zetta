@@ -5,6 +5,16 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: "0.0.0.0",
+    port: 5173,
+    // proxy: {
+    //   "/api": {
+    //     target: "http://localhost:8001", // 你的后端服务器地址
+    //     changeOrigin: true,
+    //   },
+    // },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),
