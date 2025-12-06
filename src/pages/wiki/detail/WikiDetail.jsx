@@ -14,9 +14,11 @@ import {
   Anchor,
   Breadcrumbs,
   useMantineTheme,
+  TextInput,
   Input,
   Image,
   ActionIcon,
+  Modal,
 } from "@mantine/core";
 import FatherSon from "/assets/wiki/father-son.svg";
 import {
@@ -35,31 +37,52 @@ import LocalFile from "/local-file.png";
 import { Table } from "@/components/index.js";
 
 import QWen from "/assets/models/qwen.svg";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import appHelper from "@/AppHelper.js";
 import { DocumentIndexStatus, FileType, WikiChunkType } from "@/enum.ts";
+import { useNotify } from "@/utils/notify.js";
 
 const WikiDetail = () => {
   const theme = useMantineTheme();
   const nav = useNavigate();
+  const { notify } = useNotify();
   const { wikiId } = useParams();
   const [docs, setDocs] = useState([]);
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [isFetching, setIsFetching] = useState(true);
+  const [isDocCreateModalOpen, setIsDocCreateModalOpen] = useState(false);
+  const [folderStruc, setFolderStruc] = useState([
+    {
+      title: "根目录",
+      node_id: null,
+    },
+  ]);
 
+  const folderNameRef = useRef("");
   const columns = [
     {
       accessor: "title",
       title: "名称",
-      textAlign: "center",
+      textAlign: "flex-start",
       width: 300,
-      render: ({ title }) => (
-        <Group justify={"center"} gap={"xs"} wrap={"noWrap"}>
-          {renderFileIcon(appHelper.getFileExt(title))}
-          <Text size={"sm"}>{title}</Text>
-        </Group>
-      ),
+      render: ({ title, isFolder }) => {
+        if (isFolder) {
+          return (
+            <Group justify={"flex-start"} gap={"xs"} wrap={"noWrap"}>
+              <Image src={Folder} h={20} w={20}></Image>
+              <Text size={"sm"}>{title}</Text>
+            </Group>
+          );
+        } else {
+          return (
+            <Group justify={"flex-start"} gap={"xs"} wrap={"noWrap"}>
+              {renderFileIcon(appHelper.getFileExt(title))}
+              <Text size={"sm"}>{title}</Text>
+            </Group>
+          );
+        }
+      },
     },
     {
       accessor: "size",
@@ -72,9 +95,9 @@ const WikiDetail = () => {
     },
     {
       title: "分段模式",
-      accessor: "chunk_type",
+      accessor: "chunkType",
       textAlign: "center",
-      render: ({ chunk_type }) => {
+      render: ({ chunkType }) => {
         return (
           <Badge
             color={theme.colors.gray[6]}
@@ -83,7 +106,7 @@ const WikiDetail = () => {
             radius={"sm"}
             leftSection={<Image src={FatherSon} w={12} h={12} />}
           >
-            {WikiChunkType.text[chunk_type]}
+            {WikiChunkType.text[chunkType]}
           </Badge>
         );
       },
@@ -98,12 +121,12 @@ const WikiDetail = () => {
       },
     },
     {
-      accessor: "created_at",
+      accessor: "createdAt",
       title: "上传时间",
       textAlign: "center",
-      render: ({ created_at }) => (
+      render: ({ createdAt }) => (
         <Text size={"sm"}>
-          {appHelper.formatDate(created_at, "YYYY-MM-DD HH:mm:ss")}
+          {appHelper.formatDate(createdAt, "YYYY-MM-DD HH:mm:ss")}
         </Text>
       ),
     },
@@ -154,7 +177,32 @@ const WikiDetail = () => {
       return;
     }
     setIsFetching(false);
-    setDocs(response.data);
+    // 处理返回数据渲染表格
+    let docs = [];
+
+    for (const node of response.data) {
+      const commonProps = {
+        id: node.id,
+        title: node.is_folder ? node.name : node.doc_info?.title,
+        createdAt: node.is_folder ? node.created_at : node.doc_info?.created_at,
+        isFolder: false,
+      };
+
+      if (node.is_folder) {
+        commonProps.isFolder = true;
+        docs.push(commonProps);
+      } else {
+        const { size, chunk_type, status } = node.doc_info || {};
+
+        docs.push({
+          ...commonProps,
+          size,
+          chunkType: chunk_type,
+          status,
+        });
+      }
+    }
+    setDocs(docs);
   };
 
   // endregion
@@ -205,12 +253,8 @@ const WikiDetail = () => {
   };
 
   // 定一个属性结构 后端返回
-  const items = [
-    { title: "根目录", href: "#" },
-    { title: "react native", href: "#" },
-    { title: "base", href: "#" },
-  ].map((item, index) => (
-    <Anchor href={item.href} key={index} underline={"never"}>
+  const items = folderStruc.map((item, index) => (
+    <Anchor key={index} underline={"never"} onClick={() => {}}>
       <Button
         c={theme.colors.gray[7]}
         fw={"bold"}
@@ -247,7 +291,12 @@ const WikiDetail = () => {
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Item leftSection={<Image src={Folder} w={20} h={20} />}>
+              <Menu.Item
+                leftSection={<Image src={Folder} w={20} h={20} />}
+                onClick={() => {
+                  setIsDocCreateModalOpen(true);
+                }}
+              >
                 文件夹
               </Menu.Item>
               <Menu.Item
@@ -266,6 +315,7 @@ const WikiDetail = () => {
       <Stack flex={5} px={"md"} mih={0}>
         <Table
           data={docs}
+          rowIdAccessor={"id"}
           totalRecords={appHelper.getLength(docs)}
           fetching={isFetching}
           columns={columns}
@@ -273,6 +323,59 @@ const WikiDetail = () => {
           onSelectedRecordsChange={setSelectedRecords}
         />
       </Stack>
+      <Modal
+        opened={isDocCreateModalOpen}
+        onClose={() => {
+          setIsDocCreateModalOpen(false);
+        }}
+        title={<Text fw={"bold"}>文件夹名称</Text>}
+      >
+        <TextInput
+          label={"名称"}
+          placeholder={"请输入文件夹名称"}
+          mb={"md"}
+          onChange={(e) => {
+            folderNameRef.current = e.target.value;
+          }}
+        />
+        <Group grow>
+          <Button
+            variant={"subtle"}
+            onClick={() => {
+              setIsDocCreateModalOpen(false);
+            }}
+          >
+            取消
+          </Button>
+          <Button
+            onClick={async () => {
+              if (!appHelper.getLength(folderNameRef.current) > 0) {
+                notify({
+                  type: "warning",
+                  message: "请输入文件夹名称",
+                });
+              }
+              const response = await appHelper.apiPost("/wiki/create-folder", {
+                wikiId: wikiId,
+                folderName: folderNameRef.current,
+                parentId: null,
+              });
+              if (!response.ok) {
+                notify({
+                  type: "error",
+                  message: response.message,
+                });
+                setIsDocCreateModalOpen(false);
+                return;
+              }
+              setIsDocCreateModalOpen(false);
+              await getWikiDocs();
+            }}
+          >
+            确定
+          </Button>
+        </Group>
+      </Modal>
     </Stack>
   );
 };
