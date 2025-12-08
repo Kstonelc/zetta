@@ -36,7 +36,7 @@ const WikiHomeCard = ({ wikiId, name, desc }) => {
     >
       <Group mb={"md"} justify="space-between">
         <Group>
-          <Image src={WikiIcon} h={30} w={30} />
+          <Image src={WikiIcon} h={28} w={28} />
           <Flex direction={"column"}>
             <Text fw={"bold"}>{name}</Text>
             <Text size={"xs"} c="dimmed">

@@ -28,6 +28,7 @@ import {
   Transition,
   useMantineTheme,
   Badge,
+  Pill,
   Collapse,
 } from "@mantine/core";
 import WikiIcon from "/assets/wiki/wiki.png";
@@ -1048,8 +1049,8 @@ const Chat = () => {
                       await getConversationMessages(item.id);
                     }}
                     variant={"light"}
-                    color={active ? theme.white : theme.colors.gray[8]}
-                    bg={active ? theme.colors.blue[6] : ""}
+                    color={active ? theme.black : theme.colors.gray[8]}
+                    bg={active ? theme.colors.gray[2] : ""}
                   >
                     <Text size={"xs"}>{item?.name.slice(0, 20) + "..."}</Text>
                   </Menu.Item>
@@ -1286,12 +1287,71 @@ const ChatInput = React.memo(function ChatInput({
         e.preventDefault();
         if (!isGenerating) onSend();
       }
+
+      const LAST_MENTION_REG = /(^|\s)@\S+\s?$/;
+      if (e.nativeEvent.isComposing) return;
+
+      if (e.key === "Backspace") {
+        const { value, selectionStart, selectionEnd } = e.target;
+
+        const isCaretAtEnd =
+          selectionStart === selectionEnd && selectionStart === value.length;
+
+        if (!isCaretAtEnd) return;
+
+        const match = value.match(LAST_MENTION_REG);
+        if (match) {
+          e.preventDefault();
+
+          const keepEnd = match[1] ? match.index + 1 : match.index;
+          const newValue = value.slice(0, keepEnd);
+
+          setInput(newValue);
+        }
+      }
     },
     [isGenerating, onSend],
   );
 
   const checkIsWikiOptionVisible = () => {
-    return input === "@";
+    if (!input) {
+      return false;
+    }
+
+    return input.endsWith("@");
+  };
+
+  const isOnlyWikiMentions = (text) => {
+    if (!text) return true;
+
+    const cleaned = text
+      // 删除所有 mention：开头或空白后跟 @，一直到下一个空白/换行/结尾
+      .replace(/(^|\s)@[^\s]+/g, " ")
+      .trim();
+
+    return cleaned.length === 0;
+  };
+
+  const handleWikiSelect = (selectedWikiName) => {
+    const newInputValue = updateWikiOptions(input, selectedWikiName);
+
+    setInput(newInputValue);
+  };
+
+  const updateWikiOptions = (currentInput, wikiName) => {
+    const newReference = `@${wikiName} `;
+
+    if (currentInput.includes(`@${wikiName}`)) {
+      return currentInput.slice(0, currentInput.lastIndexOf("@"));
+    }
+
+    const pattern = /@\S*$/;
+
+    if (pattern.test(currentInput)) {
+      return currentInput.replace(pattern, newReference);
+    }
+
+    return currentInput;
   };
 
   return (
@@ -1364,6 +1424,7 @@ const ChatInput = React.memo(function ChatInput({
                 size="xl"
                 variant="light"
                 radius="xl"
+                disabled={!(currentModel && !isOnlyWikiMentions(input))}
                 onClick={() => onSend()}
                 aria-label={isGenerating ? "停止" : "发送"}
               >
@@ -1381,8 +1442,20 @@ const ChatInput = React.memo(function ChatInput({
           <Menu.Item
             py={2}
             leftSection={<Image src={WikiIcon} h={16} w={16} />}
+            onClick={() => {
+              handleWikiSelect("react-native");
+            }}
           >
             react-native
+          </Menu.Item>
+          <Menu.Item
+            py={2}
+            leftSection={<Image src={WikiIcon} h={16} w={16} />}
+            onClick={() => {
+              handleWikiSelect("test");
+            }}
+          >
+            test
           </Menu.Item>
         </Menu>
       </Popover.Dropdown>
