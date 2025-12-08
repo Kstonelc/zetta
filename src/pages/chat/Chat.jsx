@@ -30,6 +30,7 @@ import {
   Badge,
   Collapse,
 } from "@mantine/core";
+import WikiIcon from "/assets/wiki/wiki.png";
 import { Virtuoso } from "react-virtuoso";
 import "highlight.js/styles/github.css";
 import { useClipboard } from "@mantine/hooks";
@@ -1289,11 +1290,15 @@ const ChatInput = React.memo(function ChatInput({
     [isGenerating, onSend],
   );
 
+  const checkIsWikiOptionVisible = () => {
+    return input === "@";
+  };
+
   return (
     <Popover
       width={220}
-      opened={input.startsWith("@")}
-      position="left-end"
+      opened={checkIsWikiOptionVisible()}
+      position="top-start"
       offset={12}
     >
       <Popover.Target>
@@ -1371,10 +1376,13 @@ const ChatInput = React.memo(function ChatInput({
           </Center>
         </Stack>
       </Popover.Target>
-      <Popover.Dropdown>
+      <Popover.Dropdown p={"4"}>
         <Menu>
-          <Menu.Item>
-            <Text size="xs">Bichon</Text>
+          <Menu.Item
+            py={2}
+            leftSection={<Image src={WikiIcon} h={16} w={16} />}
+          >
+            react-native
           </Menu.Item>
         </Menu>
       </Popover.Dropdown>
