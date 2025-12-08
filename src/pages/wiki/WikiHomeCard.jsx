@@ -11,7 +11,7 @@ import {
   Text,
   useMantineTheme,
 } from "@mantine/core";
-import WikiIcon from "/wiki.svg";
+import WikiIcon from "/assets/wiki/wiki.png";
 import {
   Ellipsis,
   Tags,
@@ -36,21 +36,7 @@ const WikiHomeCard = ({ wikiId, name, desc }) => {
     >
       <Group mb={"md"} justify="space-between">
         <Group>
-          <Center
-            bg={theme.colors.blue[0]}
-            w={40}
-            h={40}
-            style={{
-              borderRadius: theme.radius.sm,
-              border: `1px solid ${theme.colors.blue[1]}`,
-            }}
-          >
-            <SwatchBook
-              h={18}
-              w={18}
-              color={theme.colors.violet[6]}
-            ></SwatchBook>
-          </Center>
+          <Image src={WikiIcon} h={30} w={30} />
           <Flex direction={"column"}>
             <Text fw={"bold"}>{name}</Text>
             <Text size={"xs"} c="dimmed">
