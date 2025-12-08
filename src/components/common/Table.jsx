@@ -36,6 +36,7 @@ const Table = ({ columns, data, excludeAccessors = ["option"], ...props }) => {
       highlightOnHover
       records={data}
       columns={processedColumns}
+      noRecordsText="暂无数据"
       {...props}
     />
   );

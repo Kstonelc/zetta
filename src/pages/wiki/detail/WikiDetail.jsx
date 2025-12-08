@@ -42,6 +42,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import appHelper from "@/AppHelper.js";
 import { DocumentIndexStatus, FileType, WikiChunkType } from "@/enum.ts";
 import { useNotify } from "@/utils/notify.js";
+import { lowerFirst } from "@mantine/hooks";
 
 const WikiDetail = () => {
   const theme = useMantineTheme();
@@ -52,7 +53,7 @@ const WikiDetail = () => {
   const [selectedRecords, setSelectedRecords] = useState([]);
   const [isFetching, setIsFetching] = useState(true);
   const [isDocCreateModalOpen, setIsDocCreateModalOpen] = useState(false);
-  const [folderStruc, setFolderStruc] = useState([
+  const [folderStruct, setFolderStruct] = useState([
     {
       title: "根目录",
       node_id: null,
@@ -135,16 +136,20 @@ const WikiDetail = () => {
       title: "操作",
       textAlign: "center",
       width: 200,
-      render: () => (
-        <Group gap={"0"} justify={"center"}>
-          <ActionIcon variant={"transparent"}>
-            <SquarePen size={"16"} />
-          </ActionIcon>
-          <ActionIcon variant={"transparent"}>
-            <Trash2 size={"16"} color={theme.colors.red[6]} />
-          </ActionIcon>
-        </Group>
-      ),
+      render: ({ isFolder }) => {
+        if (!isFolder) {
+          return (
+            <Group gap={"0"} justify={"center"}>
+              <ActionIcon variant={"transparent"}>
+                <SquarePen size={"16"} />
+              </ActionIcon>
+              <ActionIcon variant={"transparent"}>
+                <Trash2 size={"16"} color={theme.colors.red[6]} />
+              </ActionIcon>
+            </Group>
+          );
+        }
+      },
     },
   ];
 
@@ -158,7 +163,7 @@ const WikiDetail = () => {
   }, []);
 
   const initialize = async () => {
-    await getWikiDocs();
+    await getWikiDocs(null);
   };
 
   const destroy = async () => {};
@@ -167,10 +172,11 @@ const WikiDetail = () => {
 
   // region 方法
 
-  const getWikiDocs = async () => {
+  const getWikiDocs = async (parentId) => {
     setIsFetching(true);
     const response = await appHelper.apiPost("/wiki/find-docs", {
       wikiId: wikiId,
+      parentId: parentId,
     });
     if (!response.ok) {
       setIsFetching(false);
@@ -203,6 +209,20 @@ const WikiDetail = () => {
       }
     }
     setDocs(docs);
+  };
+
+  const handleRowClick = ({ record }) => {
+    // 检查当前点击的记录是否已经在选中列表中
+    console.log(666, record);
+    const isSelected = selectedRecords.some((r) => r.id === record.id);
+
+    if (isSelected) {
+      // 逻辑 1: 如果当前行已被选中，则取消选中 (清空数组)
+      setSelectedRecords([]);
+    } else {
+      // 逻辑 2: 如果当前行未被选中，则选中它 (替换为仅包含新记录的数组，实现单选)
+      setSelectedRecords([record]);
+    }
   };
 
   // endregion
@@ -253,13 +273,24 @@ const WikiDetail = () => {
   };
 
   // 定一个属性结构 后端返回
-  const items = folderStruc.map((item, index) => (
+  const items = folderStruct.map((item, index) => (
     <Anchor key={index} underline={"never"} onClick={() => {}}>
       <Button
         c={theme.colors.gray[7]}
         fw={"bold"}
         size={"xs"}
         variant={"subtle"}
+        onClick={async () => {
+          await getWikiDocs(item.node_id);
+          setFolderStruct(
+            folderStruct.slice(0, index + 1).map((item) => {
+              return {
+                ...item,
+                node_id: item.node_id,
+              };
+            }),
+          );
+        }}
       >
         {item.title}
       </Button>
@@ -313,6 +344,19 @@ const WikiDetail = () => {
       </Group>
 
       <Stack flex={5} px={"md"} mih={0}>
+        <Card p={"xs"} shadow={"none"} bg={theme.colors.gray[1]}>
+          <Group w="100%" justify={"space-between"}>
+            <Text size={"xs"}>已经选择1项</Text>
+            <Group gap={0}>
+              <Button size={"xs"} variant={"transparent"}>
+                移动
+              </Button>
+              <Button size={"xs"} variant={"transparent"}>
+                取消选择
+              </Button>
+            </Group>
+          </Group>
+        </Card>
         <Table
           data={docs}
           rowIdAccessor={"id"}
@@ -321,6 +365,19 @@ const WikiDetail = () => {
           columns={columns}
           selectedRecords={selectedRecords}
           onSelectedRecordsChange={setSelectedRecords}
+          onRowClick={handleRowClick}
+          onRowDoubleClick={async ({ record }) => {
+            if (!record.isFolder) {
+              return;
+            }
+            // 更新 folderStruct
+            folderStruct.push({
+              title: record.title,
+              id: record.id,
+            });
+            setFolderStruct(folderStruct);
+            await getWikiDocs(record.id);
+          }}
         />
       </Stack>
       <Modal
@@ -369,7 +426,7 @@ const WikiDetail = () => {
                 return;
               }
               setIsDocCreateModalOpen(false);
-              await getWikiDocs();
+              await getWikiDocs(null);
             }}
           >
             确定
