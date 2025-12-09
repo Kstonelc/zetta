@@ -13,23 +13,22 @@ import {
   Loader,
   Anchor,
   Breadcrumbs,
+  Switch,
   useMantineTheme,
   TextInput,
   Input,
   Image,
   ActionIcon,
   Modal,
+  Transition,
 } from "@mantine/core";
 import FatherSon from "/assets/wiki/father-son.svg";
 import {
   FolderUp,
-  SquarePen,
-  Trash2,
+  ArrowLeft,
   CircleCheckBig,
   CircleX,
   Search,
-  FileText,
-  FolderOpenDot,
   ChevronRight,
 } from "lucide-react";
 import Folder from "/folder.png";
@@ -59,6 +58,7 @@ const WikiDetail = () => {
       node_id: null,
     },
   ]);
+  const [isActionToolVisible, setIsActionToolVisible] = useState(false);
 
   const folderNameRef = useRef("");
   const columns = [
@@ -133,25 +133,21 @@ const WikiDetail = () => {
     },
     {
       accessor: "option",
-      title: "操作",
+      title: "启用",
       textAlign: "center",
       width: 200,
       render: ({ isFolder }) => {
         if (!isFolder) {
           return (
             <Group gap={"0"} justify={"center"}>
-              <ActionIcon variant={"transparent"}>
-                <SquarePen size={"16"} />
-              </ActionIcon>
-              <ActionIcon variant={"transparent"}>
-                <Trash2 size={"16"} color={theme.colors.red[6]} />
-              </ActionIcon>
+              <Switch defaultChecked={true} radius={"xl"} size={"xs"}></Switch>
             </Group>
           );
         }
       },
     },
   ];
+  const currentSelectedRecordsRef = useRef([]);
 
   // region 初始化
 
@@ -209,20 +205,33 @@ const WikiDetail = () => {
       }
     }
     setDocs(docs);
+    setSelectedRecords([]);
+    setIsActionToolVisible(false);
   };
 
   const handleRowClick = ({ record }) => {
-    // 检查当前点击的记录是否已经在选中列表中
-    console.log(666, record);
-    const isSelected = selectedRecords.some((r) => r.id === record.id);
+    setSelectedRecords((prev) => {
+      const exists = prev.some((r) => r.id === record.id);
 
-    if (isSelected) {
-      // 逻辑 1: 如果当前行已被选中，则取消选中 (清空数组)
-      setSelectedRecords([]);
-    } else {
-      // 逻辑 2: 如果当前行未被选中，则选中它 (替换为仅包含新记录的数组，实现单选)
-      setSelectedRecords([record]);
-    }
+      let newSelected;
+      if (exists) {
+        newSelected = prev.filter((r) => r.id !== record.id);
+      } else {
+        newSelected = [...prev, record];
+      }
+
+      currentSelectedRecordsRef.current = newSelected;
+
+      setIsActionToolVisible(appHelper.getLength(newSelected) > 0);
+
+      return newSelected;
+    });
+  };
+
+  const applySelection = (nextSelected) => {
+    setSelectedRecords(nextSelected);
+    currentSelectedRecordsRef.current = nextSelected;
+    setIsActionToolVisible(nextSelected.length > 0);
   };
 
   // endregion
@@ -272,7 +281,6 @@ const WikiDetail = () => {
     );
   };
 
-  // 定一个属性结构 后端返回
   const items = folderStruct.map((item, index) => (
     <Anchor key={index} underline={"never"} onClick={() => {}}>
       <Button
@@ -301,7 +309,12 @@ const WikiDetail = () => {
 
   return (
     <Stack flex={1} h={"calc(100vh - 120px)"}>
-      <Title order={3}>文档</Title>
+      <Group gap={"sm"}>
+        <ActionIcon variant={"subtle"} color={theme.black} size={"lg"}>
+          <ArrowLeft />
+        </ActionIcon>
+        <Title order={3}>文档</Title>
+      </Group>
       <Group justify={"space-between"}>
         <Breadcrumbs
           separator={<ChevronRight size={16} />}
@@ -343,20 +356,7 @@ const WikiDetail = () => {
         </Group>
       </Group>
 
-      <Stack flex={5} px={"md"} mih={0}>
-        <Card p={"xs"} shadow={"none"} bg={theme.colors.gray[1]}>
-          <Group w="100%" justify={"space-between"}>
-            <Text size={"xs"}>已经选择1项</Text>
-            <Group gap={0}>
-              <Button size={"xs"} variant={"transparent"}>
-                移动
-              </Button>
-              <Button size={"xs"} variant={"transparent"}>
-                取消选择
-              </Button>
-            </Group>
-          </Group>
-        </Card>
+      <Stack flex={5} mih={0}>
         <Table
           data={docs}
           rowIdAccessor={"id"}
@@ -364,13 +364,17 @@ const WikiDetail = () => {
           fetching={isFetching}
           columns={columns}
           selectedRecords={selectedRecords}
-          onSelectedRecordsChange={setSelectedRecords}
+          onSelectedRecordsChange={applySelection}
           onRowClick={handleRowClick}
+          getRecordSelectionCheckboxProps={(record, index) => ({
+            onChange: () => {
+              handleRowClick({ record });
+            },
+          })}
           onRowDoubleClick={async ({ record }) => {
             if (!record.isFolder) {
               return;
             }
-            // 更新 folderStruct
             folderStruct.push({
               title: record.title,
               id: record.id,
@@ -379,6 +383,44 @@ const WikiDetail = () => {
             await getWikiDocs(record.id);
           }}
         />
+        <Transition
+          mounted={isActionToolVisible}
+          transition="slide-down"
+          duration={400}
+          timingFunction="ease"
+        >
+          {(styles) => (
+            <Card
+              style={styles}
+              p={"xs"}
+              shadow={"sm"}
+              mx={"20%"}
+              withBorder={true}
+              radius={"lg"}
+            >
+              <Group w="100%" justify={"space-between"}>
+                <Text size={"xs"} fw={"bold"}>
+                  已经选择 {appHelper.getLength(selectedRecords)} 项
+                </Text>
+                <Group gap={0}>
+                  <Button size={"xs"} variant={"transparent"}>
+                    移动
+                  </Button>
+                  <Button
+                    size={"xs"}
+                    variant={"transparent"}
+                    onClick={() => {
+                      setSelectedRecords([]);
+                      setIsActionToolVisible(false);
+                    }}
+                  >
+                    取消选择
+                  </Button>
+                </Group>
+              </Group>
+            </Card>
+          )}
+        </Transition>
       </Stack>
       <Modal
         opened={isDocCreateModalOpen}

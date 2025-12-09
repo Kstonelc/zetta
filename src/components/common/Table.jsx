@@ -1,4 +1,6 @@
 import { DataTable } from "mantine-datatable";
+import { Stack, Text, Image } from "@mantine/core";
+import NoRecords from "/assets/wiki/no-records.png";
 
 const Table = ({ columns, data, excludeAccessors = ["option"], ...props }) => {
   const processedColumns = columns.map((column) => {
@@ -28,6 +30,15 @@ const Table = ({ columns, data, excludeAccessors = ["option"], ...props }) => {
     };
   });
 
+  const renderNoRecords = () => {
+    return (
+      <Stack align={"center"} gap={"2"}>
+        <Image src={NoRecords} w={120} h={120}></Image>
+        <Text size={"xs"}>空空如也</Text>
+      </Stack>
+    );
+  };
+
   return (
     <DataTable
       verticalSpacing={"6"}
@@ -36,7 +47,7 @@ const Table = ({ columns, data, excludeAccessors = ["option"], ...props }) => {
       highlightOnHover
       records={data}
       columns={processedColumns}
-      noRecordsText="暂无数据"
+      emptyState={renderNoRecords()}
       {...props}
     />
   );

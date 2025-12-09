@@ -3,13 +3,12 @@ import {
   NavLink,
   Tooltip,
   Stack,
-  rem,
-  Flex,
   useMantineTheme,
   ActionIcon,
   Text,
   Divider,
   Image,
+  Group,
   Center,
   Button,
 } from "@mantine/core";
@@ -22,7 +21,7 @@ import {
   Target,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import WikiIcon from "/wiki.svg";
+import WikiIcon from "/assets/wiki/wiki.png";
 import appHelper from "@/AppHelper.js";
 import { useNotify } from "@/utils/notify.js";
 
@@ -101,18 +100,7 @@ const WikiSideBar = ({ wikiId }) => {
     >
       <Stack w={"100%"} h={"100%"} justify={"space-between"} p={"sm"}>
         <Stack gap={"xs"} align={collapsed && "center"}>
-          <Center
-            mb={8}
-            bg={theme.colors.blue[0]}
-            w={35}
-            h={35}
-            style={{
-              borderRadius: theme.radius.sm,
-              border: `1px solid ${theme.colors.blue[1]}`,
-            }}
-          >
-            <Image src={WikiIcon} w={18} h={18} />
-          </Center>
+          <Image src={WikiIcon} w={30} h={30} mt={"xs"} />
           {!collapsed && (
             <Stack mb={12} gap={"1"}>
               <Text fw={"bold"}>{wikiInfo?.name}</Text>

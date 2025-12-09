@@ -1034,13 +1034,11 @@ const Chat = () => {
                     rightSection={
                       <ActionIcon
                         className={classes.conversationItemTools}
-                        variant={"subtle"}
+                        variant={"transparent"}
                         onClick={(e) => {
                           e.stopPropagation();
                         }}
-                        color={
-                          active ? theme.colors.blue[1] : theme.colors.gray[8]
-                        }
+                        color={theme.colors.gray[8]}
                       >
                         <Ellipsis size={16} />
                       </ActionIcon>
