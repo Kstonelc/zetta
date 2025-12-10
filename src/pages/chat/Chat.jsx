@@ -236,13 +236,41 @@ const Chat = () => {
     }
   }, []);
 
+  const forceScrollToBottom = useCallback(
+    (targetLength) => {
+      const total =
+        typeof targetLength === "number"
+          ? targetLength
+          : appHelper.getLength(messagesRef.current);
+      const lastIdx = Math.max(0, total - 1);
+
+      byProgrammaticRef.current = true;
+
+      virtuosoRef.current?.scrollToIndex({
+        index: lastIdx,
+        align: "end",
+        behavior: "auto",
+      });
+
+      const scrollAttempts = [80, 160, 260, 420];
+      scrollAttempts.forEach((delay) => {
+        setTimeout(() => {
+          hardScrollToBottomNow();
+        }, delay);
+      });
+
+      setTimeout(() => {
+        byProgrammaticRef.current = false;
+        atBottomRef.current = true;
+        setShowJump(false);
+      }, 520);
+    },
+    [hardScrollToBottomNow],
+  );
+
   /**
-   * 生成中或“滚动到底”时调用：
-   * - 如果当前本来就在底部，或者 followOnGenerateRef = true 就滚动到底；
-   * - 否则什么都不做，不打扰看历史。
-   *
-   * 同时：只有当“离底部有明显距离 diff > BOTTOM_EPS”时才真正 scrollTo，
-   * 避免 Mac 触控板那种 1~2 像素抖动也被我们拉直，造成视觉上的抖动。
+   * 自动跟随场景使用：
+   * - 生成过程中按小步增量滚动（避免频繁 full scroll）
    */
   const scrollToBottomIfNeeded = useCallback(() => {
     const el = scrollerElRef.current;
@@ -257,7 +285,6 @@ const Chat = () => {
     // 当前到底部的距离
     const diff = el.scrollHeight - el.clientHeight - el.scrollTop;
 
-    // 已经几乎在底部（考虑 EPS），不需要再强制 scrollTo，避免反复“微调”
     if (diff <= BOTTOM_EPS) {
       atBottomRef.current = true;
       return;
@@ -275,7 +302,6 @@ const Chat = () => {
 
       const maxTop = Math.max(0, el2.scrollHeight - el2.clientHeight);
       try {
-        // 避免 smooth + Mac 惯性叠加，使用 auto 更稳定
         el2.scrollTo({ top: maxTop, behavior: "auto" });
       } catch {
         el2.scrollTop = maxTop;
@@ -323,7 +349,7 @@ const Chat = () => {
     messagesRef.current = messages;
   }, [messages]);
 
-  // region 初始化/销毁
+  // region 初始化
 
   const initialize = async () => {
     // 获取模型
@@ -360,7 +386,6 @@ const Chat = () => {
     return () => {
       destroy();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // endregion
@@ -408,7 +433,6 @@ const Chat = () => {
           if (!at) {
             userInteractingRef.current = true;
             autoFollowDisabledRef.current = true;
-            // 手动滚动后，不再跟随生成
             followOnGenerateRef.current = false;
           }
         };
@@ -434,7 +458,6 @@ const Chat = () => {
               const el = scrollerElRef.current;
               if (!el) return;
 
-              // 导航/程序滚动 + 抑制窗口：不更新状态，防止“上下跳”
               if (byProgrammaticRef.current || inSuppressWindow()) return;
 
               // 生成中 + 跟随开启 + 用户没交互：认为在底部，避免按钮闪烁
@@ -585,7 +608,7 @@ const Chat = () => {
     latestAssistantTextRef.current = getLatestAssistantText();
   }, [getLatestAssistantText]);
 
-  // 发送：顺序追加 + 默认跟随到底（只“贴底”，不额外把消息顶上去）
+  // 发送：顺序追加 + 默认跟随到底（使用 forceScrollToBottom 确保问题/Loader 稳定出现）
   const handleSend = useCallback(async () => {
     latestAssistantTextRef.current = "";
 
@@ -625,21 +648,21 @@ const Chat = () => {
     currentAssistantIdRef.current = assistantId;
     assistantTextMapRef.current.set(assistantId, "");
 
-    // 立刻把消息刷入
+    // 立刻把消息刷入，同时拿到 next.length
+    let newTotal = 0;
     flushSync(() => {
-      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      setMessages((prev) => {
+        const next = [...prev, userMessage, assistantMessage];
+        newTotal = next.length;
+        return next;
+      });
     });
 
     setInput("");
 
-    // 保持“贴底”，通常能同时看到问题和生成内容的起始部分
-    byProgrammaticRef.current = true;
-    scrollToBottomIfNeeded();
-    requestAnimationFrame(() => {
-      byProgrammaticRef.current = false;
-      atBottomRef.current = true;
-      setShowJump(false);
-    });
+    setTimeout(() => {
+      forceScrollToBottom(newTotal);
+    }, 40);
 
     // 模型提供商
     let currentModelProvider;
@@ -748,17 +771,17 @@ const Chat = () => {
     isDeepThink,
     handlers,
     handleUnknown,
-    scrollToBottomIfNeeded,
+    forceScrollToBottom,
   ]);
 
-  // 点击“滚动到底”：开启跟随，使用统一逻辑滚动
+  // 点击“滚动到底”：使用与切换会话相同的多次兜底逻辑
   const jumpToBottomNow = useCallback(() => {
     autoFollowDisabledRef.current = false;
     userInteractingRef.current = false;
     followOnGenerateRef.current = true;
 
-    scrollToBottomIfNeeded();
-  }, [scrollToBottomIfNeeded]);
+    forceScrollToBottom();
+  }, [forceScrollToBottom]);
 
   // region 问题导航定位（禁用自动跟随）
   const scrollToQuestionPtr = useCallback(
@@ -780,7 +803,7 @@ const Chat = () => {
         virtuosoRef.current?.scrollToIndex({
           index: itemIndex,
           align: "start",
-          behavior, // 使用 auto，避免 smooth 与虚拟化高度变动叠加抖动
+          behavior,
         });
 
         // 延长一点点保护时间，让列表高度稳定下来
@@ -788,8 +811,6 @@ const Chat = () => {
           byProgrammaticRef.current = false;
         }, 160);
       });
-
-      // 不再手动 setShowJump，让 onScroll 根据是否在底部统一控制
     },
     [questionIndices],
   );
@@ -969,37 +990,17 @@ const Chat = () => {
     byProgrammaticRef.current = true;
     followOnGenerateRef.current = false;
 
-    // 兼容旧数据：补齐 thinking 字段
     const withThinking = (response.data || []).map((m) =>
       m.role === ConversationRole.Assistant
         ? { thinking: "", content: "", ...m }
         : m,
     );
 
+    const total = appHelper.getLength(withThinking);
     setMessages(withThinking);
 
-    // 手动滚到最底部，多次兜底，避免虚拟化高度变化导致偏差
     setTimeout(() => {
-      const lastIdx = Math.max(0, appHelper.getLength(withThinking) - 1);
-
-      virtuosoRef.current?.scrollToIndex({
-        index: lastIdx,
-        align: "end",
-        behavior: "auto",
-      });
-
-      const scrollAttempts = [80, 160, 260, 420];
-      scrollAttempts.forEach((delay) => {
-        setTimeout(() => {
-          hardScrollToBottomNow();
-        }, delay);
-      });
-
-      setTimeout(() => {
-        byProgrammaticRef.current = false;
-        atBottomRef.current = true;
-        setShowJump(false);
-      }, 520);
+      forceScrollToBottom(total);
     }, 40);
   };
 
@@ -1094,7 +1095,6 @@ const Chat = () => {
   );
 };
 
-/** 消息项（强 memo） */
 const MessageItem = React.memo(
   ({ msg, theme }) => {
     const isUser = msg.role === ConversationRole.User;
@@ -1308,7 +1308,7 @@ const ChatInput = React.memo(function ChatInput({
         }
       }
     },
-    [isGenerating, onSend],
+    [isGenerating, onSend, setInput],
   );
 
   const checkIsWikiOptionVisible = () => {
