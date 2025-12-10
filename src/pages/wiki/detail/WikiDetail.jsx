@@ -310,7 +310,15 @@ const WikiDetail = () => {
   return (
     <Stack flex={1} h={"calc(100vh - 120px)"}>
       <Group gap={"sm"}>
-        <ActionIcon variant={"subtle"} color={theme.black} size={"lg"}>
+        <ActionIcon
+          variant={"subtle"}
+          color={theme.black}
+          radius={"xl"}
+          size={"lg"}
+          onClick={() => {
+            nav(-1);
+          }}
+        >
           <ArrowLeft />
         </ActionIcon>
         <Title order={3}>文档</Title>

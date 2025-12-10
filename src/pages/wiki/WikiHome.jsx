@@ -10,6 +10,7 @@ import {
   Select,
   Card,
   Radio,
+  Image,
   ActionIcon,
   TextInput,
   Textarea,
@@ -25,6 +26,7 @@ import {
   FileText,
   SwatchBook,
 } from "lucide-react";
+import FNLogo from "/assets/fn-logo.png";
 import classes from "./WikiHome.module.scss";
 import { useDisclosure } from "@mantine/hooks";
 import { WikiType } from "@/enum.js";
@@ -98,17 +100,18 @@ const WikiHome = () => {
           searchable={true}
           placeholder={"请选择部门"}
         />
-        <Button
-          leftSection={<Grid2x2Plus size={16} />}
-          onClick={() => {
-            // openWikiCreateModal();
-            nav({
-              pathname: "/wiki/create",
-            });
-          }}
-        >
-          新建知识库
-        </Button>
+        <Group>
+          <Button
+            leftSection={<Grid2x2Plus size={16} />}
+            onClick={() => {
+              nav({
+                pathname: "/wiki/create",
+              });
+            }}
+          >
+            新建知识库
+          </Button>
+        </Group>
         <Modal
           keepMounted={false}
           opened={isWikiCreateModalOpen}

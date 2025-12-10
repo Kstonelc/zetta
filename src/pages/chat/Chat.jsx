@@ -533,6 +533,19 @@ const Chat = () => {
   // ===== 事件处理器注册表（可扩展） =====
   const handlers = useMemo(() => {
     return {
+      retrieve_start: (evt) => {
+        const name = evt.section;
+        setIsSectionVisible(true);
+        upSection(name, { status: "running", logs: [String(evt.delta ?? "")] });
+      },
+
+      retrieve_end: (evt) => {
+        const name = evt.section;
+        upSection(name, { status: "done", logs: [String(evt.delta ?? "")] });
+        setTimeout(() => {
+          setIsSectionVisible(false);
+        }, 5000);
+      },
       thinking: (evt) => {
         const delta = evt.delta ?? "";
         appendToAssistantField(

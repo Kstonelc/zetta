@@ -42,7 +42,7 @@
 .agentChatWrap {
   position: relative;
   width: 90%;
-  height: 70vh;
+  height: calc(100vh - 300px);
   min-height: 0;
 }
 
