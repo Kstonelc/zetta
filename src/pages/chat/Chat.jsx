@@ -32,6 +32,8 @@ import {
   Collapse,
 } from "@mantine/core";
 import WikiIcon from "/assets/wiki/wiki.png";
+import Retrieval from "/assets/wiki/retrieval.gif";
+import AnimaBot from "/anima-bot.gif";
 import { Virtuoso } from "react-virtuoso";
 import "highlight.js/styles/github.css";
 import { useClipboard } from "@mantine/hooks";
@@ -94,14 +96,13 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
             return (
               <Card
                 key={name}
-                px="xl"
-                py={"xs"}
+                p={2}
                 radius="xl"
                 shadow={"lg"}
                 withBorder={true}
               >
                 <Group justify="flex-start" align="center" gap={"xs"}>
-                  <Loader type={"bars"} size={"xs"} />
+                  <Image src={Retrieval} w={60} h={30}></Image>
                   <Group gap="xs" align="center">
                     <Badge
                       size="md"
@@ -256,7 +257,7 @@ const Chat = () => {
         behavior: "auto",
       });
 
-      const scrollAttempts = [80, 160, 260, 420];
+      const scrollAttempts = [100, 300];
       scrollAttempts.forEach((delay) => {
         setTimeout(() => {
           hardScrollToBottomNow();
@@ -842,10 +843,17 @@ const Chat = () => {
           style={{ height: "100%", width: "100%" }}
           data={messages}
           computeItemKey={(_, msg) => msg.id}
-          increaseViewportBy={{ top: 200, bottom: 400 }}
+          increaseViewportBy={{ top: 200, bottom: 200 }}
           defaultItemHeight={160}
           components={{
             Scroller,
+            Footer: () => (
+              <div
+                style={{
+                  height: 20,
+                }}
+              />
+            ),
           }}
           followOutput={false}
           scrollSeekConfiguration={{
@@ -1061,10 +1069,13 @@ const Chat = () => {
             {isLoadingMessages ? (
               <Loader size={"sm"} />
             ) : (
-              <>
-                <Title order={1}>我是 Bichon 智能助手，开始聊天吧</Title>
-                <Text c="dimmed">连接数据与知识，助你高效决策。</Text>
-              </>
+              <Group>
+                <Image src={AnimaBot} h={80} w={80} />
+                <Stack gap={"xs"} align="center">
+                  <Title order={1}>我是 Bichon 智能助手，开始聊天吧</Title>
+                  <Text c="dimmed">连接数据与知识，助你高效决策。</Text>
+                </Stack>
+              </Group>
             )}
           </Stack>
         ) : (
