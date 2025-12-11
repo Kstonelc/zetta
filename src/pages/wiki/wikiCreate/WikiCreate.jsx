@@ -772,7 +772,7 @@ const WikiCreate = () => {
                           <div>
                             <Text size={"sm"}>经典模式</Text>
                             <Text size={"xs"} c={"dimmed"}>
-                              直接按固定长度或规则切块
+                              直接按固定长度或规则切块, 常用但可能导致语义不连贯
                             </Text>
                           </div>
                         </Group>

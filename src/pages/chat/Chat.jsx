@@ -48,6 +48,7 @@ import {
   Ellipsis,
   Eye,
   EyeOff,
+  BotMessageSquare,
 } from "lucide-react";
 
 import appHelper from "@/AppHelper.js";
@@ -73,10 +74,11 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
       {(styles) => (
         <Stack
           w="100%"
-          align="center"
+          align="flex-start"
           style={{
             position: "absolute",
-            top: 0,
+            top: 10,
+            left: 0,
             zIndex: 999,
             ...styles,
           }}
@@ -90,11 +92,19 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
                   ? theme.colors.red[5]
                   : theme.colors.blue[5];
             return (
-              <Card key={name} withBorder padding="xs" radius="md">
-                <Group justify="space-between" align="center">
+              <Card
+                key={name}
+                px="xl"
+                py={"xs"}
+                radius="xl"
+                shadow={"lg"}
+                withBorder={true}
+              >
+                <Group justify="flex-start" align="center" gap={"xs"}>
+                  <Loader type={"bars"} size={"xs"} />
                   <Group gap="xs" align="center">
                     <Badge
-                      size="sm"
+                      size="md"
                       variant={s.status === "error" ? "filled" : "light"}
                       color={statusColor}
                     >
@@ -102,12 +112,6 @@ const SectionPanel = ({ sections, theme, isSectionVisible }) => {
                         appHelper.getLength(s.logs) > 0 &&
                         s.logs.join(" ")}
                     </Badge>
-                    {Array.isArray(s.icons) &&
-                      s.icons
-                        .slice(0, 5)
-                        .map((src, i) => (
-                          <Image key={i} w={20} h={20} src={src} radius="xl" />
-                        ))}
                   </Group>
                 </Group>
               </Card>
@@ -544,7 +548,7 @@ const Chat = () => {
         upSection(name, { status: "done", logs: [String(evt.delta ?? "")] });
         setTimeout(() => {
           setIsSectionVisible(false);
-        }, 5000);
+        }, 3000);
       },
       thinking: (evt) => {
         const delta = evt.delta ?? "";
@@ -571,27 +575,6 @@ const Chat = () => {
             ]),
           ),
         );
-      },
-      // Web 搜索阶段
-      search_begin: (evt) => {
-        const name = evt.section || "search:web";
-        setIsSectionVisible(true);
-        upSection(name, { status: "running", logs: [String(evt.delta ?? "")] });
-      },
-      search_done: (evt) => {
-        const name = evt.section || "search:web";
-        const icons = Array.isArray(evt.delta) ? evt.delta : [];
-        upSection(name, { status: "done", icons, logs: ["搜索完成"] });
-        setTimeout(() => {
-          setIsSectionVisible(false);
-        }, 5000);
-      },
-      search_error: (evt) => {
-        const name = evt.section || "search:web";
-        upSection(name, {
-          status: "error",
-          logs: [String(evt.delta ?? "联网搜索失败")],
-        });
       },
     };
   }, [appendToAssistantField, getLatestAssistantText, upSection]);
@@ -757,7 +740,6 @@ const Chat = () => {
               section: obj?.section,
             };
 
-            console.log("当前事件类型", evt.type);
             const fn = handlers[evt.type];
             if (fn) fn(evt);
             else handleUnknown(evt);
